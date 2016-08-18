@@ -76,11 +76,14 @@ print("List of dependencies:")
 version_base_dir=project+"/"+soversion+"/"+codename+"-"+arch
 dependency_dir=version_base_dir
 
+build_depends=""
 for dependency in dependencies:
   dependency_dir = dependency_dir+"/"+dependency+"-"+dependency_versions[dependency]
+  build_depends += dependency+" (= "+dependency_versions[dependency]+"), "
   print("  "+dependency+" (= "+dependency_versions[dependency]+")")
+build_depends = build_depends[:-2]
 
-print("Dependency ID string: "+dependency_dir)
+#print("Dependency ID string: "+dependency_dir)
   
 # determine build number
 if not os.path.isfile("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER"):
@@ -124,3 +127,45 @@ else:
   f.close()
 
 print("Build number: "+str(build_number))
+
+# read config file
+configfile = open("DebianBuildVersions/"+project+"/CONFIG",'r').read().splitlines()
+config = {}
+for line in configfile:
+  ( key, value ) = line.split(":", 1)
+  config[key.strip()] = value.strip()
+  
+# extend the config by dynamic variables
+config["build-depends"] = build_depends
+config["package-basename"] = "lib"+project.lower()
+config["architecture"] = arch
+config["debversion"] = soversion.replace(".","-")+"-"+codename+str(build_number)
+print(config)
+
+# create the Debian control files
+controldir="DebianBuildVersions/"+dependency_dir+"/control"
+if not os.path.isdir(controldir):
+  os.makedirs(controldir)
+
+filelist=[ "control.src" ]
+for package in config["Has-packages"].split(" "):
+  filelist.append("control."+package.strip())
+  
+print filelist
+
+for filna in filelist:
+  content = open("templates/"+filna).read()
+  for var in config.keys():
+    content = content.replace("#"+var+"#", config[var])
+  print content
+
+#libdoocswrappers#DEBVERSION#, dev-doocs-serverlib (= @DOOCS_VERSION@)
+
+
+# commit the changes to git
+#os.chdir("DebianBuildVersions")
+#subprocess.call(["git", "add", "-a" , "."])
+#subprocess.call(["git", "commit", "-a" , "-m", "build "+str(build_number)+" of "+version_base_dir])
+#subprocess.call(["git", "push"])
+#os.chdir("..")
+
