@@ -1,0 +1,67 @@
+#!/usr/bin/python
+
+import debian.debian_support
+import urllib
+import subprocess
+import os
+import sys
+
+# parse command line arguments
+project = sys.argv[1]
+codename = sys.argv[2]
+arch = sys.argv[3]
+print("Project: "+project)
+print("Distribution: "+codename)
+print("Architecture: "+arch)
+
+# checkout or update the control git repository
+if not os.path.isdir("DebianBuildVersions"):
+  subprocess.call(["git", "clone", "-q", "git@github.com:ChimeraTK/DebianBuildVersions.git"])
+else:
+  os.chdir("DebianBuildVersions")
+  subprocess.call(["git", "pull", "-q"])
+  os.chdir("..")
+
+# read list of dependencies
+dependencies = [line.rstrip('\n') for line in open("DebianBuildVersions/"+project+"/DEPENDENCIES")]
+
+print("Searching for dependencies...")
+
+# download Packages file from the DESY DOOCS apt repositories
+subprocess.call(["wget", "-q", "http://doocspkgs.desy.de/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Release.DESY"])
+
+# download Packages file from Ubuntu repositories and unpack
+subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/main/binary-"+arch+"/Packages.gz", "-O", "Release.MAIN.gz"])
+subprocess.call(["gunzip", "-f", "Release.MAIN.gz"])
+
+# download Packages file from Ubuntu repositories and unpack
+subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/universe/binary-"+arch+"/Packages.gz", "-O", "Release.UNIVERSE.gz"])
+subprocess.call(["gunzip", "-f", "Release.UNIVERSE.gz"])
+
+# concatenate both files
+subprocess.call(["cat Release.DESY Release.MAIN Release.UNIVERSE > Release"], shell=True)
+
+
+# open Packages file and parse it
+PackageFile = debian.debian_support.PackageFile("Release")
+dependency_versions = {}
+
+# search for dependencies
+for Package in PackageFile:
+  for dependency in dependencies:
+    PackageAsDictionary = dict(Package)
+    if dependency == PackageAsDictionary["Package"]:
+      dependency_versions[dependency] = PackageAsDictionary["Version"]
+
+# check for unfound dependencies
+for dependency in dependencies:
+  if not dependency in dependency_versions:
+    sys.exit("Dependency "+dependency+" cannot be found in the apt repository!")
+      
+print("")
+print("List of dependencies:")
+for dependency in dependencies:
+  print("  "+dependency+" (= "+dependency_versions[dependency]+")")
+  
+  
+
