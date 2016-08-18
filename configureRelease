@@ -6,11 +6,22 @@ import subprocess
 import os
 import sys
 
+# output usage
+if len(sys.argv) != 5 :
+  print("Usage: ./configureRelease <project_name> <project_version> <distribution_codename> <architecture>")
+  print("Example: ./configureRelease DOOCSwrappers 0.5.0 xenial amd64")
+  sys.exit()
+
 # parse command line arguments
 project = sys.argv[1]
-codename = sys.argv[2]
-arch = sys.argv[3]
+version = sys.argv[2]
+splitversion = version.split(".")
+soversion = splitversion[0]+"."+splitversion[1]
+codename = sys.argv[3]
+arch = sys.argv[4]
 print("Project: "+project)
+print("Version: "+version)
+print("SO-Version: "+soversion)
 print("Distribution: "+codename)
 print("Architecture: "+arch)
 
@@ -60,8 +71,56 @@ for dependency in dependencies:
       
 print("")
 print("List of dependencies:")
-for dependency in dependencies:
-  print("  "+dependency+" (= "+dependency_versions[dependency]+")")
-  
-  
 
+# form the directory name for the build version
+version_base_dir=project+"/"+soversion+"/"+codename+"-"+arch
+dependency_dir=version_base_dir
+
+for dependency in dependencies:
+  dependency_dir = dependency_dir+"/"+dependency+"-"+dependency_versions[dependency]
+  print("  "+dependency+" (= "+dependency_versions[dependency]+")")
+
+print("Dependency ID string: "+dependency_dir)
+  
+# determine build number
+if not os.path.isfile("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER"):
+  # the package has not yet been built with these dependencies
+  if not os.path.isfile("DebianBuildVersions/"+version_base_dir+"/LAST_BUILD"):
+    print("the package was not yet build in this version for this distribution")
+    build_number = 1
+    # create the dependency directory with the BUILD_NUMBER file in it
+    os.makedirs("DebianBuildVersions/"+dependency_dir)
+    f = open("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER", 'w')
+    f.write(str(build_number))
+    f.close()
+    # create the link file to the last build
+    f = open("DebianBuildVersions/"+version_base_dir+"/LAST_BUILD", 'w')
+    f.write(dependency_dir)
+    f.close()
+  else:
+    print("package was already built in this version for this distribution with different dependencies")
+    # determine the last build's dependency directory
+    f = open("DebianBuildVersions/"+version_base_dir+"/LAST_BUILD", 'r')
+    last_build = f.readline().rstrip('\n')
+    f.close()
+    # determine the build number of the last build, increment by one
+    f = open("DebianBuildVersions/"+last_build+"/BUILD_NUMBER", 'r')
+    build_number = int(f.readline()) + 1
+    f.close()
+    # create the dependency directory with the BUILD_NUMBER file in it
+    os.makedirs("DebianBuildVersions/"+dependency_dir)
+    f = open("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER", 'w')
+    f.write(str(build_number))
+    f.close()
+    # create the link file to the last build
+    f = open("DebianBuildVersions/"+version_base_dir+"/LAST_BUILD", 'w')
+    f.write(dependency_dir)
+    f.close()
+else:    
+  print("package was already built in this version for this distribution with the same dependencies")
+  # just read the build number from the dependency directory
+  f = open("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER", 'r')
+  build_number = int(f.readline())
+  f.close()
+
+print("Build number: "+str(build_number))
