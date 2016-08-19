@@ -16,12 +16,13 @@ if len(sys.argv) != 5 :
 project = sys.argv[1]
 version = sys.argv[2]
 splitversion = version.split(".")
-soversion = splitversion[0]+"."+splitversion[1]
+epoch = splitversion[0]+"."+splitversion[1]
+patchlevel = splitversion[2]
 codename = sys.argv[3]
 arch = sys.argv[4]
 print("Project: "+project)
 print("Version: "+version)
-print("SO-Version: "+soversion)
+print("Epoch version: "+epoch)
 print("Distribution: "+codename)
 print("Architecture: "+arch)
 
@@ -33,28 +34,37 @@ else:
   subprocess.call(["git", "pull", "-q"])
   os.chdir("..")
 
-# read list of dependencies
-dependencies = [line.rstrip('\n') for line in open("DebianBuildVersions/"+project+"/DEPENDENCIES")]
+# read config file
+configfile = open("DebianBuildVersions/"+project+"/CONFIG",'r').read().splitlines()
+config = {}
+for line in configfile:
+  ( key, value ) = line.split(":", 1)
+  config[key.strip()] = value.strip()
+
+# parse lists of dependencies
+dependencies = config["Dependencies"].split(" ")
+dependencies_dev = config["Dependencies-dev"].split(" ")
+
 
 print("Searching for dependencies...")
 
 # download Packages file from the DESY DOOCS apt repositories
-subprocess.call(["wget", "-q", "http://doocspkgs.desy.de/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Release.DESY"])
+subprocess.call(["wget", "-q", "http://doocspkgs.desy.de/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
 
 # download Packages file from Ubuntu repositories and unpack
-subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/main/binary-"+arch+"/Packages.gz", "-O", "Release.MAIN.gz"])
-subprocess.call(["gunzip", "-f", "Release.MAIN.gz"])
+subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN.gz"])
+subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
 
 # download Packages file from Ubuntu repositories and unpack
-subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/universe/binary-"+arch+"/Packages.gz", "-O", "Release.UNIVERSE.gz"])
-subprocess.call(["gunzip", "-f", "Release.UNIVERSE.gz"])
+subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/universe/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
+subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
 
 # concatenate both files
-subprocess.call(["cat Release.DESY Release.MAIN Release.UNIVERSE > Release"], shell=True)
+subprocess.call(["cat Packages.DESY Packages.MAIN Packages.UNIVERSE > Packages"], shell=True)
 
 
 # open Packages file and parse it
-PackageFile = debian.debian_support.PackageFile("Release")
+PackageFile = debian.debian_support.PackageFile("Packages")
 dependency_versions = {}
 
 # search for dependencies
@@ -65,23 +75,29 @@ for Package in PackageFile:
       dependency_versions[dependency] = PackageAsDictionary["Version"]
 
 # check for unfound dependencies
-for dependency in dependencies:
+for dependency in dependencies + dependencies_dev:
   if not dependency in dependency_versions:
     sys.exit("Dependency "+dependency+" cannot be found in the apt repository!")
+
       
 print("")
 print("List of dependencies:")
 
 # form the directory name for the build version
-version_base_dir=project+"/"+soversion+"/"+codename+"-"+arch
+version_base_dir=project+"/"+epoch+"/"+codename+"-"+arch
 dependency_dir=version_base_dir
 
+# create list of dependencies with versions
 build_depends=""
 for dependency in dependencies:
   dependency_dir = dependency_dir+"/"+dependency+"-"+dependency_versions[dependency]
   build_depends += dependency+" (= "+dependency_versions[dependency]+"), "
-  print("  "+dependency+" (= "+dependency_versions[dependency]+")")
 build_depends = build_depends[:-2]
+
+dev_depends=""
+for dependency in dependencies_dev:
+  dev_depends += dependency+" (= "+dependency_versions[dependency]+"), "
+dev_depends = dev_depends[:-2]
 
 #print("Dependency ID string: "+dependency_dir)
   
@@ -127,40 +143,84 @@ else:
   f.close()
 
 print("Build number: "+str(build_number))
-
-# read config file
-configfile = open("DebianBuildVersions/"+project+"/CONFIG",'r').read().splitlines()
-config = {}
-for line in configfile:
-  ( key, value ) = line.split(":", 1)
-  config[key.strip()] = value.strip()
   
 # extend the config by dynamic variables
-config["build-depends"] = build_depends
+config["project"] = project
 config["package-basename"] = "lib"+project.lower()
+config["build-depends"] = build_depends
+config["dev-depends"] = dev_depends
+config["distribution"] = codename
 config["architecture"] = arch
-config["debversion"] = soversion.replace(".","-")+"-"+codename+str(build_number)
-print(config)
+config["buildversion"] = codename+str(build_number)
+config["soversion"] = epoch+config["buildversion"]
+config["debversion"] = epoch.replace(".","-")+"-"+config["buildversion"]
+config["package-version"] = config["soversion"]+"-"+patchlevel
+config["package-source-name"] = config["package-basename"]+"_"+epoch+"-"+config["buildversion"]
+config["version"] = version
+config["package-message"] = "Debian package for the "+project+" library version "+version
+#print(config)
 
-# create the Debian control files
-controldir="DebianBuildVersions/"+dependency_dir+"/control"
+# create directory holding the debian control files
+controldir="DebianBuildVersions/"+version_base_dir+"/"+str(build_number)
 if not os.path.isdir(controldir):
   os.makedirs(controldir)
+if not os.path.isdir(controldir+"/source"):
+  os.makedirs(controldir+"/source")
 
-filelist=[ "control.src" ]
-for package in config["Has-packages"].split(" "):
+# list of files to be processed (static part)
+filelist = [ "compat", "rules", "source/format", "control.src" ]
+
+# list of files to be processed for each package
+hasPackages = config["Has-packages"].split(" ")
+for package in hasPackages:
   filelist.append("control."+package.strip())
+  filelist.append("package-"+package.strip()+".install")
+
+# copyright file
+filelist.append("copyright."+config["License"])
+
+# if we have a lib package, add the shlib file
+if "lib" in hasPackages:
+  filelist.append("package-lib.shlib")
   
 print filelist
 
+# replace config variables in files
 for filna in filelist:
+  # read file into string
   content = open("templates/"+filna).read()
+  # replace all variables
   for var in config.keys():
     content = content.replace("#"+var+"#", config[var])
-  print content
+  # check for unknown variables which have not been replaced
+  if content.find("#") != -1:
+    pos1 = content.find("#")
+    pos2 = content.find("#",pos1+1)
+    # two consecutive # are not a variable but will be replaced with a single #, so ignore it
+    if pos2 > pos1+1:
+      print "File "+filna+" has an unknown variable: "+content[pos1:pos2+1]
+      sys.exit(1)
+  # replace ## with #, so we can still write single # if needed
+  content = content.replace("##", "#")
+  # write out the resulting file
+  f = open(controldir+"/"+filna,"w")
+  f.write(content)
+  f.close()
 
-#libdoocswrappers#DEBVERSION#, dev-doocs-serverlib (= @DOOCS_VERSION@)
+# create the merged control file and remove the parts
+subprocess.call(["cat "+controldir+"/control.* > "+controldir+"/control"], shell=True)
+subprocess.call(["rm "+controldir+"/control.*"], shell=True)
 
+# rename files which need a different name
+os.rename(controldir+"/copyright."+config["License"], controldir+"/copyright")
+if "lib" in hasPackages:
+  os.rename(controldir+"/package-lib.install", controldir+"/"+config["package-basename"]+config["debversion"]+".install")
+  os.rename(controldir+"/package-lib.shlib",   controldir+"/"+config["package-basename"]+config["debversion"]+".shlib")
+if "dev" in hasPackages:
+  os.rename(controldir+"/package-dev.install", controldir+"/"+config["package-basename"]+"-dev.install")
+
+# make rules file executable
+subprocess.call(["chmod", "+x", controldir+"/rules"])
 
 # commit the changes to git
 #os.chdir("DebianBuildVersions")
@@ -169,3 +229,6 @@ for filna in filelist:
 #subprocess.call(["git", "push"])
 #os.chdir("..")
 
+# output the command to build the package
+print("To build the package, run the following command:")
+print("./makeDebianPackage "+controldir)
