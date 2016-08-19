@@ -38,7 +38,7 @@ export PROJECT_BUILDVERSION
 BUILD_DIR_NAME=${PACKAGE_BASENAME}_${SOVERSION}
 git clone ${SOURCE_URI} ${BUILD_DIR_NAME}
 ( cd  ${BUILD_DIR_NAME} &&\
-  git checkout ${VERSION} &&\
+  git checkout tags/${TAGVERSION} &&\
   rm -rf .git )
 # Debian convention: file has to end on .orig.tar.gz
 tar -czf ${BUILD_DIR_NAME}.orig.tar.gz ${BUILD_DIR_NAME}
@@ -51,6 +51,8 @@ cd ${BUILD_DIR_NAME}
 # because debchange does the right format and the current date, user name and email automatically for us.
 # Use the NAME and EMAIL environment variables to get correct values if needed (usually the email is
 #  user@host instead of first.last@institute, for instance killenb@mskpcx18571.desy.de instead of martin.killenberg@desy.de).
+# TODO: move this into the configureRelease script and keep the changelog once it is created (in the DebianBuildVersions repo)
+rm -f debian/changelog
 debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION} --distribution ${DISTRIBUTION} ${PACKAGE_MESSAGE}
 
 # Now everything is prepared and we can actually build the package.
