@@ -336,6 +336,8 @@ subprocess.call(["chmod", "+x", controldir+"/rules"])
 #subprocess.call(["git", "commit", "-a" , "-m", "build "+str(build_number)+" of "+version_base_dir])
 #subprocess.call(["git", "push"])
 #os.chdir("..")
+print("")
+print("Note: committing and pushing to the DebianBuildVersions is not yet implemented. Please do not forget to do this manually, otherwise you risk clashing build versions!")
 
 # output the command to build the package
 print("")
