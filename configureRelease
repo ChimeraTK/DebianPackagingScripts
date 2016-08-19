@@ -210,7 +210,12 @@ for filna in filelist:
   f.close()
 
 # create the merged control file and remove the parts
-subprocess.call(["cat "+controldir+"/control.* > "+controldir+"/control"], shell=True)
+content = open(controldir+"/control.src").read()
+for package in hasPackages:
+  content += open(controldir+"/control."+package).read()
+f = open(controldir+"/control","w")
+f.write(content)
+f.close()
 subprocess.call(["rm "+controldir+"/control.*"], shell=True)
 
 # rename files which need a different name
