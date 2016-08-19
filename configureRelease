@@ -292,6 +292,8 @@ if "lib" in hasPackages:
   os.rename(controldir+"/package-lib.shlib",   controldir+"/"+config["package-basename"]+config["debversion"]+".shlib")
 if "dev" in hasPackages:
   os.rename(controldir+"/package-dev.install", controldir+"/"+config["package-basename"]+"-dev.install")
+if "doc" in hasPackages:
+  os.rename(controldir+"/package-doc.install", controldir+"/"+config["package-basename"]+"-doc.install")
 
 # make rules file executable
 subprocess.call(["chmod", "+x", controldir+"/rules"])
