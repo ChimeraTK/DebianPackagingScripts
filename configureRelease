@@ -5,6 +5,25 @@ import urllib
 import subprocess
 import os
 import sys
+import time
+
+# function for resolving dependencies from a Packages file
+# returns a dictionary: "name" -> "version"
+def resolveDeps(dependencies, filename):
+
+  # open Packages file and parse it
+  PackageFile = debian.debian_support.PackageFile(filename)
+  dependency_versions = {}
+
+  # search for dependencies
+  for Package in PackageFile:
+    for dependency in dependencies:
+      PackageAsDictionary = dict(Package)
+      if dependency == PackageAsDictionary["Package"]:
+        dependency_versions[dependency] = PackageAsDictionary["Version"]
+  
+  return dependency_versions
+
 
 # output usage
 if len(sys.argv) != 5 :
@@ -20,11 +39,6 @@ epoch = splitversion[0]+"."+splitversion[1]
 patchlevel = splitversion[2]
 codename = sys.argv[3]
 arch = sys.argv[4]
-print("Project: "+project)
-print("Version: "+version)
-print("Epoch version: "+epoch)
-print("Distribution: "+codename)
-print("Architecture: "+arch)
 
 # checkout or update the control git repository
 if not os.path.isdir("DebianBuildVersions"):
@@ -34,6 +48,11 @@ else:
   subprocess.call(["git", "pull", "-q"])
   os.chdir("..")
 
+# check if project is known
+if not os.path.isfile("DebianBuildVersions/"+project+"/CONFIG"):
+  print("The project "+project+" is not known.")
+  sys.exit(1)
+
 # read config file
 configfile = open("DebianBuildVersions/"+project+"/CONFIG",'r').read().splitlines()
 config = {}
@@ -41,10 +60,16 @@ for line in configfile:
   ( key, value ) = line.split(":", 1)
   config[key.strip()] = value.strip()
 
+# output generic information
+print("Project: "+project)
+print("Version: "+version)
+print("Epoch version: "+epoch)
+print("Distribution: "+codename)
+print("Architecture: "+arch)
+
 # parse lists of dependencies
 dependencies = config["Dependencies"].split(" ")
 dependencies_dev = config["Dependencies-dev"].split(" ")
-
 
 print("Searching for dependencies...")
 
@@ -59,40 +84,50 @@ subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
 subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/universe/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
 subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
 
-# concatenate both files
-subprocess.call(["cat Packages.DESY Packages.MAIN Packages.UNIVERSE > Packages"], shell=True)
+# parse all sources
+dependency_versions_main = resolveDeps(dependencies, "Packages.MAIN")
+dependency_versions_universe = resolveDeps(dependencies, "Packages.UNIVERSE")
+dependency_versions_desy = resolveDeps(dependencies, "Packages.DESY")
+dependency_versions_local = resolveDeps(dependencies, "/var/cache/pbuilder/result/Packages")
 
-
-# open Packages file and parse it
-PackageFile = debian.debian_support.PackageFile("Packages")
-dependency_versions = {}
-
-# search for dependencies
-for Package in PackageFile:
-  for dependency in dependencies:
-    PackageAsDictionary = dict(Package)
-    if dependency == PackageAsDictionary["Package"]:
-      dependency_versions[dependency] = PackageAsDictionary["Version"]
-
-# check for unfound dependencies
-for dependency in dependencies + dependencies_dev:
-  if not dependency in dependency_versions:
-    sys.exit("Dependency "+dependency+" cannot be found in the apt repository!")
-
-      
+# merge the found dependencies with priority, and check for unfound dependencies
 print("")
 print("List of dependencies:")
+dependency_versions = {}
+is_using_local = False
+for dependency in dependencies:
+  if dependency in dependency_versions_main:
+    dependency_versions[dependency] = dependency_versions_main[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu/main")
+  elif dependency in dependency_versions_universe:
+    dependency_versions[dependency] = dependency_versions_universe[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu/universe")
+  elif dependency in dependency_versions_desy:
+    dependency_versions[dependency] = dependency_versions_desy[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from desy/main")
+  elif dependency in dependency_versions_local:
+    dependency_versions[dependency] = dependency_versions_local[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from *** LOCAL ***")
+    is_using_local = True
+  else:
+    sys.exit("Dependency "+dependency+" cannot be found in any of the apt repository!")
+
+# print warning if using the local repository
+if is_using_local:
+  print("*** WARNING ***")
+  print("You are building against packages in your local /var/cache/pbuilder/result which have not yet been published!")
+  print("Proceeding in 5 seconds...")
+  time.sleep(5)
 
 # form the directory name for the build version
-version_base_dir=project+"/"+epoch+"/"+codename+"-"+arch
-dependency_dir=version_base_dir
+version_base_dir = project+"/"+epoch+"/"+codename+"-"+arch
+dependency_dir = version_base_dir
 
 # create list of dependencies with versions
 build_depends=""
 for dependency in dependencies:
   dependency_dir = dependency_dir+"/"+dependency+"-"+dependency_versions[dependency]
   build_depends += dependency+" (= "+dependency_versions[dependency]+"), "
-  print("  "+dependency+" (= "+dependency_versions[dependency]+")")
 build_depends = build_depends[:-2]
 
 dev_depends=""
@@ -107,7 +142,7 @@ print("")
 if not os.path.isfile("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER"):
   # the package has not yet been built with these dependencies
   if not os.path.isfile("DebianBuildVersions/"+version_base_dir+"/LAST_BUILD"):
-    print("the package was not yet build in this version for this distribution")
+    print("The package was not yet build in this version for this distribution")
     build_number = 1
     # create the dependency directory with the BUILD_NUMBER file in it
     os.makedirs("DebianBuildVersions/"+dependency_dir)
@@ -119,7 +154,7 @@ if not os.path.isfile("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER"):
     f.write(dependency_dir)
     f.close()
   else:
-    print("package was already built in this version for this distribution with different dependencies")
+    print("The package was already built in this version for this distribution with different dependencies")
     # determine the last build's dependency directory
     f = open("DebianBuildVersions/"+version_base_dir+"/LAST_BUILD", 'r')
     last_build = f.readline().rstrip('\n')
@@ -138,7 +173,7 @@ if not os.path.isfile("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER"):
     f.write(dependency_dir)
     f.close()
 else:    
-  print("package was already built in this version for this distribution with the same dependencies")
+  print("The package was already built in this version for this distribution with the same dependencies")
   # just read the build number from the dependency directory
   f = open("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER", 'r')
   build_number = int(f.readline())
@@ -157,7 +192,6 @@ config["buildversion"] = codename+str(build_number)
 config["soversion"] = epoch+config["buildversion"]
 config["debversion"] = epoch.replace(".","-")+"-"+config["buildversion"]
 config["package-version"] = config["soversion"]+"-"+patchlevel
-config["package-source-name"] = config["package-basename"]+"_"+epoch+"-"+config["buildversion"]
 config["version"] = version
 config["package-message"] = "Debian package for the "+project+" library version "+version
 #print(config)
