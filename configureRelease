@@ -56,8 +56,16 @@ if not os.path.isfile("DebianBuildVersions/"+project+"/CONFIG"):
 # read config file
 configfile = open("DebianBuildVersions/"+project+"/CONFIG",'r').read().splitlines()
 config = {}
+line_counter=0
 for line in configfile:
-  ( key, value ) = line.split(":", 1)
+  line_counter = line_counter+1
+  if line.strip() == "" or line.strip()[0:1] == "#":
+    continue
+  try:
+    ( key, value ) = line.split(":", 1)
+  except (ValueError):
+    print("Error parsing file 'DebianBuildVersions/"+project+"/CONFIG' in line "+str(line_counter))
+    sys.exit(1)
   config[key.strip()] = value.strip()
 
 # output generic information
