@@ -1,4 +1,4 @@
 usr/bin/*-config
 usr/lib/lib*.so
-usr/include/* /usr/include/#project#
+usr/include/*
 usr/share/cmake*
