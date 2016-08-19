@@ -58,10 +58,10 @@ debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION} --distrib
 MIRRORLIST="deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main|deb [trusted=yes] file:///var/cache/pbuilder/result ./"
 sudo bash -c "cd /var/cache/pbuilder/result ; apt-ftparchive packages . > Packages"                   || exit 1
 sudo pbuilder --update --distribution ${DISTRIBUTION} --override-config --components "main universe" \
-              --othermirror "${MIRRORLIST}" --buildresult "/var/cache/pbuilder/result"             \
+              --othermirror "${MIRRORLIST}" --buildresult "/var/cache/pbuilder/result"               \
               --bindmounts "/var/cache/pbuilder/result"                                               || exit 1
 pdebuild -- --distribution ${DISTRIBUTION} --buildresult "/var/cache/pbuilder/result"                \
-            --bindmounts "/var/cache/pbuilder/result"                                                 || exit 1
+            --bindmounts "/var/cache/pbuilder/result /dev"                                            || exit 1
 echo ""
 echo "You can find the resulting debian packages in this directory: /var/cache/pbuilder/result"
 
