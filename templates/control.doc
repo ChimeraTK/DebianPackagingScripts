@@ -1,0 +1,7 @@
+Package: #package-basename#-doc
+Section: libdevel
+Architecture: any
+Depends: #package-basename#-dev
+Enhances: #package-basename#-dev
+Description: #Description-doc#
+
