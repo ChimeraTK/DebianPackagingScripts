@@ -80,7 +80,7 @@ if ret != 0:
   os.chdir(workdir)
   shutil.rmtree(tempdir)
   sys.exit(1)
-ret = subprocess.call(["git", "checkout", "tags/"+version])
+ret = subprocess.call(["git", "checkout", "-q", "tags/"+version])
 if ret != 0:
   print("Version "+version+" does not exist in the source repository.")
   print("List of known versions:")
