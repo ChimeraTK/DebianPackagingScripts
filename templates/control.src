@@ -1,0 +1,7 @@
+Source: #package-basename#
+Priority: extra
+Maintainer: #Maintainer#
+Build-Depends: #build-depends#
+Standards-Version: 3.8.3
+Section: libs
+

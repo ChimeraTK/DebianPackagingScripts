@@ -1,0 +1,6 @@
+Package: #package-basename##debversion#
+Section: libs
+Architecture: #architecture#
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: #Description-lib#
+

@@ -1,0 +1,10 @@
+Files: *
+Copyright: 2014, Deutsches Elektronen-Synchrotron DESY, MSK
+License: DESY-MSK-Internal-1+
+ This package is intended for DESY internal use only. The binary shall only
+ be used at facilities operated by DESY.
+ .
+ Access to the source code is restricted to the developers working on the 
+ code.
+ . 
+ Usage at other facilities can be allowed under an additional licence.
