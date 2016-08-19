@@ -6,6 +6,7 @@ import subprocess
 import os
 import sys
 import time
+import tempfile
 
 # function for resolving dependencies from a Packages file
 # returns a dictionary: "name" -> "version"
@@ -67,6 +68,27 @@ for line in configfile:
     print("Error parsing file 'DebianBuildVersions/"+project+"/CONFIG' in line "+str(line_counter))
     sys.exit(1)
   config[key.strip()] = value.strip()
+
+# check if version is a valid tag
+workdir = os.getcwd()
+tempdir = tempfile.mkdtemp("configureRelease")
+os.chdir(tempdir)
+ret = subprocess.call(["git", "clone", "-q", config["SourceURI"], "."])
+if ret != 0:
+  print("Cannot access source repository.")
+  os.chdir(workdir)
+  shutil.rmtree(tempdir)
+  sys.exit(1)
+ret = subprocess.call(["git", "checkout", "tags/"+version])
+if ret != 0:
+  print("Version "+version+" does not exist in the source repository.")
+  print("List of known versions:")
+  ret = subprocess.call(["git", "tag"])
+  os.chdir(workdir)
+  shutil.rmtree(tempdir)
+  sys.exit(1)
+os.chdir(workdir)
+shutil.rmtree(tempdir)
 
 # output generic information
 print("Project: "+project)
