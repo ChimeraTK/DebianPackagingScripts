@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# Shell script to generate a debian package from a particular tag (configured during the cmake configuration).
+
+# drop out of the script if anything goes wrong (e.g. non-existing git tag)
+set -e
+
+# Create a working directory in order not to merge with the rest in the build directory
+rm -rf debian_package
+mkdir debian_package
+cd debian_package
+
+# Parse command line arguments
+if [ -z "$1" ] ; then
+  # print usage
+  echo "Usage: TODO"
+  exit 1
+elif [ "$1" == "--setup" ] ; then
+  if [ -z "$2" ] ; then
+    echo "Missing parameter to --setup"
+    exit 1
+  fi
+  sudo pbuilder --create --distribution $2
+  exit $?
+fi
+CONTROLDIR="../$1"
+
+# load config
+if [ ! -f "${CONTROLDIR}/makeDebianPackage.config" ]; then
+  echo "Wrong control directory given."
+  exit 1
+fi
+source "${CONTROLDIR}/makeDebianPackage.config"
+export PROJECT_BUILDVERSION
+
+# Check out the correct tag from the master git repository. Note, we first clone and then checkout the tag because the
+# old git version on Ubuntu12.4 does not support to do it in one go.
+git clone ${SOURCE_URI} ${BUILD_DIR_NAME}
+( cd  ${BUILD_DIR_NAME} &&\
+  git checkout @PACKAGE_TAG_VERSION@ &&\
+  rm -rf .git )
+# Debian convention: file has to end on .orig.tar.gz
+tar -czf ${BUILD_DIR_NAME}.orig.tar.gz ${BUILD_DIR_NAME}
+
+# Copy the prepared debian packaging config files to the source code directroy
+cp -r ../debian_from_template  ${BUILD_DIR_NAME}/debian
+cd ${BUILD_DIR_NAME}
+
+# Before building the package we will update the changelog. This is easier from a shell script
+# because debchange does the right format and the current date, user name and email automatically for us.
+# Use the NAME and EMAIL environment variables to get correct values if needed (usually the email is
+#  user@host instead of first.last@institute, for instance killenb@mskpcx18571.desy.de instead of martin.killenberg@desy.de).
+debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION} --distribution ${DISTRIBUTION} ${PACKAGE_MESSAGE}
+
+# Now everything is prepared and we can actually build the package.
+# If you have a gpg signature you can remove the -us and -uc flags and sign the package.
+MIRRORLIST="deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main|deb [trusted=yes] file:///var/cache/pbuilder/result ./"
+sudo bash -c "cd /var/cache/pbuilder/result ; apt-ftparchive packages . > Packages"                   || exit 1
+sudo pbuilder --update --distribution ${DISTRIBUTION} --override-config --components "main universe" \
+              --othermirror "$MIRRORLIST" --buildresult "/var/cache/pbuilder/result"             \
+              --bindmounts "/var/cache/pbuilder/result"                                               || exit 1
+pdebuild -- --distribution ${DISTRIBUTION} --buildresult "/var/cache/pbuilder/result"                \
+            --bindmounts "/var/cache/pbuilder/result"                                                 || exit 1
+echo ""
+echo "You can find the resulting debian packages in this directory: /var/cache/pbuilder/result"
+
