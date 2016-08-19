@@ -35,6 +35,7 @@ export PROJECT_BUILDVERSION
 
 # Check out the correct tag from the master git repository. Note, we first clone and then checkout the tag because the
 # old git version on Ubuntu12.4 does not support to do it in one go.
+BUILD_DIR_NAME=${PACKAGE_BASENAME}_${SOVERSION}
 git clone ${SOURCE_URI} ${BUILD_DIR_NAME}
 ( cd  ${BUILD_DIR_NAME} &&\
   git checkout ${VERSION} &&\
