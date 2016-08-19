@@ -35,7 +35,10 @@ if len(sys.argv) != 5 :
 
 # parse command line arguments
 project = sys.argv[1]
-version = sys.argv[2]
+tagversion = sys.argv[2]
+version = tagversion
+if tagversion[0:1] == "v":
+  version = tagversion[1:]
 splitversion = version.split(".")
 epoch = splitversion[0]+"."+splitversion[1]
 patchlevel = splitversion[2]
@@ -55,9 +58,12 @@ if not os.path.isfile("DebianBuildVersions/"+project+"/CONFIG"):
   print("The project "+project+" is not known.")
   sys.exit(1)
 
+# preset optional config variables
+config = {}
+#config["Dependencies-dev"] = ""
+
 # read config file
 configfile = open("DebianBuildVersions/"+project+"/CONFIG",'r').read().splitlines()
-config = {}
 line_counter=0
 for line in configfile:
   line_counter = line_counter+1
@@ -70,6 +76,28 @@ for line in configfile:
     sys.exit(1)
   config[key.strip()] = value.strip()
 
+hasPackages = config["Has-packages"].split(" ")
+
+# check for mandatory variables in the config
+if not "Dependencies" in config:
+  print("Missing variable 'Dependencies' in CONFIG file")
+  sys.exit(1)
+if not "SourceURI" in config:
+  print("Missing variable 'SourceURI' in CONFIG file")
+  sys.exit(1)
+if not "Maintainer" in config:
+  print("Missing variable 'Maintainer' in CONFIG file")
+  sys.exit(1)
+if not "Section" in config:
+  print("Missing variable 'Section' in CONFIG file")
+  sys.exit(1)
+if not "Has-packages" in config:
+  print("Missing variable 'Has-packages' in CONFIG file")
+  sys.exit(1)
+if not "License" in config:
+  print("Missing variable 'License' in CONFIG file")
+  sys.exit(1)
+
 # check if version is a valid tag
 workdir = os.getcwd()
 tempdir = tempfile.mkdtemp("configureRelease")
@@ -80,7 +108,7 @@ if ret != 0:
   os.chdir(workdir)
   shutil.rmtree(tempdir)
   sys.exit(1)
-ret = subprocess.call(["git", "checkout", "-q", "tags/"+version])
+ret = subprocess.call(["git", "checkout", "-q", "tags/"+tagversion])
 if ret != 0:
   print("Version "+version+" does not exist in the source repository.")
   print("List of known versions:")
@@ -93,6 +121,7 @@ shutil.rmtree(tempdir)
 
 # output generic information
 print("Project: "+project)
+print("Source tag name: "+tagversion)
 print("Version: "+version)
 print("Epoch version: "+epoch)
 print("Distribution: "+codename)
@@ -100,7 +129,10 @@ print("Architecture: "+arch)
 
 # parse lists of dependencies
 dependencies = config["Dependencies"].split(" ")
-dependencies_dev = config["Dependencies-dev"].split(" ")
+if "dev" in hasPackages:
+  dependencies_dev = config["Dependencies-dev"].split(" ")
+else:
+  dependencies_dev = {}
 
 print("Searching for dependencies...")
 
@@ -217,15 +249,16 @@ print("Build number: "+str(build_number))
 # extend the config by dynamic variables
 config["project"] = project
 config["package-basename"] = "lib"+project.lower()
+config["version"] = version
+config["tagversion"] = tagversion
+config["buildversion"] = codename+str(build_number)
+config["soversion"] = epoch+config["buildversion"]
+config["debversion"] = epoch.replace(".","-")+"-"+config["buildversion"]
+config["package-version"] = config["soversion"]+"."+patchlevel
 config["build-depends"] = build_depends
 config["dev-depends"] = dev_depends
 config["distribution"] = codename
 config["architecture"] = arch
-config["buildversion"] = codename+str(build_number)
-config["soversion"] = epoch+config["buildversion"]
-config["debversion"] = epoch.replace(".","-")+"-"+config["buildversion"]
-config["package-version"] = config["soversion"]+"-"+patchlevel
-config["version"] = version
 config["package-message"] = "Debian package for the "+project+" library version "+version
 #print(config)
 
@@ -240,7 +273,6 @@ if not os.path.isdir(controldir+"/source"):
 filelist = [ "makeDebianPackage.config", "compat", "rules", "source/format", "control.src" ]
 
 # list of files to be processed for each package
-hasPackages = config["Has-packages"].split(" ")
 for package in hasPackages:
   filelist.append("control."+package.strip())
   filelist.append("package-"+package.strip()+".install")
