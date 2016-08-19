@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import tempfile
+import shutil
 
 # function for resolving dependencies from a Packages file
 # returns a dictionary: "name" -> "version"
