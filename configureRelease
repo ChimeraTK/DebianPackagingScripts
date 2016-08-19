@@ -92,6 +92,7 @@ build_depends=""
 for dependency in dependencies:
   dependency_dir = dependency_dir+"/"+dependency+"-"+dependency_versions[dependency]
   build_depends += dependency+" (= "+dependency_versions[dependency]+"), "
+  print("  "+dependency+" (= "+dependency_versions[dependency]+")")
 build_depends = build_depends[:-2]
 
 dev_depends=""
@@ -102,6 +103,7 @@ dev_depends = dev_depends[:-2]
 #print("Dependency ID string: "+dependency_dir)
   
 # determine build number
+print("")
 if not os.path.isfile("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER"):
   # the package has not yet been built with these dependencies
   if not os.path.isfile("DebianBuildVersions/"+version_base_dir+"/LAST_BUILD"):
@@ -168,7 +170,7 @@ if not os.path.isdir(controldir+"/source"):
   os.makedirs(controldir+"/source")
 
 # list of files to be processed (static part)
-filelist = [ "compat", "rules", "source/format", "control.src" ]
+filelist = [ "makeDebianPackage.config", "compat", "rules", "source/format", "control.src" ]
 
 # list of files to be processed for each package
 hasPackages = config["Has-packages"].split(" ")
@@ -183,7 +185,7 @@ filelist.append("copyright."+config["License"])
 if "lib" in hasPackages:
   filelist.append("package-lib.shlib")
   
-print filelist
+#print filelist
 
 # replace config variables in files
 for filna in filelist:
@@ -230,5 +232,6 @@ subprocess.call(["chmod", "+x", controldir+"/rules"])
 #os.chdir("..")
 
 # output the command to build the package
+print("")
 print("To build the package, run the following command:")
 print("./makeDebianPackage "+controldir)
