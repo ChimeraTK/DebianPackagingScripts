@@ -115,6 +115,9 @@ subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
 subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/universe/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
 subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
 
+# update the locake package repository
+subprocess.call(['sudo bash -c "cd /var/cache/pbuilder/result ; apt-ftparchive packages . > Packages"'], shell=True)
+
 # parse all sources
 dependency_versions_main = resolveDeps(dependencies, "Packages.MAIN")
 dependency_versions_universe = resolveDeps(dependencies, "Packages.UNIVERSE")
@@ -127,7 +130,11 @@ print("List of dependencies:")
 dependency_versions = {}
 is_using_local = False
 for dependency in dependencies:
-  if dependency in dependency_versions_main:
+  if dependency in dependency_versions_local:
+    dependency_versions[dependency] = dependency_versions_local[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from *** LOCAL ***")
+    is_using_local = True
+  elif dependency in dependency_versions_main:
     dependency_versions[dependency] = dependency_versions_main[dependency]
     print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu/main")
   elif dependency in dependency_versions_universe:
@@ -136,19 +143,14 @@ for dependency in dependencies:
   elif dependency in dependency_versions_desy:
     dependency_versions[dependency] = dependency_versions_desy[dependency]
     print("  "+dependency+" (= "+dependency_versions[dependency]+") from desy/main")
-  elif dependency in dependency_versions_local:
-    dependency_versions[dependency] = dependency_versions_local[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from *** LOCAL ***")
-    is_using_local = True
   else:
     sys.exit("Dependency "+dependency+" cannot be found in any of the apt repository!")
 
 # print warning if using the local repository
 if is_using_local:
+  print("")
   print("*** WARNING ***")
   print("You are building against packages in your local /var/cache/pbuilder/result which have not yet been published!")
-  print("Proceeding in 5 seconds...")
-  time.sleep(5)
 
 # form the directory name for the build version
 version_base_dir = project+"/"+epoch+"/"+codename+"-"+arch
