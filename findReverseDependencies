@@ -9,6 +9,20 @@ import time
 import tempfile
 import shutil
 
+def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies):
+  for Package in Packages:
+    PackageAsDictionary = dict(Package)
+    if 'Depends' in PackageAsDictionary:
+      depends = PackageAsDictionary['Depends']
+      depends_array = depends.split(", ")
+      for dependency in depends_array:
+        dependency_split = dependency.split(" ")
+        if(dependency_split[0] == DependencyToSearchFor):
+          # add the found package to the list
+          ReverseDependencies.append(PackageAsDictionary['Package'])
+          # recursive search: find packages depending on the found package as well
+          findReverseDependencies(PackageAsDictionary['Package'], Packages, ReverseDependencies)
+
 
 # output usage
 if len(sys.argv) != 3 and len(sys.argv) != 4 :
@@ -29,16 +43,15 @@ subprocess.call(["wget", "-q", "http://doocspkgs.desy.de/pub/doocs/dists/"+coden
 
 # open Packages file and parse it
 PackageFile = debian.debian_support.PackageFile("Packages.DESY")
+Packages = []
+for Package in PackageFile:
+  Packages.append(Package)
 
 # search for packages depending on the specified package
-print("List of packages depending on '"+package+"' on "+codename+"/"+arch+":")
-for Package in PackageFile:
-  PackageAsDictionary = dict(Package)
-  if 'Depends' in PackageAsDictionary:
-    depends = PackageAsDictionary['Depends']
-    depends_array = depends.split(", ")
-    for dependency in depends_array:
-      dependency_split = dependency.split(" ")
-      if(dependency_split[0] == package):
-        print(PackageAsDictionary['Package'])
+ReverseDependencies = []
+findReverseDependencies(package, Packages, ReverseDependencies)
 
+# output list (as a set, to make it unique)
+print("List of packages depending on '"+package+"' on "+codename+"/"+arch+":")
+for dep in set(ReverseDependencies):
+  print(dep)
