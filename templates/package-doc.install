@@ -1,1 +1,1 @@
-usr/share/doc/#project#-#soversion#/* usr/share/doc/#package-basename##debversion#
+usr/share/doc/#project#*/* usr/share/doc/#package-basename##debversion#
