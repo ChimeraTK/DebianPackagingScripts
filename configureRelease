@@ -28,9 +28,9 @@ def resolveDeps(dependencies, filename):
 
 
 # output usage
-if len(sys.argv) != 5 :
-  print("Usage: ./configureRelease <project_name> <project_version> <distribution_codename> <architecture>")
-  print("Example: ./configureRelease DOOCSwrappers 0.5.0 xenial amd64")
+if len(sys.argv) != 4 and len(sys.argv) != 5 :
+  print("Usage: ./configureRelease <project_name> <project_version> <distribution_codename> [<architecture>]")
+  print("Example: ./configureRelease DOOCSwrappers 0.5.0 xenial")
   sys.exit()
 
 # parse command line arguments
@@ -43,7 +43,11 @@ splitversion = version.split(".")
 epoch = splitversion[0]+"."+splitversion[1]
 patchlevel = splitversion[2]
 codename = sys.argv[3]
-arch = sys.argv[4]
+if len(sys.argv) == 5 :
+  arch = sys.argv[4]
+else:
+  arch = "amd64"
+
 
 # checkout or update the control git repository
 if not os.path.isdir("DebianBuildVersions"):
@@ -148,13 +152,13 @@ subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+code
 subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
 
 # update the locake package repository
-subprocess.call(['sudo bash -c "cd /var/cache/pbuilder/result ; apt-ftparchive packages . > Packages"'], shell=True)
+subprocess.call(['bash -c "mkdir -p pbuilder-result ; cd pbuilder-result ; apt-ftparchive packages . > Packages"'], shell=True)
 
 # parse all sources
 dependency_versions_main = resolveDeps(dependencies, "Packages.MAIN")
 dependency_versions_universe = resolveDeps(dependencies, "Packages.UNIVERSE")
 dependency_versions_desy = resolveDeps(dependencies, "Packages.DESY")
-dependency_versions_local = resolveDeps(dependencies, "/var/cache/pbuilder/result/Packages")
+dependency_versions_local = resolveDeps(dependencies, "pbuilder-result/Packages")
 
 # merge the found dependencies with priority, and check for unfound dependencies
 print("")
@@ -182,7 +186,7 @@ for dependency in dependencies:
 if is_using_local:
   print("")
   print("*** WARNING ***")
-  print("You are building against packages in your local /var/cache/pbuilder/result which have not yet been published!")
+  print("You are building against packages in your local ./pbuilder-result directory which may not yet be published!")
 
 # form the directory name for the build version
 version_base_dir = project+"/"+epoch+"/"+codename+"-"+arch
@@ -248,13 +252,16 @@ print("Build number: "+str(build_number))
   
 # extend the config by dynamic variables
 config["project"] = project
-config["package-basename"] = "lib"+project.lower()
+if "lib" in hasPackages:
+  config["package-basename"] = "lib"+project.lower()
+else:
+  config["package-basename"] = project.lower()
 config["version"] = version
 config["tagversion"] = tagversion
 config["buildversion"] = codename+str(build_number)
-config["soversion"] = epoch+config["buildversion"]
+config["soversion"] = epoch+config["buildversion"]+"."+patchlevel
 config["debversion"] = epoch.replace(".","-")+"-"+config["buildversion"]
-config["package-version"] = config["soversion"]+"."+patchlevel
+config["package-version"] = config["soversion"]
 config["build-depends"] = build_depends
 config["dev-depends"] = dev_depends
 config["distribution"] = codename
@@ -322,6 +329,8 @@ os.rename(controldir+"/copyright."+config["License"], controldir+"/copyright")
 if "lib" in hasPackages:
   os.rename(controldir+"/package-lib.install", controldir+"/"+config["package-basename"]+config["debversion"]+".install")
   os.rename(controldir+"/package-lib.shlib",   controldir+"/"+config["package-basename"]+config["debversion"]+".shlib")
+if "bin" in hasPackages:
+  os.rename(controldir+"/package-bin.install", controldir+"/"+config["package-basename"]+config["debversion"]+".install")
 if "dev" in hasPackages:
   os.rename(controldir+"/package-dev.install", controldir+"/"+config["package-basename"]+"-dev.install")
 if "doc" in hasPackages:

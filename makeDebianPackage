@@ -5,6 +5,9 @@
 # drop out of the script if anything goes wrong (e.g. non-existing git tag)
 set -e
 
+# directory with local Debian repository and where the created packages should be placed
+LOCAL_REPOS="`pwd`/pbuilder-result"
+
 # Create a working directory in order not to merge with the rest in the build directory
 rm -rf debian_package
 mkdir debian_package
@@ -44,7 +47,8 @@ git clone ${SOURCE_URI} ${BUILD_DIR_NAME}
 tar -czf ${BUILD_DIR_NAME}.orig.tar.gz ${BUILD_DIR_NAME}
 
 # Copy the prepared debian packaging config files to the source code directroy
-cp -r ${CONTROLDIR} ${BUILD_DIR_NAME}/debian
+mkdir -p ${BUILD_DIR_NAME}/debian
+cp -r ${CONTROLDIR}/* ${BUILD_DIR_NAME}/debian
 cd ${BUILD_DIR_NAME}
 
 # Before building the package we will update the changelog. This is easier from a shell script
@@ -57,13 +61,13 @@ debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION} --distrib
 
 # Now everything is prepared and we can actually build the package.
 # If you have a gpg signature you can remove the -us and -uc flags and sign the package.
-MIRRORLIST="deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main|deb [trusted=yes] file:///var/cache/pbuilder/result ./"
-sudo bash -c "cd /var/cache/pbuilder/result ; apt-ftparchive packages . > Packages"                   || exit 1
+MIRRORLIST="deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main|deb [trusted=yes] file://${LOCAL_REPOS} ./"
+sudo bash -c "cd ${LOCAL_REPOS} ; apt-ftparchive packages . > Packages"                   || exit 1
 sudo pbuilder --update --distribution ${DISTRIBUTION} --override-config --components "main universe" \
-              --othermirror "${MIRRORLIST}" --buildresult "/var/cache/pbuilder/result"               \
-              --bindmounts "/var/cache/pbuilder/result"                                               || exit 1
-pdebuild -- --distribution ${DISTRIBUTION} --buildresult "/var/cache/pbuilder/result"                \
-            --bindmounts "/var/cache/pbuilder/result /dev"                                            || exit 1
+              --othermirror "${MIRRORLIST}" --buildresult "${LOCAL_REPOS}"                           \
+              --bindmounts "${LOCAL_REPOS}"                                               || exit 1
+pdebuild -- --distribution ${DISTRIBUTION} --buildresult "${LOCAL_REPOS}"                            \
+            --bindmounts "${LOCAL_REPOS} /dev"                                            || exit 1
 echo ""
-echo "You can find the resulting debian packages in this directory: /var/cache/pbuilder/result"
+echo "You can find the resulting debian packages in this directory: ${LOCAL_REPOS}"
 
