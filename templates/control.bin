@@ -1,4 +1,4 @@
-Package: #package-basename##debversion#
+Package: #Package-name-bin#
 Section: #Section#
 Architecture: #architecture#
 Depends: ${shlibs:Depends}, ${misc:Depends}, #Dependencies-bin#

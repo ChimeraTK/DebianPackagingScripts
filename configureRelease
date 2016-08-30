@@ -267,6 +267,14 @@ config["dev-depends"] = dev_depends
 config["distribution"] = codename
 config["architecture"] = arch
 config["package-message"] = "Debian package for the "+project+" library version "+version
+if not "Package-name-lib" in config:
+  config["Package-name-lib"] = config["package-basename"]+config["debversion"]
+if not "Package-name-dev" in config:
+  config["Package-name-dev"] = config["package-basename"]+"-dev"
+if not "Package-name-doc" in config:
+  config["Package-name-doc"] = config["package-basename"]+"-doc"
+if not "Package-name-bin" in config:
+  config["Package-name-bin"] = config["package-basename"]+config["debversion"]
 #print(config)
 
 # create directory holding the debian control files
@@ -326,15 +334,10 @@ subprocess.call(["rm "+controldir+"/control.*"], shell=True)
 
 # rename files which need a different name
 os.rename(controldir+"/copyright."+config["License"], controldir+"/copyright")
+for package in hasPackages:
+  os.rename(controldir+"/package-"+package+".install", controldir+"/"+config["Package-name-"+package]+".install")
 if "lib" in hasPackages:
-  os.rename(controldir+"/package-lib.install", controldir+"/"+config["package-basename"]+config["debversion"]+".install")
-  os.rename(controldir+"/package-lib.shlib",   controldir+"/"+config["package-basename"]+config["debversion"]+".shlib")
-if "bin" in hasPackages:
-  os.rename(controldir+"/package-bin.install", controldir+"/"+config["package-basename"]+config["debversion"]+".install")
-if "dev" in hasPackages:
-  os.rename(controldir+"/package-dev.install", controldir+"/"+config["package-basename"]+"-dev.install")
-if "doc" in hasPackages:
-  os.rename(controldir+"/package-doc.install", controldir+"/"+config["package-basename"]+"-doc.install")
+  os.rename(controldir+"/package-lib.shlib",   controldir+"/"+config["Package-name-lib"]+".shlib")
 
 # make rules file executable
 subprocess.call(["chmod", "+x", controldir+"/rules"])

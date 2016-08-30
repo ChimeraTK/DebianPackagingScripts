@@ -1,7 +1,7 @@
-Package: #package-basename#-doc
+Package: #Package-name-doc#
 Section: libdevel
 Architecture: any
-Depends: #package-basename#-dev
-Enhances: #package-basename#-dev
+Depends: #Package-name-dev#
+Enhances: #Package-name-dev#
 Description: #Description-doc#
 

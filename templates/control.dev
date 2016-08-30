@@ -1,8 +1,8 @@
-Package: #package-basename#-dev
+Package: #Package-name-dev#
 Section: libdevel
 Architecture: #architecture#
 Conflicts: #Conflicts-dev#
 Replaces: #Replaces-dev#
-Depends: #package-basename##debversion#, #dev-depends#
+Depends: #Package-name-lib#, #dev-depends#
 Description: #Description-dev#
 
