@@ -64,7 +64,8 @@ if not os.path.isfile("DebianBuildVersions/"+project+"/CONFIG"):
 
 # preset optional config variables
 config = {}
-#config["Dependencies-dev"] = ""
+config["Conflicts-dev"] = ""
+config["Replaces-dev"] = ""
 
 # read config file
 configfile = open("DebianBuildVersions/"+project+"/CONFIG",'r').read().splitlines()
