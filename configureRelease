@@ -203,7 +203,8 @@ build_depends = build_depends[:-2]
 
 dev_depends=""
 for dependency in dependencies_dev:
-  dev_depends += dependency+" (= "+dependency_versions[dependency]+"), "
+  if dependency != "":
+    dev_depends += dependency+" (= "+dependency_versions[dependency]+"), "
 dev_depends = dev_depends[:-2]
 
 #print("Dependency ID string: "+dependency_dir)
