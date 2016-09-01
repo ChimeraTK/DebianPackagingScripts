@@ -289,10 +289,14 @@ if not os.path.isdir(controldir+"/source"):
 # list of files to be processed (static part)
 filelist = [ "makeDebianPackage.config", "compat", "rules", "source/format", "control.src" ]
 
-# list of files to be processed for each package
+# List of files to be processed for each package
+# If there is a single package only, no install file is needed and everything gets included in the package. Otherwise
+# specific install files for each package are used.
 for package in hasPackages:
   filelist.append("control."+package.strip())
-  filelist.append("package-"+package.strip()+".install")
+if len(hasPackages) > 1:
+  for package in hasPackages:
+    filelist.append("package-"+package.strip()+".install")
 
 # copyright file
 filelist.append("copyright."+config["License"])
@@ -336,8 +340,9 @@ subprocess.call(["rm "+controldir+"/control.*"], shell=True)
 
 # rename files which need a different name
 os.rename(controldir+"/copyright."+config["License"], controldir+"/copyright")
-for package in hasPackages:
-  os.rename(controldir+"/package-"+package+".install", controldir+"/"+config["Package-name-"+package]+".install")
+if len(hasPackages) > 1:
+  for package in hasPackages:
+    os.rename(controldir+"/package-"+package+".install", controldir+"/"+config["Package-name-"+package]+".install")
 if "lib" in hasPackages:
   os.rename(controldir+"/package-lib.shlib",   controldir+"/"+config["Package-name-lib"]+".shlib")
 
