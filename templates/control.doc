@@ -4,6 +4,7 @@ Architecture: any
 Conflicts: #Conflicts-doc#
 Replaces: #Replaces-doc#
 Recommends: #Recommends-doc#
+Suggests: #Suggests-doc#
 Enhances: #Enhances-doc#
 Depends: #Package-name-dev#
 Description: #Description-doc#

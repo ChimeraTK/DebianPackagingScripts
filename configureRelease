@@ -66,22 +66,31 @@ if not os.path.isfile("DebianBuildVersions/"+project+"/CONFIG"):
 # preset optional config variables
 config = {}
 config["Dependencies-bin"] = ""
+
 config["Conflicts-lib"] = ""
-config["Replaces-lib"] = ""
-config["Recommends-lib"] = ""
-config["Enhances-lib"] = ""
 config["Conflicts-dev"] = ""
-config["Replaces-dev"] = ""
-config["Recommends-dev"] = ""
-config["Enhances-dev"] = ""
 config["Conflicts-bin"] = ""
-config["Replaces-bin"] = ""
-config["Recommends-bin"] = ""
-config["Enhances-bin"] = ""
 config["Conflicts-doc"] = ""
+
+config["Replaces-lib"] = ""
+config["Replaces-dev"] = ""
+config["Replaces-bin"] = ""
 config["Replaces-doc"] = ""
-config["Recommends-doc"] = ""
+
+config["Enhances-lib"] = ""
+config["Enhances-dev"] = ""
+config["Enhances-bin"] = ""
 config["Enhances-doc"] = ""
+
+config["Suggests-lib"] = ""
+config["Suggests-dev"] = ""
+config["Suggests-bin"] = ""
+config["Suggests-doc"] = ""
+
+config["Recommends-lib"] = ""
+config["Recommends-dev"] = ""
+config["Recommends-bin"] = ""
+config["Recommends-doc"] = ""
 
 # read config file
 configfile = open("DebianBuildVersions/"+project+"/CONFIG",'r').read().splitlines()
@@ -328,6 +337,11 @@ filelist.append("copyright."+config["License"])
 # if we have a lib package, add the shlib file
 if "lib" in hasPackages:
   filelist.append("package-lib.shlib")
+
+# resolve variables inside the values of the variables
+for var1 in config.keys():
+  for var2 in config.keys():
+    config[var1] = config[var1].replace("#"+var2+"#", config[var2])
 
 # replace config variables in files
 for filna in filelist:

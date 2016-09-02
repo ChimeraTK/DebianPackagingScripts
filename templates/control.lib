@@ -4,6 +4,7 @@ Architecture: #architecture#
 Conflicts: #Conflicts-lib#
 Replaces: #Replaces-lib#
 Recommends: #Recommends-lib#
+Suggests: #Suggests-lib#
 Enhances: #Enhances-lib#
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: #Description-lib#

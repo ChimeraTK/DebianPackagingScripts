@@ -4,6 +4,7 @@ Architecture: #architecture#
 Conflicts: #Conflicts-dev#
 Replaces: #Replaces-dev#
 Recommends: #Recommends-dev#
+Suggests: #Suggests-dev#
 Enhances: #Enhances-dev#
 Depends: #Package-name-lib#, #dev-depends#
 Description: #Description-dev#

@@ -4,6 +4,7 @@ Architecture: #architecture#
 Conflicts: #Conflicts-bin#
 Replaces: #Replaces-bin#
 Recommends: #Recommends-bin#
+Suggests: #Suggests-bin#
 Enhances: #Enhances-bin#
 Depends: ${shlibs:Depends}, ${misc:Depends}, #Dependencies-bin#
 Description: #Description-bin#
