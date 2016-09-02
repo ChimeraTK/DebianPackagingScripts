@@ -1,0 +1,61 @@
+#!/bin/bash -e
+#
+# This script is only intended for internal use at DESY.
+
+# load master-control file
+if [ ! -f master-control ]; then
+    echo "No master_control file found. Run the master script first."
+    exit 1
+fi
+source master-control
+
+# check for local modifications in the DebianBuildVersions directory
+cd DebianBuildVersions
+if [ -n "`git status --porcelain`" ]; then
+    echo "You have still uncommitted changes in the DebianBuildVersions repository. You are not allowed to publish packages like this!"
+    exit 1
+fi
+
+# Check that there are debian packages and return an error if not
+cd ../pbuilder-result
+ls *.deb > /dev/null
+if [ $? -ne 0 ]; then
+    echo "No debian packages found in pbuilder-result. Run the master script first."
+    exit 1
+fi
+
+# loop over all packages in the list (note: this is not the list of .deb files but the list of projects!)
+for package in "${!package_list[@]}"; do
+
+  PACKAGE_FILES_WILDCARDS_DEB="${package}*.deb lib${package}*.deb ${package}*.changes lib${package}*.changes"
+  PACKAGE_FILES_WILDCARDS="${PACKAGE_FILES_WILDCARDS_DEB} ${package}*.changes lib${package}*.changes"
+  
+  TARGET_REPOSITORIES=`grep '^Target-repositories: ' ../DebianBuildVersions/${package}/CONFIG | sed -e 's/^Target-repositories: //'`
+
+  # Step 1: Remove an older version of the package
+  # -- from the nfs archive
+  ( cd /home/debian/${distribution}/stable && mv ${PACKAGE_FILES_WILDCARDS} ../old )
+  # -- from the actual repository
+  for REPO in ${TARGET_REPOSITORIES}; do
+      for PACKAGE in ${PACKAGE_FILES_WILDCARDS}; do
+          ssh doocspkgs sudo -H reprepro --waitforlock 2 -Vb \
+              /export/reprepro/${REPO}/doocs remove ${distribution} ${PACKAGE}
+      done
+  done
+
+  # Step 2: Set the privileges to rw-rw-r--
+  chmod 664 ${PACKAGE_FILES_WILDCARDS}
+  chgrp flash ${PACKAGE_FILES_WILDCARDS}
+  # -- and move the files to the nfs archive (mv keeps privileges and group)
+  mv ${PACKAGE_FILES_WILDCARDS} /home/debian/${distribution}/stable
+
+  # Step 3: Install to the repository
+  for REPO in ${TARGET_REPOSITORIES}; do
+      for FILE in ${PACKAGE_FILES_WILDCARDS_DEB}; do
+          ssh doocspkgs sudo -H reprepro --waitforlock 2 -Vb \
+              /export/reprepro/${REPO}/doocs includedeb ${distribution} \
+              /home/debian/${distribution}/stable/${FILE}
+     done
+  done
+  
+done
