@@ -109,5 +109,4 @@ for package in "${!package_list[@]}"; do
   ${package_buildcmd[$package]}
 done
 
-# cleanup
-rm master-control
+echo "Please commit and push all changes to the DebianBuildVersions repository now. Only if you get no conflicts you may proceed with installing the packages into the DESY repositories."
