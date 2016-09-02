@@ -1,6 +1,14 @@
 #!/bin/bash -e
 #
 # This script is only intended for internal use at DESY.
+#InstallHost=doocspkgs
+InstallHost=localhost
+PackageArchive=/home/debian/${distribution}/stable
+PackageFileGroup=flash
+PackagePriviledges=664
+declare -A RepositoryDirectories
+RepositoryDirectories["intern"]=/export/reprepro/intern/doocs
+RepositoryDirectories["pub"]=/export/reprepro/pub/doocs
 
 # load master-control file
 if [ ! -f master-control ]; then
@@ -22,43 +30,47 @@ if [ ! -d ../pbuilder-result ]; then
     exit 1
 fi
 cd ../pbuilder-result
-ls *.deb > /dev/null
-if [ $? -ne 0 ]; then
-    echo "No debian packages found in pbuilder-result. Run the master script first."
-    exit 1
-fi
 
 # loop over all packages in the list (note: this is not the list of .deb files but the list of projects!)
-for package in "${!package_list[@]}"; do
+for package in "${!package_buildcmd[@]}"; do
 
-  PACKAGE_FILES_WILDCARDS_DEB="${package}*.deb lib${package}*.deb ${package}*.changes lib${package}*.changes"
-  PACKAGE_FILES_WILDCARDS="${PACKAGE_FILES_WILDCARDS_DEB} ${package}*.changes lib${package}*.changes"
+  # get the path to the control file from the build command (argument to makeDebianPackage)
+  BUILD_CONTROL_FILE=`echo ${package_buildcmd[$package]} | sed -e 's|^./makeDebianPackage |../|'`/control
   
+  # obtain list of package names from the control file
+  TEMPFILE=`mktemp`
+  grep "^Package: " ${BUILD_CONTROL_FILE} | sed -e 's|^Package: ||' > $TEMPFILE
+  
+  # build the wildcards matching the deb and changes files
+  PACKAGE_FILES_WILDCARDS_DEB=`cat $TEMPFILE | sed -e 's|$|_*.deb|'`
+  PACKAGE_FILES_WILDCARDS_CHANGES=`cat $TEMPFILE | sed -e 's|$|_*.changes|'`
+  PACKAGE_FILES_WILDCARDS="${PACKAGE_FILES_WILDCARDS_DEB} ${PACKAGE_FILES_WILDCARDS_CHANGES}"
+
+  # obtain content of Target-repositories variable from CONFIG file
   TARGET_REPOSITORIES=`grep '^Target-repositories: ' ../DebianBuildVersions/${package}/CONFIG | sed -e 's/^Target-repositories: //'`
 
   # Step 1: Remove an older version of the package
-  # -- from the nfs archive
-  ( cd /home/debian/${distribution}/stable && mv ${PACKAGE_FILES_WILDCARDS} ../old )
+  # -- from the package archive
+  ssh ${InstallHost} "/bin/bash -c \"( cd ${PackageArchive} && mv ${PACKAGE_FILES_WILDCARDS} ../old )\""
   # -- from the actual repository
   for REPO in ${TARGET_REPOSITORIES}; do
-      for PACKAGE in ${PACKAGE_FILES_WILDCARDS}; do
-          ssh doocspkgs sudo -H reprepro --waitforlock 2 -Vb \
-              /export/reprepro/${REPO}/doocs remove ${distribution} ${PACKAGE}
+      for PACKAGE in ${PACKAGE_FILES_WILDCARDS_DEB}; do
+          ssh ${InstallHost} sudo -H reprepro --waitforlock 2 -Vb \
+              ${RepositoryDirectories[${REPO}]} remove ${distribution} ${PACKAGE}
       done
   done
 
-  # Step 2: Set the privileges to rw-rw-r--
-  chmod 664 ${PACKAGE_FILES_WILDCARDS}
-  chgrp flash ${PACKAGE_FILES_WILDCARDS}
-  # -- and move the files to the nfs archive (mv keeps privileges and group)
-  mv ${PACKAGE_FILES_WILDCARDS} /home/debian/${distribution}/stable
+  # Step 2: Copy the files to the package archive
+  scp ${PACKAGE_FILES_WILDCARDS} ${InstallHost}:${PackageArchive}
+  # -- and set the privileges to rw-rw-r-- and the group
+  ssh ${InstallHost} "/bin/bash -c \"( chmod ${PackagePriviledges} ${PACKAGE_FILES_WILDCARDS} ; chgrp ${PackageFileGroup} ${PACKAGE_FILES_WILDCARDS} )\""
 
   # Step 3: Install to the repository
   for REPO in ${TARGET_REPOSITORIES}; do
       for FILE in ${PACKAGE_FILES_WILDCARDS_DEB}; do
-          ssh doocspkgs sudo -H reprepro --waitforlock 2 -Vb \
-              /export/reprepro/${REPO}/doocs includedeb ${distribution} \
-              /home/debian/${distribution}/stable/${FILE}
+          ssh ${InstallHost} sudo -H reprepro --waitforlock 2 -Vb \
+              ${RepositoryDirectories[${REPO}]} includedeb ${distribution} \
+              ${PackageArchive}/${FILE}
      done
   done
   
