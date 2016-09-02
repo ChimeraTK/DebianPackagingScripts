@@ -15,12 +15,12 @@ fi
 
 # check for other unfinished operations
 NEED_CLEANUP=0
-if [ -s "pbuilder-result" ]; then
-  echo "You still have packages in the pbuilder-result directory."
+if [ -e "master-control" ]; then
+  echo "You file 'master-control' exists. Are you running another instance of this script in the same directory?"
   NEED_CLEANUP=1
 fi
-if [ -e "package-list" ]; then
-  echo "The file 'package-list' exists. Are you running another instance of this script in the same directory?"
+if [ -s "pbuilder-result" ]; then
+  echo "You still have packages in the pbuilder-result directory."
   NEED_CLEANUP=1
 fi
 if [ -e "debian_package" ]; then
@@ -31,11 +31,10 @@ if [ "$NEED_CLEANUP" == "1" ]; then
   echo -n "Do you want to remove any leftovers from the previous (or current!?) run and continue (y/N)? "
   read answer
   if [ "$answer" != "y" -a "$answer" != "Y" ]; then
-    rm package-list
     echo "Aborted."
     exit 1
   fi
-  rm -rf pbuilder-result package-list debian_package
+  rm -rf pbuilder-result debian_package master-control
   echo ""
 fi
 
@@ -43,8 +42,12 @@ fi
 distribution="$1"
 shift
 
+# create the master control file
+touch master-control
+echo "distribution=${distribution}" >> master-control
+echo "declare -A package_list" >> master-control
+
 # create list of packages to build from command line arguments
-touch package-list
 declare -A package_list        # associative array: package name -> package version
 while [ -n "$1" ]; do
   package_list["$1"]="$2"
@@ -72,25 +75,39 @@ done
 # output list of packages to be build
 echo "The following packages will be build:"
 for package in "${!package_list[@]}"; do
-  echo "$package ${package_list[$package]}" >> package-list
+  echo "$package ${package_list[$package]}"
+  echo "package_list[$package]=${package_list[$package]}" >> master-control
 done
-cat package-list
 
 # ask if we want to proceed
 echo ""
 echo -n "Do you want to proceed with configuring and building the packages in the given versions (y/N)? "
 read answer
 if [ "$answer" != "y" -a "$answer" != "Y" ]; then
-  rm package-list
   echo "Aborted."
   exit 1
 fi
 
+# gain root rights. This (likely) avoids the need to type the passwort later in the middle of the build step
+sudo echo "We have root rights now."
+
 # configure packages
+TEMPFILE=`mktemp`
+declare -A package_buildcmd        # associative array: package name -> command to build the package
 for package in "${!package_list[@]}"; do
+  echo ""
   echo "Configuring $package in version ${package_list[$package]} for ${distribution}..."
-  ./configureRelease "$package" "${package_list[$package]}" "$distribution"
+  ./configureRelease "$package" "${package_list[$package]}" "$distribution" | tee $TEMPFILE
+  package_buildcmd[$package]=`tail -n1 $TEMPFILE`
+done
+rm $TEMPFILE
+
+# building packages
+for package in "${!package_list[@]}"; do
+  echo ""
+  echo "Building $package in version ${package_list[$package]} for ${distribution}..."
+  ${package_buildcmd[$package]}
 done
 
 # cleanup
-rm package-list
+rm master-control
