@@ -214,7 +214,7 @@ for dependency in dependencies_dev:
       deps_epoch_split = deps_epoch.split(codename)[0].split(".")
       deps_next_epoch = deps_epoch_split[0] + "." + str( int(deps_epoch_split[1])+1 ) + codename + "0"
       print(deps_epoch+ " " +deps_next_epoch)
-      dev_depends += dependency+" (>= "+deps_epoch+"), " + dependency+" (< "+deps_next_epoch+"), "
+      dev_depends += dependency+" (>= "+deps_epoch+"), " + dependency+" (<< "+deps_next_epoch+"), "
 dev_depends = dev_depends[:-2]
 
 #print("Dependency ID string: "+dependency_dir)
@@ -288,7 +288,6 @@ if not "Package-name-doc" in config:
   config["Package-name-doc"] = config["package-basename"]+"-doc"
 if not "Package-name-bin" in config:
   config["Package-name-bin"] = config["package-basename"]+config["debversion"]
-#print(config)
 
 # create directory holding the debian control files
 controldir="DebianBuildVersions/"+version_base_dir+"/"+str(build_number)
@@ -315,8 +314,6 @@ filelist.append("copyright."+config["License"])
 # if we have a lib package, add the shlib file
 if "lib" in hasPackages:
   filelist.append("package-lib.shlib")
-  
-#print filelist
 
 # replace config variables in files
 for filna in filelist:
