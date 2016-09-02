@@ -17,6 +17,10 @@ if [ -n "`git status --porcelain`" ]; then
 fi
 
 # Check that there are debian packages and return an error if not
+if [ ! -d ../pbuilder-result ]; then
+    echo "No pbuilder-result directory found. Run the master script first."
+    exit 1
+fi
 cd ../pbuilder-result
 ls *.deb > /dev/null
 if [ $? -ne 0 ]; then
