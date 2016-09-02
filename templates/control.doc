@@ -1,7 +1,10 @@
 Package: #Package-name-doc#
 Section: libdevel
 Architecture: any
+Conflicts: #Conflicts-doc#
+Replaces: #Replaces-doc#
+Recommends: #Recommends-doc#
+Enhances: #Enhances-doc#
 Depends: #Package-name-dev#
-Enhances: #Package-name-dev#
 Description: #Description-doc#
 

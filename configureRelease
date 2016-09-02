@@ -65,9 +65,23 @@ if not os.path.isfile("DebianBuildVersions/"+project+"/CONFIG"):
 
 # preset optional config variables
 config = {}
+config["Dependencies-bin"] = ""
+config["Conflicts-lib"] = ""
+config["Replaces-lib"] = ""
+config["Recommends-lib"] = ""
+config["Enhances-lib"] = ""
 config["Conflicts-dev"] = ""
 config["Replaces-dev"] = ""
-config["Dependencies-bin"] = ""
+config["Recommends-dev"] = ""
+config["Enhances-dev"] = ""
+config["Conflicts-bin"] = ""
+config["Replaces-bin"] = ""
+config["Recommends-bin"] = ""
+config["Enhances-bin"] = ""
+config["Conflicts-doc"] = ""
+config["Replaces-doc"] = ""
+config["Recommends-doc"] = ""
+config["Enhances-doc"] = ""
 
 # read config file
 configfile = open("DebianBuildVersions/"+project+"/CONFIG",'r').read().splitlines()

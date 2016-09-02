@@ -1,6 +1,10 @@
 Package: #Package-name-lib#
 Section: libs
 Architecture: #architecture#
+Conflicts: #Conflicts-lib#
+Replaces: #Replaces-lib#
+Recommends: #Recommends-lib#
+Enhances: #Enhances-lib#
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: #Description-lib#
 
