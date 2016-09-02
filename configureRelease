@@ -8,6 +8,7 @@ import sys
 import time
 import tempfile
 import shutil
+import re
 
 # function for resolving dependencies from a Packages file
 # returns a dictionary: "name" -> "version"
@@ -29,20 +30,20 @@ def resolveDeps(dependencies, filename):
 
 # output usage
 if len(sys.argv) != 4 and len(sys.argv) != 5 :
-  print("Usage: ./configureRelease <project_name> <project_version> <distribution_codename> [<architecture>]")
+  print("Usage: ./configureRelease <project_name> <version_tag_name> <distribution_codename> [<architecture>]")
   print("Example: ./configureRelease DOOCSwrappers 0.5.0 xenial")
   sys.exit()
 
 # parse command line arguments
 project = sys.argv[1]
-tagversion = sys.argv[2]
-version = tagversion
+tagversion = sys.argv[2]                        # tagversion is the git tag to be checked out for this version
+version = tagversion                            # version is identical to the git tag but omitting the "v" at the beginning if present
 if tagversion[0:1] == "v":
   version = tagversion[1:]
 splitversion = version.split(".")
-epoch = splitversion[0]+"."+splitversion[1]
-patchlevel = splitversion[2]
-codename = sys.argv[3]
+epoch = splitversion[0]+"."+splitversion[1]     # the "epoch" is the part of the version which is identical for binary compatible versions
+patchlevel = splitversion[2]                    # the patchlevel contains any part of the version which differs for binary compatible versions
+codename = sys.argv[3]                          # codename of the distribution to build for (e.g. xenial)
 if len(sys.argv) == 5 :
   arch = sys.argv[4]
 else:
@@ -204,7 +205,16 @@ build_depends = build_depends[:-2]
 dev_depends=""
 for dependency in dependencies_dev:
   if dependency != "":
-    dev_depends += dependency+" (= "+dependency_versions[dependency]+"), "
+    print(" Here dev_depends: " + dependency + " " + dependency_versions[dependency])
+    deps_epoch_array = re.findall("^.*"+codename+"[0-9]*\.", dependency_versions[dependency])
+    if(len(deps_epoch_array) == 0):
+      dev_depends += dependency+" (= "+dependency_versions[dependency]+"), "
+    else:
+      deps_epoch = deps_epoch_array[0][:-1]
+      deps_epoch_split = deps_epoch.split(codename)[0].split(".")
+      deps_next_epoch = deps_epoch_split[0] + "." + str( int(deps_epoch_split[1])+1 ) + codename + "0"
+      print(deps_epoch+ " " +deps_next_epoch)
+      dev_depends += dependency+" (>= "+deps_epoch+"), " + dependency+" (< "+deps_next_epoch+"), "
 dev_depends = dev_depends[:-2]
 
 #print("Dependency ID string: "+dependency_dir)
