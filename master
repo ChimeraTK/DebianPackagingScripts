@@ -45,7 +45,7 @@ shift
 # create the master control file
 touch master-control
 echo "distribution=${distribution}" >> master-control
-echo "declare -A package_list" >> master-control
+echo "declare -A package_buildcmd" >> master-control
 
 # create list of packages to build from command line arguments
 declare -A package_list        # associative array: package name -> package version
@@ -76,7 +76,6 @@ done
 echo "The following packages will be build:"
 for package in "${!package_list[@]}"; do
   echo "$package ${package_list[$package]}"
-  echo "package_list[$package]=${package_list[$package]}" >> master-control
 done
 
 # ask if we want to proceed
@@ -99,6 +98,7 @@ for package in "${!package_list[@]}"; do
   echo "Configuring $package in version ${package_list[$package]} for ${distribution}..."
   ./configureRelease "$package" "${package_list[$package]}" "$distribution" | tee $TEMPFILE
   package_buildcmd[$package]=`tail -n1 $TEMPFILE`
+  echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
 done
 rm $TEMPFILE
 
