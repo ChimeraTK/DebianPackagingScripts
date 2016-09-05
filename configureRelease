@@ -309,6 +309,8 @@ if not "Package-name-doc" in config:
   config["Package-name-doc"] = config["package-basename"]+"-doc"
 if not "Package-name-bin" in config:
   config["Package-name-bin"] = config["package-basename"]+config["debversion"]
+if not "Install-pattern-bin" in config:
+  config["Install-pattern-bin"] = "usr/bin/*"
 
 # create directory holding the debian control files
 controldir="DebianBuildVersions/"+version_base_dir+"/"+str(build_number)
