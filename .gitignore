@@ -3,4 +3,5 @@ Packages.*
 debian_package
 DebianBuildVersions
 pbuilder-result
+pbuilder-base
 master-control
