@@ -3,7 +3,7 @@
 # This script is only intended for internal use at DESY.
 #InstallHost=doocspkgs
 InstallHost=localhost
-PackageArchive=/home/debian/${distribution}/stable
+PackageArchive='/home/debian/${distribution}/stable'  # evalulate later
 PackageFileGroup=flash
 PackagePriviledges=664
 declare -A RepositoryDirectories
@@ -16,20 +16,17 @@ if [ ! -f master-control ]; then
     exit 1
 fi
 source master-control
+PackageArchive=`eval echo $PackageArchive`
 
 # check for local modifications in the DebianBuildVersions directory
-cd DebianBuildVersions
-if [ -n "`git status --porcelain`" ]; then
-    echo "You have still uncommitted changes in the DebianBuildVersions repository. You are not allowed to publish packages like this!"
-    exit 1
-fi
+#./checkIfBuildVersionsCommitted || exit 1
 
 # Check that there are debian packages and return an error if not
-if [ ! -d ../pbuilder-result ]; then
+if [ ! -d pbuilder-result ]; then
     echo "No pbuilder-result directory found. Run the master script first."
     exit 1
 fi
-cd ../pbuilder-result
+cd pbuilder-result
 
 # loop over all packages in the list (note: this is not the list of .deb files but the list of projects!)
 for package in "${!package_buildcmd[@]}"; do
@@ -37,21 +34,29 @@ for package in "${!package_buildcmd[@]}"; do
   # get the path to the control file from the build command (argument to makeDebianPackage)
   BUILD_CONTROL_FILE=`echo ${package_buildcmd[$package]} | sed -e 's|^./makeDebianPackage |../|'`/control
   
-  # obtain list of package names from the control file
+  # obtain list of package names from the control file and form wildcards to match the deb files
   TEMPFILE=`mktemp`
-  grep "^Package: " ${BUILD_CONTROL_FILE} | sed -e 's|^Package: ||' > $TEMPFILE
+  grep "^Package: " ${BUILD_CONTROL_FILE} | sed -e 's|^Package: ||g' > $TEMPFILE
+  PACKAGE_FILES_WILDCARDS_DEB=`cat $TEMPFILE | sed -e 's|$|_*.deb|g' | sed -e ':a;N;$!ba;s/\n/ /g'`
+  rm $TEMPFILE
   
-  # build the wildcards matching the deb and changes files
-  PACKAGE_FILES_WILDCARDS_DEB=`cat $TEMPFILE | sed -e 's|$|_*.deb|'`
-  PACKAGE_FILES_WILDCARDS_CHANGES=`cat $TEMPFILE | sed -e 's|$|_*.changes|'`
+  # obtain source package name from the control file and form wildcards to match the changes file
+  TEMPFILE=`mktemp`
+  grep "^Source: " ${BUILD_CONTROL_FILE} | sed -e 's|^Source: ||g' > $TEMPFILE
+  PACKAGE_FILES_WILDCARDS_CHANGES=`cat $TEMPFILE | sed -e 's|$|_*.changes|g' | sed -e ':a;N;$!ba;s/\n/ /g'`
+  rm $TEMPFILE
+
+  # merge the wildcards
   PACKAGE_FILES_WILDCARDS="${PACKAGE_FILES_WILDCARDS_DEB} ${PACKAGE_FILES_WILDCARDS_CHANGES}"
+  
 
   # obtain content of Target-repositories variable from CONFIG file
   TARGET_REPOSITORIES=`grep '^Target-repositories: ' ../DebianBuildVersions/${package}/CONFIG | sed -e 's/^Target-repositories: //'`
 
   # Step 1: Remove an older version of the package
   # -- from the package archive
-  ssh ${InstallHost} "/bin/bash -c \"( cd ${PackageArchive} && mv ${PACKAGE_FILES_WILDCARDS} ../old )\""
+  echo "${PACKAGE_FILES_WILDCARDS}"
+  ssh ${InstallHost} "/bin/bash -c \"( cd ${PackageArchive} && mv ${PACKAGE_FILES_WILDCARDS} ../old )\"" || true
   # -- from the actual repository
   for REPO in ${TARGET_REPOSITORIES}; do
       for PACKAGE in ${PACKAGE_FILES_WILDCARDS_DEB}; do
@@ -63,7 +68,7 @@ for package in "${!package_buildcmd[@]}"; do
   # Step 2: Copy the files to the package archive
   scp ${PACKAGE_FILES_WILDCARDS} ${InstallHost}:${PackageArchive}
   # -- and set the privileges to rw-rw-r-- and the group
-  ssh ${InstallHost} "/bin/bash -c \"( chmod ${PackagePriviledges} ${PACKAGE_FILES_WILDCARDS} ; chgrp ${PackageFileGroup} ${PACKAGE_FILES_WILDCARDS} )\""
+  ssh ${InstallHost} "/bin/bash -c \"( cd ${PackageArchive} ; chmod ${PackagePriviledges} ${PACKAGE_FILES_WILDCARDS} ; chgrp ${PackageFileGroup} ${PACKAGE_FILES_WILDCARDS} )\""
 
   # Step 3: Install to the repository
   for REPO in ${TARGET_REPOSITORIES}; do
