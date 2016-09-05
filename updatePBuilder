@@ -2,10 +2,6 @@
 
 # Shell script to create or update the pbuilder image used in makeDebianPackage
 
-# directory with local Debian repository and where the created packages should be placed
-LOCAL_REPOS="`pwd`/pbuilder-result"
-mkdir -p "${LOCAL_REPOS}"
-
 # create directory holding pbuilder images
 mkdir -p "`pwd`/pbuilder-base"
 
@@ -14,10 +10,10 @@ if [ -z "$1" ] ; then
   # print usage
   echo "Usage:"
   echo "  ./updatePBuilder <distributionCodeName>"
-  echo "     - update the image for the given distribution"
+  echo "     - Update the image for the given distribution. If no image exists, create it first."
   echo ""
   echo "  ./updatePBuilder --setup <distributionCodeName>"
-  echo "     - create the image for the given distribution"
+  echo "     - Create a fresh image for the given distribution, even if it exists already."
   exit 1
 elif [ "$1" == "--setup" ] ; then
   if [ -z "$2" ] ; then
@@ -25,12 +21,19 @@ elif [ "$1" == "--setup" ] ; then
     exit 1
   fi
   DISTRIBUTION=$2
-  PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${DISTRIBUTION}.tgz"
-  sudo pbuilder --create --distribution $DISTRIBUTION --basetgz "${PBUILDER_IMAGE}" || exit 1
+  rm -rf "pbuilder-base/base-${DISTRIBUTION}.tgz"
 else
   DISTRIBUTION=$1
-  PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${DISTRIBUTION}.tgz"
 fi
+
+PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${DISTRIBUTION}.tgz"
+if [ ! -f ${PBUILDER_IMAGE} ]; then
+  sudo pbuilder --create --distribution $DISTRIBUTION --basetgz "${PBUILDER_IMAGE}" || exit 1
+fi
+
+# directory with local Debian repository and where the created packages should be placed
+LOCAL_REPOS="`pwd`/pbuilder-result"
+mkdir -p "${LOCAL_REPOS}"
 
 MIRRORLIST="deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main|deb [trusted=yes] file://${LOCAL_REPOS} ./"
 bash -c "cd ${LOCAL_REPOS} ; apt-ftparchive packages . > Packages"                        || exit 1

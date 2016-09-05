@@ -20,7 +20,7 @@ source "${CONTROLDIR}/makeDebianPackage.config"
 export PROJECT_BUILDVERSION
 
 # directory with local Debian repository and where the created packages should be placed
-LOCAL_REPOS="`pwd`/pbuilder-result/${DISTRIBUTION}"
+LOCAL_REPOS="`pwd`/pbuilder-result"
 
 # directory with pbuilder base image
 PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${DISTRIBUTION}.tgz"
