@@ -228,7 +228,6 @@ build_depends = build_depends[:-2]
 dev_depends=""
 for dependency in dependencies_dev:
   if dependency != "":
-    print(" Here dev_depends: " + dependency + " " + dependency_versions[dependency])
     deps_epoch_array = re.findall("^.*"+codename+"[0-9]*\.", dependency_versions[dependency])
     if(len(deps_epoch_array) == 0):
       dev_depends += dependency+" (= "+dependency_versions[dependency]+"), "
