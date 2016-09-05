@@ -1,0 +1,22 @@
+#!/bin/bash
+
+cd DebianBuildVersions
+if [ -n "`git status --porcelain`" ]; then
+    echo "You have still uncommitted changes in the DebianBuildVersions repository. You are not allowed to publish packages like this!"
+    exit 1
+fi
+
+if [ -n "`git status --porcelain`" ]; then
+    echo "You have still uncommitted changes in the DebianBuildVersions repository. You are not allowed to publish packages like this!"
+    exit 1
+fi
+
+LATEST_COMMIT_ORIGIN=`git log origin/master | head -n1`
+LATEST_COMMIT_LOCAL=`git log | head -n1`
+
+if [ "${LATEST_COMMIT_ORIGIN}" != "${LATEST_COMMIT_LOCAL}" ]; then
+    echo "Your probably have not pushed your commits. You are not allowed to publish packages like this!"
+    exit 1
+fi
+
+exit 0
