@@ -1,32 +1,15 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # Shell script to generate a debian package from a particular tag (configured during the cmake configuration).
-
-# drop out of the script if anything goes wrong (e.g. non-existing git tag)
-set -e
-
-# directory with local Debian repository and where the created packages should be placed
-LOCAL_REPOS="`pwd`/pbuilder-result"
-
-# Create a working directory in order not to merge with the rest in the build directory
-rm -rf debian_package
-mkdir debian_package
-cd debian_package
 
 # Parse command line arguments
 if [ -z "$1" ] ; then
   # print usage
-  echo "Usage: TODO"
+  echo "Usage: ./makeDebianPackage path/to/control/directory/created/by/configureRelease"
+  echo "Hint: configureRelease will print the full command line to run this script after creating the control directory."
   exit 1
-elif [ "$1" == "--setup" ] ; then
-  if [ -z "$2" ] ; then
-    echo "Missing parameter to --setup"
-    exit 1
-  fi
-  sudo pbuilder --create --distribution $2
-  exit $?
 fi
-CONTROLDIR="../$1"
+CONTROLDIR="`pwd`/$1"
 
 # load config
 if [ ! -f "${CONTROLDIR}/makeDebianPackage.config" ]; then
@@ -35,6 +18,17 @@ if [ ! -f "${CONTROLDIR}/makeDebianPackage.config" ]; then
 fi
 source "${CONTROLDIR}/makeDebianPackage.config"
 export PROJECT_BUILDVERSION
+
+# directory with local Debian repository and where the created packages should be placed
+LOCAL_REPOS="`pwd`/pbuilder-result/${DISTRIBUTION}"
+
+# directory with pbuilder base image
+PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${DISTRIBUTION}.tgz"
+
+# Create a working directory in order not to merge with the rest in the build directory
+rm -rf debian_package
+mkdir debian_package
+cd debian_package
 
 # Check out the correct tag from the master git repository. Note, we first clone and then checkout the tag because the
 # old git version on Ubuntu12.4 does not support to do it in one go.
@@ -62,12 +56,8 @@ debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION} --distrib
 # Now everything is prepared and we can actually build the package.
 # If you have a gpg signature you can remove the -us and -uc flags and sign the package.
 MIRRORLIST="deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main|deb [trusted=yes] file://${LOCAL_REPOS} ./"
-sudo bash -c "cd ${LOCAL_REPOS} ; apt-ftparchive packages . > Packages"                   || exit 1
-sudo pbuilder --update --distribution ${DISTRIBUTION} --override-config --components "main universe" \
-              --othermirror "${MIRRORLIST}" --buildresult "${LOCAL_REPOS}"                           \
-              --bindmounts "${LOCAL_REPOS}"                                               || exit 1
 pdebuild -- --distribution ${DISTRIBUTION} --buildresult "${LOCAL_REPOS}"                            \
-            --bindmounts "${LOCAL_REPOS} /dev"                                            || exit 1
+            --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} /dev /run/shm"      || exit 1
 echo ""
 echo "You can find the resulting debian packages in this directory: ${LOCAL_REPOS}"
 

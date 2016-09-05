@@ -1,0 +1,40 @@
+#!/bin/bash -e
+
+# Shell script to create or update the pbuilder image used in makeDebianPackage
+
+# directory with local Debian repository and where the created packages should be placed
+LOCAL_REPOS="`pwd`/pbuilder-result"
+mkdir -p "${LOCAL_REPOS}"
+
+# create directory holding pbuilder images
+mkdir -p "`pwd`/pbuilder-base"
+
+# Parse command line arguments
+if [ -z "$1" ] ; then
+  # print usage
+  echo "Usage:"
+  echo "  ./updatePBuilder <distributionCodeName>"
+  echo "     - update the image for the given distribution"
+  echo ""
+  echo "  ./updatePBuilder --setup <distributionCodeName>"
+  echo "     - create the image for the given distribution"
+  exit 1
+elif [ "$1" == "--setup" ] ; then
+  if [ -z "$2" ] ; then
+    echo "Missing parameter to --setup"
+    exit 1
+  fi
+  DISTRIBUTION=$2
+  PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${DISTRIBUTION}.tgz"
+  sudo pbuilder --create --distribution $DISTRIBUTION --basetgz "${PBUILDER_IMAGE}" || exit 1
+else
+  DISTRIBUTION=$1
+  PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${DISTRIBUTION}.tgz"
+fi
+
+MIRRORLIST="deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main|deb [trusted=yes] file://${LOCAL_REPOS} ./"
+bash -c "cd ${LOCAL_REPOS} ; apt-ftparchive packages . > Packages"                        || exit 1
+sudo pbuilder --update --distribution ${DISTRIBUTION} --override-config --components "main universe" \
+              --othermirror "${MIRRORLIST}" --buildresult "${LOCAL_REPOS}"                           \
+              --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} /run/shm"         || exit 1
+

@@ -90,6 +90,9 @@ fi
 # gain root rights. This (likely) avoids the need to type the passwort later in the middle of the build step
 sudo echo "We have root rights now."
 
+# update the pbuilder image
+./updatePBuilder $distribution
+
 # configure packages
 TEMPFILE=`mktemp`
 declare -A package_buildcmd        # associative array: package name -> command to build the package
