@@ -235,7 +235,6 @@ for dependency in dependencies_dev:
       deps_epoch = deps_epoch_array[0][:-1]
       deps_epoch_split = deps_epoch.split(codename)[0].split(".")
       deps_next_epoch = deps_epoch_split[0] + "." + str( int(deps_epoch_split[1])+1 ) + codename + "0"
-      print(deps_epoch+ " " +deps_next_epoch)
       dev_depends += dependency+" (>= "+deps_epoch+"), " + dependency+" (<< "+deps_next_epoch+"), "
 dev_depends = dev_depends[:-2]
 
