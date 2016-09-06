@@ -9,7 +9,7 @@ function ask() {
   read answer
   if [ "$answer" != "y" -a "$answer" != "Y" ]; then
     echo "Aborted."
-    exit 1
+    false
   fi
 }
 
@@ -96,7 +96,7 @@ for package in "${!package_list[@]}"; do
 done
 
 # ask if we want to proceed
-ask "Do you want to proceed with configuring and building the packages in the given versions (y/N)?"
+ask "Do you want to proceed with configuring and building the packages in the given versions (y/N)?" || ( rm master-control ; exit 1 )
 
 # gain root rights. This (likely) avoids the need to type the passwort later in the middle of the build step
 sudo echo "We have root rights now."
