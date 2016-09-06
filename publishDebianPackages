@@ -48,15 +48,27 @@ for package in "${!package_buildcmd[@]}"; do
 
   # Step 1: Remove an older version of the package
   # -- from the package archive
-  echo "${PACKAGE_FILES_WILDCARDS}"
-  ssh ${InstallHost} "/bin/bash -c \"( cd ${PackageArchive} && mv ${PACKAGE_FILES_WILDCARDS} ../old )\"" || true
   # -- from the actual repository
+  # This is done by writing a script, copying it to the InstallHost and executing it there.
+  echo "${PACKAGE_FILES_WILDCARDS_DEB}"
+  TEMPFILE=`mktemp -p .`
+  echo "#!/bin/bash -e" > $TEMPFILE
+  echo "cd ${PackageArchive}" >> $TEMPFILE
+  echo "for p in ${PACKAGE_FILES_WILDCARDS_DEB}; do" >> $TEMPFILE
+  echo "  if [ ! -f \"\$p\" ]; then continue ; fi" >> $TEMPFILE
+  echo "  echo mv \"\$p\" ../old" >> $TEMPFILE
+  echo "  mv \"\$p\" ../old" >> $TEMPFILE
+  echo "  packname=\`echo \$p | sed -e 's|_.*\.deb$||'\`" >> $TEMPFILE
   for REPO in ${TARGET_REPOSITORIES}; do
-      for PACKAGE in ${PACKAGE_FILES_WILDCARDS_DEB}; do
-          ssh ${InstallHost} sudo -H reprepro --waitforlock 2 -Vb \
-              ${RepositoryDirectories[${REPO}]} remove ${distribution} ${PACKAGE}
-      done
+    echo "  echo sudo -H reprepro --waitforlock 2 -Vb ${RepositoryDirectories[${REPO}]} remove ${distribution} \"\$packname\"" >> $TEMPFILE
+    echo "  sudo -H reprepro --waitforlock 2 -Vb ${RepositoryDirectories[${REPO}]} remove ${distribution} \"\$packname\"" >> $TEMPFILE
   done
+  echo "done" >> $TEMPFILE
+  cat $TEMPFILE
+  chmod +x $TEMPFILE
+  scp $TEMPFILE ${InstallHost}:$TEMPFILE
+  ssh ${InstallHost} $TEMPFILE
+  rm $TEMPFILE
 
   # Step 2: Copy the files to the package archive
   scp ${PACKAGE_FILES_WILDCARDS} ${InstallHost}:${PackageArchive}
