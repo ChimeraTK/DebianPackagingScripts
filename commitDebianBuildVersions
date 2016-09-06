@@ -31,10 +31,10 @@ if [ $do_not_publish -eq 0 ]; then
   done
 
   # execute the commit
-  echo git commit -m "automated commit by commitDebianBuildVersions script"
+  git commit -m "automated commit by commitDebianBuildVersions script" || true
 
   # push the commit
-  echo git push
+  git push ${DebianBuildVersionsURI}
 
 else
 
