@@ -27,6 +27,10 @@ def resolveDeps(dependencies, filename):
   
   return dependency_versions
 
+# read DebianBuildVersionsURI from config.sh
+p = subprocess.Popen(['/bin/bash', '-c', '( source config.sh ; echo -n $DebianBuildVersionsURI )'], stdout=subprocess.PIPE)
+DebianBuildVersionsURI, err = p.communicate()
+rc = p.returncode
 
 # output usage
 if len(sys.argv) != 4 and len(sys.argv) != 5 :
@@ -52,7 +56,7 @@ else:
 
 # checkout or update the control git repository
 if not os.path.isdir("DebianBuildVersions"):
-  subprocess.call(["git", "clone", "-q", "git@github.com:ChimeraTK/DebianBuildVersions.git"])
+  subprocess.call(["git", "clone", "-q", DebianBuildVersionsURI])
 else:
   os.chdir("DebianBuildVersions")
   subprocess.call(["git", "pull", "-q"])

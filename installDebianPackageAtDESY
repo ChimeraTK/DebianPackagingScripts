@@ -1,14 +1,7 @@
 #!/bin/bash -e
-#
-# This script is only intended for internal use at DESY.
-#InstallHost=doocspkgs
-InstallHost=localhost
-PackageArchive='/home/debian/${distribution}/stable'  # evalulate later
-PackageFileGroup=flash
-PackagePriviledges=664
-declare -A RepositoryDirectories
-RepositoryDirectories["intern"]=/export/reprepro/intern/doocs
-RepositoryDirectories["pub"]=/export/reprepro/pub/doocs
+
+# load configuration
+source config.sh
 
 # load master-control file
 if [ ! -f master-control ]; then
