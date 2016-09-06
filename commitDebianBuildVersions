@@ -1,0 +1,44 @@
+#!/bin/bash -e
+
+# load master-control file
+if [ ! -f master-control ]; then
+    echo "No master_control file found. Run the master script first."
+    exit 1
+fi
+source master-control
+
+# check if publishing is allowed
+if [ $do_not_publish -eq 0 ]; then
+
+  # enter the repository working copy
+  cd DebianBuildVersions
+
+  # loop over all packages in the list (note: this is not the list of .deb files but the list of projects!)
+  for package in "${!package_buildcmd[@]}"; do
+
+    # get the path to the control directory from the build command (argument to makeDebianPackage)
+    BUILD_CONTROL_DIRECTORY=`echo ${package_buildcmd[$package]} | sed -e 's|^./makeDebianPackage DebianBuildVersions/||'`
+
+    # add control direcotry to commit
+    git add ${BUILD_CONTROL_DIRECTORY}
+  
+    # add the LAST_BUILD file
+    git add ${BUILD_CONTROL_DIRECTORY}/../LAST_BUILD
+  
+    # add the BUILD_NUMBER file in the dependency directory
+    git add `cat ${BUILD_CONTROL_DIRECTORY}/../LAST_BUILD`/BUILD_NUMBER
+
+  done
+
+  # execute the commit
+  echo git commit -m "automated commit by commitDebianBuildVersions script"
+
+  # push the commit
+  echo git push
+
+else
+
+  echo "Publishing is not allowed since there were local modifications before configuring the packages."
+  exit 1
+
+fi
