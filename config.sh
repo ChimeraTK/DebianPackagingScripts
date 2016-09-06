@@ -14,8 +14,7 @@ DebianBuildVersionsURI=git@github.com:ChimeraTK/DebianBuildVersions.git
 
 # Host name where to publish the Debian packages on. You will need ssh access to that machine and rights to execute
 # reprepro with sudo as root.
-#InstallHost=doocspkgs
-InstallHost=localhost
+InstallHost=doocspkgs
 
 # Debian package archive directory. This is where the new packages will be copied. Packages to be replaced will
 # be first moved into ../old relativ to that directory.
