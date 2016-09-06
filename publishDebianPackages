@@ -64,7 +64,7 @@ for package in "${!package_buildcmd[@]}"; do
     echo "  sudo -H reprepro --waitforlock 2 -Vb ${RepositoryDirectories[${REPO}]} remove ${distribution} \"\$packname\"" >> $TEMPFILE
   done
   echo "done" >> $TEMPFILE
-  cat $TEMPFILE
+  echo "rm \$HOME/$TEMPFILE" >> $TEMPFILE
   chmod +x $TEMPFILE
   scp $TEMPFILE ${InstallHost}:$TEMPFILE
   ssh ${InstallHost} $TEMPFILE
@@ -84,4 +84,12 @@ for package in "${!package_buildcmd[@]}"; do
      done
   done
   
+  # Remove just installed files from the local pbuilder-result directory
+  rm ${PACKAGE_FILES_WILDCARDS}
+  
 done
+
+# Everything installed: remove the entire pbuilder-result directory
+cd ..
+rm -rf pbuilder-result master-control debian_package
+
