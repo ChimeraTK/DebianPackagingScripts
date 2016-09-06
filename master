@@ -1,10 +1,18 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # master shell script for creating debian packages for multiple packages, with proper reverse-dependency checking
 # and other safetly checks.
 
-# drop out of the script if anything goes wrong
-set -e
+function ask() {
+  echo ""
+  echo -n "$1 "
+  read answer
+  if [ "$answer" != "y" -a "$answer" != "Y" ]; then
+    echo "Aborted."
+    exit 1
+  fi
+}
+
 
 # check command line arguments
 if [ $# -lt 3 -o $(($#%2)) -eq 0 ]; then
@@ -47,6 +55,15 @@ touch master-control
 echo "distribution=${distribution}" >> master-control
 echo "declare -A package_buildcmd" >> master-control
 
+# check for local modifications in the DebianBuildVersions directory
+./checkIfBuildVersionsCommitted
+if [ $? -ne 0 ]; then
+  do_not_publish=1
+else
+  do_not_publish=0
+fi
+echo "do_not_publish=${do_not_publish}" >> master-control
+
 # create list of packages to build from command line arguments
 declare -A package_list        # associative array: package name -> package version
 while [ -n "$1" ]; do
@@ -79,13 +96,7 @@ for package in "${!package_list[@]}"; do
 done
 
 # ask if we want to proceed
-echo ""
-echo -n "Do you want to proceed with configuring and building the packages in the given versions (y/N)? "
-read answer
-if [ "$answer" != "y" -a "$answer" != "Y" ]; then
-  echo "Aborted."
-  exit 1
-fi
+ask "Do you want to proceed with configuring and building the packages in the given versions (y/N)?"
 
 # gain root rights. This (likely) avoids the need to type the passwort later in the middle of the build step
 sudo echo "We have root rights now."
@@ -112,4 +123,10 @@ for package in "${!package_list[@]}"; do
   ${package_buildcmd[$package]}
 done
 
-echo "Please commit and push all changes to the DebianBuildVersions repository now. Only if you get no conflicts you may proceed with installing the packages into the DESY repositories."
+# committing build versions and publish packages
+if [ $do_not_publish -eq 0 ]; then
+  ask "Publish the build versions to git and the packages to the DESY Debian repositories (y/N)?"
+  ./commitDebianBuildVersions
+  ./installDebianPackageAtDESY
+fi
+
