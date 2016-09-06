@@ -1,6 +1,12 @@
 #!/bin/bash
 
+if [ ! -e DebianBuildVersions ]; then
+    # repository is not even there: no local changes
+    exit 0
+fi
+
 cd DebianBuildVersions
+
 if [ -n "`git status --porcelain`" ]; then
     echo "You have still uncommitted changes in the DebianBuildVersions repository. You are not allowed to publish packages like this!"
     exit 1
