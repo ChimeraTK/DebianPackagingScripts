@@ -127,6 +127,6 @@ done
 if [ $do_not_publish -eq 0 ]; then
   ask "Publish the build versions to git and the packages to the DESY Debian repositories (y/N)?"
   ./commitDebianBuildVersions
-  ./installDebianPackageAtDESY
+  ./publishDebianPackages
 fi
 
