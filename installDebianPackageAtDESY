@@ -19,7 +19,7 @@ source master-control
 PackageArchive=`eval echo $PackageArchive`
 
 # check for local modifications in the DebianBuildVersions directory
-#./checkIfBuildVersionsCommitted || exit 1
+./checkIfBuildVersionsCommitted || exit 1
 
 # Check that there are debian packages and return an error if not
 if [ ! -d pbuilder-result ]; then
