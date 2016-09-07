@@ -66,6 +66,16 @@ else
 fi
 echo "do_not_publish=${do_not_publish}" >> master-control
 
+# checkout or update the control git repository
+source config.sh
+if [ ! -d "DebianBuildVersions" ]; then
+  git clone -q "$DebianBuildVersionsURI" DebianBuildVersions
+else
+  cd DebianBuildVersions
+  git pull -q
+  cd ..
+fi
+
 # create list of packages to build from command line arguments
 declare -A package_list        # associative array: package name -> package version
 while [ -n "$1" ]; do
