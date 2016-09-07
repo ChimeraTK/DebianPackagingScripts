@@ -150,7 +150,7 @@ declare -A package_buildcmd        # associative array: package name -> command 
 for package in "${!package_list[@]}"; do
   echo ""
   echo "Configuring $package in version ${package_list[$package]} for ${distribution}..."
-  ./configureRelease "$package" "${package_list[$package]}" "$distribution" "$arch" | tee $TEMPFILE
+  ./configureRelease "$package" "${package_list[$package]}" "$distribution" "$arch" | tee $TEMPFILE ; test ${PIPESTATUS[0]} -eq 0
   package_buildcmd[$package]=`tail -n1 $TEMPFILE`
   echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
   echo ""
