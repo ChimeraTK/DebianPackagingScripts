@@ -27,11 +27,6 @@ def resolveDeps(dependencies, filename):
   
   return dependency_versions
 
-# read DebianBuildVersionsURI from config.sh
-p = subprocess.Popen(['/bin/bash', '-c', '( source config.sh ; echo -n $DebianBuildVersionsURI )'], stdout=subprocess.PIPE)
-DebianBuildVersionsURI, err = p.communicate()
-rc = p.returncode
-
 # output usage
 if len(sys.argv) != 4 and len(sys.argv) != 5 :
   print("Usage: ./configureRelease <project_name> <version_tag_name> <distribution_codename> [<architecture>]")
@@ -52,20 +47,6 @@ if len(sys.argv) == 5 :
   arch = sys.argv[4]
 else:
   arch = "amd64"
-
-
-# checkout or update the control git repository
-if not os.path.isdir("DebianBuildVersions"):
-  subprocess.call(["git", "clone", "-q", DebianBuildVersionsURI])
-else:
-  os.chdir("DebianBuildVersions")
-  subprocess.call(["git", "pull", "-q"])
-  os.chdir("..")
-
-# check if project is known
-if not os.path.isfile("DebianBuildVersions/"+project+"/CONFIG"):
-  print("The project "+project+" is not known.")
-  sys.exit(1)
 
 # preset optional config variables
 config = {}
@@ -95,6 +76,16 @@ config["Recommends-lib"] = ""
 config["Recommends-dev"] = ""
 config["Recommends-bin"] = ""
 config["Recommends-doc"] = ""
+
+# check if DebianBuildVersions is checked out
+if not os.path.isdirectory("DebianBuildVersions/.git"):
+  print("DebianBuildVersions has not been checked out.")
+  sys.exit(1)
+
+# check if project is known
+if not os.path.isfile("DebianBuildVersions/"+project+"/CONFIG"):
+  print("The project "+project+" is not known.")
+  sys.exit(1)
 
 # read config file
 configfile = open("DebianBuildVersions/"+project+"/CONFIG",'r').read().splitlines()
@@ -237,13 +228,11 @@ for dependency in dependencies_dev:
       dev_depends += dependency+" (= "+dependency_versions[dependency]+"), "
     else:
       deps_epoch = deps_epoch_array[0][:-1]
-      deps_epoch_split = deps_epoch.split(codename)[0].split(".")
-      deps_next_epoch = deps_epoch_split[0] + "." + str( int(deps_epoch_split[1])+1 ) + codename + "0"
+      deps_epoch_split = deps_epoch.split(codename)
+      deps_next_epoch = deps_epoch_split[0] + codename + str( int(deps_epoch_split[1])+1 )
       dev_depends += dependency+" (>= "+deps_epoch+"), " + dependency+" (<< "+deps_next_epoch+"), "
 dev_depends = dev_depends[:-2]
 
-#print("Dependency ID string: "+dependency_dir)
-  
 # determine build number
 print("")
 if not os.path.isfile("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER"):
