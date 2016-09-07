@@ -78,7 +78,7 @@ config["Recommends-bin"] = ""
 config["Recommends-doc"] = ""
 
 # check if DebianBuildVersions is checked out
-if not os.path.isdirectory("DebianBuildVersions/.git"):
+if not os.path.isdir("DebianBuildVersions/.git"):
   print("DebianBuildVersions has not been checked out.")
   sys.exit(1)
 
