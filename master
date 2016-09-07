@@ -158,7 +158,6 @@ for package in "${!package_list[@]}"; do
   ${package_buildcmd[$package]}
 done
 rm $TEMPFILE
-done
 
 # committing build versions and publish packages
 if [ $do_not_publish -eq 0 ]; then
