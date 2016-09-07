@@ -3,6 +3,8 @@
 # master shell script for creating debian packages for multiple packages, with proper reverse-dependency checking
 # and other safetly checks.
 
+# function to ask a question (first parameter) and expect a y/n answer from the user. If the user answers with anything
+# other than y, the script will terminate.
 function ask() {
   echo ""
   echo -n "$1 "
@@ -12,7 +14,6 @@ function ask() {
     false
   fi
 }
-
 
 # check command line arguments
 if [ $# -lt 3 -o $(($#%2)) -eq 0 ]; then
@@ -48,6 +49,7 @@ fi
 
 # obtain distribution code name
 distribution="$1"
+arch="amd64"      # note: changing this has not been tested!
 shift
 
 # create the master control file
@@ -75,7 +77,7 @@ done
 for package in "${!package_list[@]}"; do
   # obtain possible reverse dependencies for lib${package}-dev
   TEMPFILE=`mktemp`
-  ./findReverseDependencies lib${package}-dev $distribution | grep "^lib" | grep -- "-dev " | sed -e 's/^lib//' -e 's/-dev / /' > $TEMPFILE
+  ./findReverseDependencies lib${package}-dev $distribution $arch | grep "^lib" | grep -- "-dev " | sed -e 's/^lib//' -e 's/-dev / /' > $TEMPFILE
   readarray revdeps_with_versions < $TEMPFILE
   rm -f $TEMPFILE
   # loop over any found reverse dependencies
@@ -89,8 +91,36 @@ for package in "${!package_list[@]}"; do
   done
 done
 
+# sort package list so dependencies are built first
+sorting_done=0
+while [ "$sorting_done" == "0" ]; do
+  declare -A package_list_sort
+  sorting_done=1
+  for package in "${!package_list[@]}"; do
+    # add the dependencies of the package to the new list, if not yet present
+    DEPENDENCIES=`grep "^Dependencies: " DebianBuildVersions/$package/CONFIG | sed -e 's|^Dependencies: ||'`
+    for dependency in $DEPENDENCIES; do
+      if [ -n "${package_list[$dependency]}" -a -z "${package_list_sort[$dependency]}" ]; then
+        sorting_done=0
+        package_list_sort[$dependency]="${package_list[$dependency]}"
+      fi
+    done
+    # add the package itself to the new list, if not yet present
+    if [ -z "${package_list_sort[$package]}" ]; then
+      package_list_sort[$package]="${package_list[$package]}"
+    fi
+  done
+  # move the new list into the old list("${a[@]}")
+  unset package_list
+  declare -A package_list
+  for package in "${!package_list_sort[@]}"; do
+    package_list[$package]=${package_list_sort[$package]}
+  done
+  unset package_list_sort
+done
+
 # output list of packages to be build
-echo "The following packages will be build:"
+echo "The following packages will be build (in that order):"
 for package in "${!package_list[@]}"; do
   echo "$package ${package_list[$package]}"
 done
@@ -104,23 +134,20 @@ sudo echo "We have root rights now."
 # update the pbuilder image
 ./updatePBuilder $distribution
 
-# configure packages
+# configure and build packages
 TEMPFILE=`mktemp`
 declare -A package_buildcmd        # associative array: package name -> command to build the package
 for package in "${!package_list[@]}"; do
   echo ""
   echo "Configuring $package in version ${package_list[$package]} for ${distribution}..."
-  ./configureRelease "$package" "${package_list[$package]}" "$distribution" | tee $TEMPFILE
+  ./configureRelease "$package" "${package_list[$package]}" "$distribution" "$arch" | tee $TEMPFILE
   package_buildcmd[$package]=`tail -n1 $TEMPFILE`
   echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
-done
-rm $TEMPFILE
-
-# building packages
-for package in "${!package_list[@]}"; do
   echo ""
   echo "Building $package in version ${package_list[$package]} for ${distribution}..."
   ${package_buildcmd[$package]}
+done
+rm $TEMPFILE
 done
 
 # committing build versions and publish packages
