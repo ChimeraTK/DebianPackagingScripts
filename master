@@ -159,6 +159,9 @@ for package in "${!package_list[@]}"; do
 done
 rm $TEMPFILE
 
+# run validation
+./validation
+
 # committing build versions and publish packages
 if [ $do_not_publish -eq 0 ]; then
   ask "Publish the build versions to git and the packages to the DESY Debian repositories (y/N)?"

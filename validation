@@ -248,7 +248,7 @@ sudo pbuilder --execute --distribution ${DISTRIBUTION} --override-config --compo
               --othermirror "${MIRRORLIST}" --buildresult "${LOCAL_REPOS}"                           \
               --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} /run/shm" "${SCRIPT}"
 if [ $? -ne 0 ]; then
-  echo "*** INSTALLING FAILED"
+  echo "*** INSTALLING THE PACKAGES FAILED"
   ERROR=1
 fi
 rm $SCRIPT
