@@ -72,8 +72,6 @@ for package in "${!package_buildcmd[@]}"; do
 
   # Step 2: Copy the files to the package archive
   scp ${PACKAGE_FILES_WILDCARDS} ${InstallHost}:${PackageArchive}
-  # -- and set the privileges to rw-rw-r-- and the group
-  ssh ${InstallHost} "/bin/bash -c \"( cd ${PackageArchive} ; chmod ${PackagePriviledges} ${PACKAGE_FILES_WILDCARDS} ; chgrp ${PackageFileGroup} ${PACKAGE_FILES_WILDCARDS} )\""
 
   # Step 3: Install to the repository
   for REPO in ${TARGET_REPOSITORIES}; do

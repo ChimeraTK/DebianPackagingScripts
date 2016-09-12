@@ -20,10 +20,6 @@ InstallHost=doocspkgs
 # be first moved into ../old relativ to that directory.
 PackageArchive='/home/debian/${distribution}/stable'  # evalulate later
 
-# Priviledges to set the copied files to. Your account on the InstallHost needs to be in the PackageFileGroup.
-PackageFileGroup=flash
-PackagePriviledges=664
-
 # map of repository names (as used in the CONFIG files of the projects) to target directories on the InstallHost
 declare -A RepositoryDirectories
 RepositoryDirectories["intern"]=/export/reprepro/intern/doocs
