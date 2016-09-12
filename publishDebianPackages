@@ -54,6 +54,11 @@ for package in "${!package_buildcmd[@]}"; do
   TEMPFILE=`mktemp -p .`
   echo "#!/bin/bash -e" > $TEMPFILE
   echo "cd ${PackageArchive}" >> $TEMPFILE
+  echo "for p in ${PACKAGE_FILES_WILDCARDS_CHANGES}; do" >> $TEMPFILE
+  echo "  if [ ! -f \"\$p\" ]; then continue ; fi" >> $TEMPFILE
+  echo "  echo mv \"\$p\" ../old" >> $TEMPFILE
+  echo "  mv \"\$p\" ../old" >> $TEMPFILE
+  echo "done" >> $TEMPFILE
   echo "for p in ${PACKAGE_FILES_WILDCARDS_DEB}; do" >> $TEMPFILE
   echo "  if [ ! -f \"\$p\" ]; then continue ; fi" >> $TEMPFILE
   echo "  echo mv \"\$p\" ../old" >> $TEMPFILE
