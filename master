@@ -141,19 +141,20 @@ ask "Do you want to proceed with configuring and building the packages in the gi
 # gain root rights. This (likely) avoids the need to type the passwort later in the middle of the build step
 sudo echo "We have root rights now."
 
-# update the pbuilder image
-./updatePBuilder $distribution
-
 # configure and build packages
 TEMPFILE=`mktemp`
 declare -A package_buildcmd        # associative array: package name -> command to build the package
 for package in "${!package_list[@]}"; do
   echo ""
   echo "Configuring $package in version ${package_list[$package]} for ${distribution}..."
+  # update pbuilder chroot environment (needed for every package, since dependencies might be added)
+  ./updatePBuilder "$distribution"
+  # configure the package (possibly using just built dependencies)
   ./configureRelease "$package" "${package_list[$package]}" "$distribution" "$arch" | tee $TEMPFILE ; test ${PIPESTATUS[0]} -eq 0
   package_buildcmd[$package]=`tail -n1 $TEMPFILE`
   echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
   echo ""
+  # actually build the package
   echo "Building $package in version ${package_list[$package]} for ${distribution}..."
   ${package_buildcmd[$package]}
 done
