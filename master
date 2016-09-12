@@ -58,11 +58,11 @@ echo "distribution=${distribution}" >> master-control
 echo "declare -A package_buildcmd" >> master-control
 
 # check for local modifications in the DebianBuildVersions directory
-./checkIfBuildVersionsCommitted
-if [ $? -ne 0 ]; then
-  do_not_publish=1
-else
-  do_not_publish=0
+do_not_publish=0
+./checkIfBuildVersionsCommitted || do_not_publish=1
+if [ $do_not_publish == 1 ]; then
+  echo ""
+  sleep 2
 fi
 echo "do_not_publish=${do_not_publish}" >> master-control
 
