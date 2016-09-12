@@ -10,6 +10,24 @@ import tempfile
 import shutil
 import re
 
+# wrapper around e.g. debian.debian_support.PackageFile to catch exceptions and continue the loop
+class ExceptionHandlingIterator(object):
+    def __init__(self, iterable):
+        self._iter = iter(iterable)
+        self.handlers = []
+    def __iter__(self):
+        return self
+    def next(self):
+        try:
+            return self._iter.next()
+        except StopIteration as e:
+            raise e
+        except Exception as e:
+            for handler in self.handlers:
+                handler(e)
+            print("Error: "+str(e))
+            return self.next()
+
 # function for resolving dependencies from a Packages file
 # returns a dictionary: "name" -> "version"
 def resolveDeps(dependencies, filename):
@@ -19,7 +37,7 @@ def resolveDeps(dependencies, filename):
   dependency_versions = {}
 
   # search for dependencies
-  for Package in PackageFile:
+  for Package in ExceptionHandlingIterator(PackageFile):
     for dependency in dependencies:
       PackageAsDictionary = dict(Package)
       if dependency == PackageAsDictionary["Package"]:
@@ -378,14 +396,9 @@ if "lib" in hasPackages:
 # make rules file executable
 subprocess.call(["chmod", "+x", controldir+"/rules"])
 
-# commit the changes to git
-#os.chdir("DebianBuildVersions")
-#subprocess.call(["git", "add", "-a" , "."])
-#subprocess.call(["git", "commit", "-a" , "-m", "build "+str(build_number)+" of "+version_base_dir])
-#subprocess.call(["git", "push"])
-#os.chdir("..")
 print("")
-print("Note: committing and pushing to the DebianBuildVersions is not yet implemented. Please do not forget to do this manually, otherwise you risk clashing build versions!")
+print("Note: committing and pushing to the DebianBuildVersions is done by this script. Please run "+
+      "commitDebianBuildVersions before publishing any packages, otherwise you risk clashing build versions!")
 
 # output the command to build the package
 print("")
