@@ -55,9 +55,9 @@ debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION} --distrib
 
 # Now everything is prepared and we can actually build the package.
 # If you have a gpg signature you can remove the -us and -uc flags and sign the package.
-MIRRORLIST="deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main|deb [trusted=yes] file://${LOCAL_REPOS} ./"
-pdebuild -- --distribution ${DISTRIBUTION} --buildresult "${LOCAL_REPOS}"                            \
+MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ./|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main"
+pdebuild -- --distribution ${DISTRIBUTION} --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"   \
             --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} /dev /run/shm"      || exit 1
 echo ""
-echo "You can find the resulting debian packages in this directory: ${LOCAL_REPOS}"
+echo "You can find the resulting debian packages in this directory: ${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"
 

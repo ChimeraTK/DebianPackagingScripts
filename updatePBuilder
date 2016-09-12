@@ -32,12 +32,17 @@ if [ ! -f ${PBUILDER_IMAGE} ]; then
 fi
 
 # directory with local Debian repository and where the created packages should be placed
-LOCAL_REPOS="`pwd`/pbuilder-result"
-mkdir -p "${LOCAL_REPOS}"
+WD=`pwd`
+LOCAL_REPOS="${WD}/pbuilder-result"
+mkdir -p "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"
+cd "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"
+apt-ftparchive packages ./ > Packages
+cd "${LOCAL_REPOS}/dists/${DISTRIBUTION}"
+apt-ftparchive release main/binary-${ARCH} > Release
+cd "$WD"
 
-MIRRORLIST="deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main|deb [trusted=yes] file://${LOCAL_REPOS} ./"
-bash -c "cd ${LOCAL_REPOS} ; apt-ftparchive packages . > Packages"                        || exit 1
-sudo pbuilder --update --distribution ${DISTRIBUTION} --override-config --components "main universe" \
-              --othermirror "${MIRRORLIST}" --buildresult "${LOCAL_REPOS}"                           \
+MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ./|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main"
+sudo pbuilder --update --distribution ${DISTRIBUTION} --override-config --components "main universe"                  \
+              --othermirror "${MIRRORLIST}" --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"  \
               --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} /run/shm"         || exit 1
 

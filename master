@@ -55,6 +55,7 @@ shift
 # create the master control file
 touch master-control
 echo "distribution=${distribution}" >> master-control
+echo "arch=${arch}" >> master-control
 echo "declare -A package_buildcmd" >> master-control
 
 # check for local modifications in the DebianBuildVersions directory

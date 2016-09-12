@@ -2,12 +2,13 @@
 #
 # Script to validate the Debian packages built with the DebianPackagingScripts
 #
+WD=`pwd`
 
 declare -A config
 
 # function to extract a variable from a CONFIG file
 function getFromConfig() {  # arguments: package name, config variable; sets variable in environment ("-" repaces with "_")
-  CONFIG="../DebianBuildVersions/${1}/CONFIG"
+  CONFIG="${WD}/DebianBuildVersions/${1}/CONFIG"
   value=`grep "^${2}:" "${CONFIG}" | sed -e "s:^${2}\: *::"`
   name=`echo ${2} | sed -e "s|-|_|g"`
   config[$name]=$value
@@ -24,19 +25,15 @@ fi
 source master-control
 
 # preperations for running pbuilder later
-LOCAL_REPOS="`pwd`/pbuilder-result"
-bash -c "cd ${LOCAL_REPOS} ; apt-ftparchive packages . > Packages"                        || exit 1
-PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${distribution}.tgz"
-
-# check for local modifications in the DebianBuildVersions directory (just as a warning)
-./checkIfBuildVersionsCommitted || true
+LOCAL_REPOS="${WD}/pbuilder-result"
+PBUILDER_IMAGE="${WD}/pbuilder-base/base-${distribution}.tgz"
 
 # Check that there are debian packages and return an error if not
 if [ ! -d pbuilder-result ]; then
     echo "No pbuilder-result directory found. Run the master script first."
     exit 1
 fi
-cd pbuilder-result
+cd pbuilder-result/dists/${distribution}/main/binary-${arch}
 
 # global error flag, will be set in case of an error
 ERROR=0
@@ -57,7 +54,7 @@ for package in "${!package_buildcmd[@]}"; do
     
   # obtain so file version in two different ways and compare
   so_version_nopatch=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|-[^/].*/||' -e 's|/||'`
-  mdpconfig="../`echo ${package_buildcmd[$package]} | sed -e 's|^./makeDebianPackage ||'`/makeDebianPackage.config"
+  mdpconfig="${WD}/`echo ${package_buildcmd[$package]} | sed -e 's|^./makeDebianPackage ||'`/makeDebianPackage.config"
   so_version="`( source $mdpconfig ; echo $SOVERSION )`"
   if [ -z "`echo $so_version | grep ^$so_version_nopatch`" ]; then
     echo "The .so file version obtained from the makeDebianPackage.config file and from the master-control file do not match."
@@ -161,7 +158,7 @@ for package in "${!package_buildcmd[@]}"; do
         if [[ "${dep_split[0]}" == *-dev ]]; then
           # dependency on a "-dev" package: check if this is a package maintaned by these scripts
           dep_packname=`echo "${dep_split[0]}" | sed -e 's|^lib||' -e 's|-dev$||'`
-          if [ -d "../DebianBuildVersions/${dep_packname}" ]; then
+          if [ -d "${WD}/DebianBuildVersions/${dep_packname}" ]; then
             # check if the version range is properly specified
             if [ $isInVersionRange == 0 ]; then    # first of the two entries for this dependency
               isInVersionRange=1
@@ -237,15 +234,18 @@ if [ $nfiles -ne $nDebianFilesChecked ]; then
   ERROR=1
 fi
 
+# update the pbuilder chroot environment to take into account the latest packages
+${WD}/updatePBuilder "$distribution"
+
 # try to install all the debian packages in a pbuilder environment
 PACKAGE_LIST=`ls *.deb | sed -e 's|_.*$||'`
 SCRIPT=`mktemp -p ${LOCAL_REPOS}`  # must be in the pbuilder-result directory, since it is bind-mounted in the pbuilder environment
 echo "#!/bin/bash -e" > $SCRIPT
 echo "apt-get install -y `echo $PACKAGE_LIST`" >> $SCRIPT
 
-MIRRORLIST="deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main|deb [trusted=yes] file://${LOCAL_REPOS} ./"
-sudo pbuilder --execute --distribution ${DISTRIBUTION} --override-config --components "main universe" \
-              --othermirror "${MIRRORLIST}" --buildresult "${LOCAL_REPOS}"                           \
+MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ./|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main"
+sudo pbuilder --execute --distribution ${distribution} --override-config --components "main universe" \
+              --othermirror "${MIRRORLIST}"                                                           \
               --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} /run/shm" "${SCRIPT}"
 if [ $? -ne 0 ]; then
   echo "*** INSTALLING THE PACKAGES FAILED"
