@@ -108,12 +108,12 @@ for package in "${!package_buildcmd[@]}"; do
     if [ $subpackage == "lib" ]; then
 
       # check for presence of .so file with the right name and version number in the pacakge
-      so_file=`dpkg -c $debname | grep "\./usr/lib/lib${package}.so.${so_version}$"`
+      so_file=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}.so.${so_version}$"`
       if [ -z "$so_file" ]; then
         echo "Cannot find the .so file in the library pacakge by the name: ./usr/lib/lib${package}.so.${so_version}"
         ERROR=1
       fi
-      so_link=`dpkg -c $debname | grep "\./usr/lib/lib${package}.so.${so_version_nopatch} -> lib${package}.so.${so_version}$"`
+      so_link=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}.so.${so_version_nopatch} -> lib${package}.so.${so_version}$"`
       if [ -z "$so_link" ]; then
         echo "Cannot find the link to the .so file in the library pacakge by the name: ./usr/lib/lib${package}.so.${so_version_nopatch}"
         ERROR=1
@@ -143,9 +143,9 @@ for package in "${!package_buildcmd[@]}"; do
       fi
 
       # check for presence of so link
-      so_link=`dpkg -c $debname | grep "\./usr/lib/lib${package}.so -> lib${package}.so.${so_version_nopatch}$"`
+      so_link=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}.so -> lib${package}.so.${so_version_nopatch}$"`
       if [ -z "$so_link" ]; then
-        echo "Cannot find the link to the .so file in the library pacakge by the name: ./usr/lib/lib${package}.so.${so_version_nopatch}"
+        echo "Cannot find the link to the .so file in the dev pacakge by the name: ./usr/lib/lib${package}.so"
         ERROR=1
       fi
 
