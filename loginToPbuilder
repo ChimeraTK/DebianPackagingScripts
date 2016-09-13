@@ -1,0 +1,32 @@
+#!/bin/bash -e
+
+# Shell script to log into the pbuilder chroot environment (needed for debugging purposes only)
+
+# create directory holding pbuilder images
+WD=`realpath $(dirname "$0")`
+mkdir -p "${WD}/pbuilder-base"
+
+# Parse command line arguments
+if [ -z "$1" ] ; then
+  # print usage
+  echo "Usage:"
+  echo "  ./loginToPbuilder <distributionCodeName>"
+  echo "     - Log in to the image for the given distribution."
+  exit 1
+fi
+DISTRIBUTION="$1"
+
+PBUILDER_IMAGE="${WD}/pbuilder-base/base-${DISTRIBUTION}.tgz"
+if [ ! -f ${PBUILDER_IMAGE} ]; then
+  echo "The selected distribution was not yet initialised."
+  exit 1
+fi
+
+${WD}/updateLocalRepos
+LOCAL_REPOS=${WD}/pbuilder-result
+
+MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main"
+sudo pbuilder --login --distribution ${DISTRIBUTION} --override-config --components "main universe"                  \
+              --othermirror "${MIRRORLIST}"  \
+              --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}"         || exit 1
+
