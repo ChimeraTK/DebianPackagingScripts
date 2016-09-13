@@ -27,16 +27,38 @@ else
   DISTRIBUTION=$1
 fi
 
+# form the file name of the image
 PBUILDER_IMAGE="${WD}/pbuilder-base/base-${DISTRIBUTION}.tgz"
+
+# build the mirror list including the local repository
+LOCAL_REPOS=${WD}/pbuilder-result
+MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main"
+
+# if image does not exist, create it first
 if [ ! -f ${PBUILDER_IMAGE} ]; then
   sudo pbuilder --create --distribution $DISTRIBUTION --basetgz "${PBUILDER_IMAGE}" || exit 1
+
+  # Make sure the local package repository gets priority. Not sure how this works and if it's realy correct. Found this
+  # solution here: http://askubuntu.com/questions/135339/assign-highest-priority-to-my-local-repository
+  # Also fix the problem that /run/shm is a symlink to /dev/shm and will be incorrectly mounted by pbuilder.
+  SCRIPT=`mktemp -p ${LOCAL_REPOS}`  # must be in the pbuilder-result directory, since it is bind-mounted in the pbuilder environment
+  echo "#!/bin/bash -e" > $SCRIPT
+  echo "echo 'Package: *' > /etc/apt/preferences" >> $SCRIPT
+  echo "echo 'Pin: origin \"\"' >> /etc/apt/preferences" >> $SCRIPT
+  echo "echo 'Pin-Priority: 1001' >> /etc/apt/preferences" >> $SCRIPT
+  echo "rm /run/shm" >> $SCRIPT
+  echo "mkdir /run/shm" >> $SCRIPT
+  sudo pbuilder --execute --distribution ${distribution} --override-config --components "main universe" \
+                --othermirror "${MIRRORLIST}"  --save-after-exec                                        \
+                --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}" "${SCRIPT}"
 fi
 
+# update
 ${WD}/updateLocalRepos
-LOCAL_REPOS=${WD}/pbuilder-result
 
-MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main"
+# update the pbuilder chroot environment
 sudo pbuilder --update --distribution ${DISTRIBUTION} --override-config --components "main universe"                  \
               --othermirror "${MIRRORLIST}"  \
               --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}"         || exit 1
 
+echo "pbuilder chroot environment successfully updated."
