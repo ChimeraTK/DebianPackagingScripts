@@ -1,4 +1,5 @@
 #!/bin/bash -e
+cd $(dirname "$0")
 
 # master shell script for creating debian packages for multiple packages, with proper reverse-dependency checking
 # and other safetly checks.

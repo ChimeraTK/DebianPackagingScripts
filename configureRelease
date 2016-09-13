@@ -191,7 +191,7 @@ subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+code
 subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
 
 # update the locake package repository
-subprocess.call(['bash -c "mkdir -p pbuilder-result ; cd pbuilder-result ; apt-ftparchive packages . > Packages"'], shell=True)
+subprocess.call(['./updateLocalRepos'])
 
 # parse all sources
 dependency_versions_main = resolveDeps(dependencies, "Packages.MAIN")

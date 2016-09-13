@@ -2,7 +2,8 @@
 #
 # Script to validate the Debian packages built with the DebianPackagingScripts
 #
-WD=`pwd`
+WD=`realpath $(dirname "$0")`
+cd "$WD"
 
 declare -A config
 
@@ -243,7 +244,7 @@ SCRIPT=`mktemp -p ${LOCAL_REPOS}`  # must be in the pbuilder-result directory, s
 echo "#!/bin/bash -e" > $SCRIPT
 echo "apt-get install -y `echo $PACKAGE_LIST`" >> $SCRIPT
 
-MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ./|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main"
+MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${distribution} main|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${distribution} main"
 sudo pbuilder --execute --distribution ${distribution} --override-config --components "main universe" \
               --othermirror "${MIRRORLIST}"                                                           \
               --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} /run/shm" "${SCRIPT}"

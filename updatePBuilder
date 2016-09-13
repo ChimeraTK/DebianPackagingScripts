@@ -3,7 +3,8 @@
 # Shell script to create or update the pbuilder image used in makeDebianPackage
 
 # create directory holding pbuilder images
-mkdir -p "`pwd`/pbuilder-base"
+WD=`realpath $(dirname "$0")`
+mkdir -p "${WD}/pbuilder-base"
 
 # Parse command line arguments
 if [ -z "$1" ] ; then
@@ -26,23 +27,16 @@ else
   DISTRIBUTION=$1
 fi
 
-PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${DISTRIBUTION}.tgz"
+PBUILDER_IMAGE="${WD}/pbuilder-base/base-${DISTRIBUTION}.tgz"
 if [ ! -f ${PBUILDER_IMAGE} ]; then
   sudo pbuilder --create --distribution $DISTRIBUTION --basetgz "${PBUILDER_IMAGE}" || exit 1
 fi
 
-# directory with local Debian repository and where the created packages should be placed
-WD=`pwd`
-LOCAL_REPOS="${WD}/pbuilder-result"
-mkdir -p "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"
-cd "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"
-apt-ftparchive packages ./ > Packages
-cd "${LOCAL_REPOS}/dists/${DISTRIBUTION}"
-apt-ftparchive release main/binary-${ARCH} > Release
-cd "$WD"
+${WD}/updateLocalRepos
+LOCAL_REPOS=${WD}/pbuilder-result
 
-MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ./|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main"
+MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main"
 sudo pbuilder --update --distribution ${DISTRIBUTION} --override-config --components "main universe"                  \
-              --othermirror "${MIRRORLIST}" --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"  \
+              --othermirror "${MIRRORLIST}"  \
               --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} /run/shm"         || exit 1
 

@@ -1,0 +1,22 @@
+#!/bin/bash -e
+
+# script to update the local package repository
+
+WD=`realpath $(dirname "$0")`
+source "${WD}/master-control"
+
+LOCAL_REPOS="${WD}/pbuilder-result"
+mkdir -p "${LOCAL_REPOS}/dists/${distribution}/main/binary-${arch}"
+if [ "${arch}" == "amd64" ]; then
+  mkdir -p "${LOCAL_REPOS}/dists/${distribution}/main/binary-i386"
+fi
+
+cd "${LOCAL_REPOS}"
+apt-ftparchive packages "dists/${distribution}/main/binary-${arch}" > "dists/${distribution}/main/binary-${arch}/Packages"
+apt-ftparchive release dists/${distribution}/main/binary-${arch} > "dists/${distribution}/Release"
+
+if [ "${arch}" == "amd64" ]; then
+  mkdir -p "${LOCAL_REPOS}/dists/${distribution}/main/binary-i386"
+  touch "${LOCAL_REPOS}/dists/${distribution}/main/binary-i386/Packages"
+fi
+
