@@ -47,8 +47,10 @@ if [ ! -f ${PBUILDER_IMAGE} ]; then
   echo "echo 'Package: *' > /etc/apt/preferences" >> $SCRIPT
   echo "echo 'Pin: origin \"\"' >> /etc/apt/preferences" >> $SCRIPT
   echo "echo 'Pin-Priority: 1001' >> /etc/apt/preferences" >> $SCRIPT
-  echo "rm /run/shm" >> $SCRIPT
-  echo "mkdir /run/shm" >> $SCRIPT
+  echo "if [ -L /run/shm ]; then" >> $SCRIPT
+  echo "  rm /run/shm" >> $SCRIPT
+  echo "  mkdir /run/shm" >> $SCRIPT
+  echo "fi" >> $SCRIPT
   sudo pbuilder --execute --distribution ${distribution} --override-config --components "main universe" \
                 --othermirror "${MIRRORLIST}"  --save-after-exec                                        \
                 --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}" "${SCRIPT}"
