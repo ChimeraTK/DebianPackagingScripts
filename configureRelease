@@ -197,7 +197,7 @@ subprocess.call(['./updateLocalRepos'])
 dependency_versions_main = resolveDeps(dependencies, "Packages.MAIN")
 dependency_versions_universe = resolveDeps(dependencies, "Packages.UNIVERSE")
 dependency_versions_desy = resolveDeps(dependencies, "Packages.DESY")
-dependency_versions_local = resolveDeps(dependencies, "pbuilder-result/Packages")
+dependency_versions_local = resolveDeps(dependencies, "pbuilder-result/dists/"+codename+"/main/binary-"+arch+"/Packages")
 
 # merge the found dependencies with priority, and check for unfound dependencies
 print("")
