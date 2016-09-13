@@ -32,6 +32,7 @@ PBUILDER_IMAGE="${WD}/pbuilder-base/base-${DISTRIBUTION}.tgz"
 
 # build the mirror list including the local repository
 LOCAL_REPOS=${WD}/pbuilder-result
+mkdir -p "${LOCAL_REPOS}"
 MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main"
 
 # if image does not exist, create it first
