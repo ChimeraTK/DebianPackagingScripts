@@ -38,12 +38,7 @@ if [ -e "debian_package" ]; then
   NEED_CLEANUP=1
 fi
 if [ "$NEED_CLEANUP" == "1" ]; then
-  echo -n "Do you want to remove any leftovers from the previous (or current!?) run and continue (y/N)? "
-  read answer
-  if [ "$answer" != "y" -a "$answer" != "Y" ]; then
-    echo "Aborted."
-    exit 1
-  fi
+  ask "Do you want to remove any leftovers from the previous (or current!?) run and continue (y/N)?"
   rm -rf pbuilder-result debian_package master-control
   echo ""
 fi
@@ -63,8 +58,7 @@ echo "declare -A package_buildcmd" >> master-control
 do_not_publish=0
 ./checkIfBuildVersionsCommitted || do_not_publish=1
 if [ $do_not_publish == 1 ]; then
-  echo ""
-  sleep 2
+  ask "Continue anyway (y/N)?" || ( rm master-control ; exit 1 )
 fi
 echo "do_not_publish=${do_not_publish}" >> master-control
 
