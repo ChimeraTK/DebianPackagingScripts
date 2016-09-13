@@ -13,7 +13,7 @@ fi
 
 cd "${LOCAL_REPOS}"
 apt-ftparchive packages "dists/${distribution}/main/binary-${arch}" > "dists/${distribution}/main/binary-${arch}/Packages"
-apt-ftparchive release dists/${distribution}/main/binary-${arch} > "dists/${distribution}/Release"
+apt-ftparchive release "dists/${distribution}/main/binary-${arch}/Packages" > "dists/${distribution}/Release"
 
 if [ "${arch}" == "amd64" ]; then
   mkdir -p "${LOCAL_REPOS}/dists/${distribution}/main/binary-i386"
