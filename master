@@ -16,6 +16,18 @@ function ask() {
   fi
 }
 
+# function to check if an array (first parameter - just the name without $) contains a value (second parameter)
+function hasValue() {
+  arrayname=$1[@]
+  for val in "${!arrayname}"; do
+    if [ "$val" == "$2" ]; then
+      return 0  # True
+    fi
+  done
+  return 1  # False
+}
+
+
 # check command line arguments
 if [ $# -lt 3 -o $(($#%2)) -eq 0 ]; then
   echo "Usage: ./master <distribution_codename> <package_name1> <package_version1> [<package_name2> <package_version2>] [...]"
@@ -98,36 +110,43 @@ for package in "${!package_list[@]}"; do
 done
 
 # sort package list so dependencies are built first
+declare -a package_build_order  # non-associative array so we have a well-defined order
+for package in "${!package_list[@]}"; do    # fill array initially with package names from the list
+  package_build_order+=("$package")
+done
 sorting_done=0
 while [ "$sorting_done" == "0" ]; do
-  declare -A package_list_sort
+  declare -a package_build_order_sort
   sorting_done=1
-  for package in "${!package_list[@]}"; do
+  for package in "${package_build_order[@]}"; do
     # add the dependencies of the package to the new list, if not yet present
     DEPENDENCIES=`grep "^Dependencies: " DebianBuildVersions/$package/CONFIG | sed -e 's|^Dependencies: ||'`
     for dependency in $DEPENDENCIES; do
-      if [ -n "${package_list[$dependency]}" -a -z "${package_list_sort[$dependency]}" ]; then
-        sorting_done=0
-        package_list_sort[$dependency]="${package_list[$dependency]}"
+      dependency_packagename=`echo $dependency | sed -e 's|^lib||' | sed -e 's|-dev$||'`
+      if hasValue package_build_order "$dependency_packagename" ; then
+        if ! hasValue package_build_order_sort "$dependency_packagename" ; then
+          sorting_done=0
+          package_build_order_sort+=("$dependency_packagename")
+        fi
       fi
     done
     # add the package itself to the new list, if not yet present
-    if [ -z "${package_list_sort[$package]}" ]; then
-      package_list_sort[$package]="${package_list[$package]}"
+    if ! hasValue package_build_order_sort "$package" ; then
+      package_build_order_sort+=("$package")
     fi
   done
   # move the new list into the old list("${a[@]}")
-  unset package_list
-  declare -A package_list
-  for package in "${!package_list_sort[@]}"; do
-    package_list[$package]=${package_list_sort[$package]}
+  unset package_build_order
+  declare -a package_build_order
+  for package in "${package_build_order_sort[@]}"; do
+    package_build_order+=("$package")
   done
-  unset package_list_sort
+  unset package_build_order_sort
 done
 
 # output list of packages to be build
 echo "The following packages will be build (in that order):"
-for package in "${!package_list[@]}"; do
+for package in "${package_build_order[@]}"; do
   echo "$package ${package_list[$package]}"
 done
 
@@ -140,7 +159,7 @@ sudo echo "We have root rights now."
 # configure and build packages
 TEMPFILE=`mktemp`
 declare -A package_buildcmd        # associative array: package name -> command to build the package
-for package in "${!package_list[@]}"; do
+for package in "${package_build_order[@]}"; do
   echo ""
   echo "Configuring $package in version ${package_list[$package]} for ${distribution}..."
   # update pbuilder chroot environment (needed for every package, since dependencies might be added)
