@@ -170,6 +170,13 @@ print("Epoch version: "+epoch)
 print("Distribution: "+codename)
 print("Architecture: "+arch)
 
+# check if we are building a doocs server
+isDoocsServer=False
+if "doocs-bin" in hasPackages:
+  hasPackages.remove("doocs-bin")
+  hasPackages.append("bin")
+  isDoocsServer=True
+
 # parse lists of dependencies
 dependencies = config["Dependencies"].split(" ")
 if "dev" in hasPackages:
@@ -390,6 +397,15 @@ if "Disable-tests" in config and config["Disable-tests"] == "yes":
   content = open(controldir+"/rules").read()
   for package in hasPackages:
     content += open("templates/rules.notests").read()
+  f = open(controldir+"/rules","w")
+  f.write(content)
+  f.close()
+
+# if building a doocs server, change the install prefix
+if isDoocsServer == True:
+  content = open(controldir+"/rules").read()
+  for package in hasPackages:
+    content += open("templates/rules.doocs-bin").read()
   f = open(controldir+"/rules","w")
   f.write(content)
   f.close()
