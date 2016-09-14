@@ -385,6 +385,15 @@ f.write(content)
 f.close()
 subprocess.call(["rm "+controldir+"/control.*"], shell=True)
 
+# add override parts to the rules file, if needed
+if "Disable-tests" in config and config["Disable-tests"] == "yes":
+  content = open(controldir+"/rules").read()
+  for package in hasPackages:
+    content += open("templates/rules.notests").read()
+  f = open(controldir+"/rules","w")
+  f.write(content)
+  f.close()
+
 # rename files which need a different name
 os.rename(controldir+"/copyright."+config["License"], controldir+"/copyright")
 if len(hasPackages) > 1:
