@@ -422,6 +422,13 @@ if "lib" in hasPackages:
 # make rules file executable
 subprocess.call(["chmod", "+x", controldir+"/rules"])
 
+# copy postinst and postrm scripts if existent
+if os.path.isfile("DebianBuildVersions/"+project+"/postinst"):
+  shutil.copy("DebianBuildVersions/"+project+"/postinst", controldir+"/postinst");
+if os.path.isfile("DebianBuildVersions/"+project+"/postrm"):
+  shutil.copy("DebianBuildVersions/"+project+"/postrm", controldir+"/postrm");
+
+# print a warning that the changes to DebianBuildVersions are not published by this script
 print("")
 print("Note: committing and pushing to the DebianBuildVersions is done by this script. Please run "+
       "commitDebianBuildVersions before publishing any packages, otherwise you risk clashing build versions!")
