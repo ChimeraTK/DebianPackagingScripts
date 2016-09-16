@@ -95,6 +95,11 @@ config["Recommends-dev"] = ""
 config["Recommends-bin"] = ""
 config["Recommends-doc"] = ""
 
+config["Provides-lib"] = ""
+config["Provides-dev"] = ""
+config["Provides-bin"] = ""
+config["Provides-doc"] = ""
+
 # check if DebianBuildVersions is checked out
 if not os.path.isdir("DebianBuildVersions/.git"):
   print("DebianBuildVersions has not been checked out.")

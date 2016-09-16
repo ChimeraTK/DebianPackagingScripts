@@ -6,6 +6,7 @@ Replaces: #Replaces-lib#
 Recommends: #Recommends-lib#
 Suggests: #Suggests-lib#
 Enhances: #Enhances-lib#
+Provides: #Provides-lib#
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: #Description-lib#
 

@@ -6,6 +6,7 @@ Replaces: #Replaces-doc#
 Recommends: #Recommends-doc#
 Suggests: #Suggests-doc#
 Enhances: #Enhances-doc#
+Provides: #Provides-doc#
 Depends: #Package-name-dev#
 Description: #Description-doc#
 

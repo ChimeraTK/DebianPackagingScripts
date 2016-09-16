@@ -6,6 +6,7 @@ Replaces: #Replaces-dev#
 Recommends: #Recommends-dev#
 Suggests: #Suggests-dev#
 Enhances: #Enhances-dev#
+Provides: #Provides-dev#
 Depends: #Package-name-lib#, #dev-depends#
 Description: #Description-dev#
 
