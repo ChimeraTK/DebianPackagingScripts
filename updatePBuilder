@@ -39,9 +39,11 @@ MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [tr
 if [ ! -f ${PBUILDER_IMAGE} ]; then
   sudo pbuilder --create --distribution $DISTRIBUTION --basetgz "${PBUILDER_IMAGE}" || exit 1
 
-  # Make sure the local package repository gets priority. Not sure how this works and if it's realy correct. Found this
-  # solution here: http://askubuntu.com/questions/135339/assign-highest-priority-to-my-local-repository
-  # Also fix the problem that /run/shm is a symlink to /dev/shm and will be incorrectly mounted by pbuilder.
+  # Execute a script inside the pbuilder chroot environment to set it up properly for our needs:
+  # - Make sure the local package repository gets priority. Not sure how this works and if it's realy correct. Found
+  #   this solution here: http://askubuntu.com/questions/135339/assign-highest-priority-to-my-local-repository
+  # - Also fix the problem that /run/shm is a symlink to /dev/shm and will be incorrectly mounted by pbuilder.
+  # - add the user doocsadm which is needed for the doocs server packages (and their postinst scripts)
   SCRIPT=`mktemp -p ${LOCAL_REPOS}`  # must be in the pbuilder-result directory, since it is bind-mounted in the pbuilder environment
   echo "#!/bin/bash -e" > $SCRIPT
   echo "echo 'Package: *' > /etc/apt/preferences" >> $SCRIPT
@@ -51,6 +53,8 @@ if [ ! -f ${PBUILDER_IMAGE} ]; then
   echo "  rm /run/shm" >> $SCRIPT
   echo "  mkdir /run/shm" >> $SCRIPT
   echo "fi" >> $SCRIPT
+  echo "groupadd doocsadm" >> $SCRIPT
+  echo "useradd -m -g doocsadm doocsadm" >> $SCRIPT
   sudo pbuilder --execute --distribution ${distribution} --override-config --components "main universe" \
                 --othermirror "${MIRRORLIST}"  --save-after-exec                                        \
                 --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}" "${SCRIPT}"
