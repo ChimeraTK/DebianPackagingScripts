@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+WD=`pwd`
+
 # load configuration
 source config.sh
 
@@ -12,20 +14,20 @@ source master-control
 PackageArchive=`eval echo $PackageArchive`
 
 # check for local modifications in the DebianBuildVersions directory
-./checkIfBuildVersionsCommitted || exit 1
+${WD}/checkIfBuildVersionsCommitted || exit 1
 
 # Check that there are debian packages and return an error if not
 if [ ! -d pbuilder-result ]; then
     echo "No pbuilder-result directory found. Run the master script first."
     exit 1
 fi
-cd pbuilder-result
+cd ${WD}/pbuilder-result/dists/${distribution}/main/binary-${arch}
 
 # loop over all packages in the list (note: this is not the list of .deb files but the list of projects!)
 for package in "${!package_buildcmd[@]}"; do
 
   # get the path to the control file from the build command (argument to makeDebianPackage)
-  BUILD_CONTROL_FILE=`echo ${package_buildcmd[$package]} | sed -e 's|^./makeDebianPackage |../|'`/control
+  BUILD_CONTROL_FILE=`echo ${package_buildcmd[$package]} | sed -e "s|^./makeDebianPackage |${WD}/|"`/control
   
   # obtain list of package names from the control file and form wildcards to match the deb files
   TEMPFILE=`mktemp`
@@ -44,7 +46,7 @@ for package in "${!package_buildcmd[@]}"; do
   
 
   # obtain content of Target-repositories variable from CONFIG file
-  TARGET_REPOSITORIES=`grep '^Target-repositories: ' ../DebianBuildVersions/${package}/CONFIG | sed -e 's/^Target-repositories: //'`
+  TARGET_REPOSITORIES=`grep '^Target-repositories: ' ${WD}/DebianBuildVersions/${package}/CONFIG | sed -e 's/^Target-repositories: //'`
 
   # Step 1: Remove an older version of the package
   # -- from the package archive
@@ -93,6 +95,6 @@ for package in "${!package_buildcmd[@]}"; do
 done
 
 # Everything installed: remove the entire pbuilder-result directory
-cd ..
+cd ${WD}
 rm -rf pbuilder-result master-control debian_package
 
