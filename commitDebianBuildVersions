@@ -32,6 +32,19 @@ if [ $do_not_publish -eq 0 ]; then
 
   # execute the commit
   git commit -m "automated commit by commitDebianBuildVersions script" || true
+  
+  # pull potential changes
+  echo "=========================================================================================="
+  echo " Now pulling potential changes from the DebianBuildVersions repository."
+  echo " If you get conflicts, do NOT TRY TO MERGE THEM!"
+  echo " In this case, someone else probably built the same package(s) as you just did."
+  echo " To resolve this problem, delete your local working copy and start all over again (after"
+  echo " talking to whoever worked in parallel!)"
+  echo "=========================================================================================="
+  git pull --no-edit || exit 1
+  echo "=========================================================================================="
+  echo " Everything went well obviously, so we proceed with publishing our build versions."
+  echo "=========================================================================================="
 
   # push the commit
   git push ${DebianBuildVersionsURI}
