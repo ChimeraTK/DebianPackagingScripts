@@ -24,7 +24,7 @@ def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies
           version = ""
           for version_part in PackageAsDictionary['Version'].split("."):
             version += version_part.split(codename)[0] + "."
-          version = version[:-2]   # remove the trailing dot and dash
+          version = version[:-1]   # remove the trailing dot
           # add the found package to the list
           ReverseDependencies.append(PackageAsDictionary['Package']+' '+version)
           # recursive search: find packages depending on the found package as well
