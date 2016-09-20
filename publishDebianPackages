@@ -23,8 +23,18 @@ if [ ! -d pbuilder-result ]; then
 fi
 cd ${WD}/pbuilder-result/dists/${distribution}/main/binary-${arch}
 
-# loop over all packages in the list (note: this is not the list of .deb files but the list of projects!)
-for package in "${!package_buildcmd[@]}"; do
+# check that none of the packages already exists in the repositories
+wget -q "http://doocspkgs.desy.de/pub/doocs/dists/${distribution}/main/binary-${arch}/Packages" -O "${WD}/Packages.DESY"
+for debfile in *.deb ; do
+  if [ -n "`grep \"$debfile\" \"${WD}/Packages.DESY\"`" ]; then
+    echo "The package $debfile is currently already in the Debian repository. Publication is not allowed!"
+    echo "Probably someone else published packages in parallel with you. In this case, delete the local changes in the DebianBuildVersions repository and start the entire package building process from the beginnin!"
+    exit 1
+  fi
+done
+
+# actually perform the installation of each package
+for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the list (note: this is *not* the list of .deb files but the list of projects!)
 
   # get the path to the control file from the build command (argument to makeDebianPackage)
   BUILD_CONTROL_FILE=`echo ${package_buildcmd[$package]} | sed -e "s|^./makeDebianPackage |${WD}/|"`/control
