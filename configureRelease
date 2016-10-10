@@ -69,6 +69,7 @@ else:
 # preset optional config variables
 config = {}
 config["Dependencies-bin"] = ""
+config["Install-additional-pattern-dev"] = ""
 
 config["Conflicts-lib"] = ""
 config["Conflicts-dev"] = ""

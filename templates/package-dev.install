@@ -2,3 +2,4 @@ usr/bin/*-config
 usr/lib/lib*.so
 usr/include/*
 usr/share/cmake*
+#Install-additional-pattern-dev#
