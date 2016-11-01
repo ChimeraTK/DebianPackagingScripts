@@ -1,0 +1,245 @@
+#!/bin/bash
+#
+# Script to check the consistency of a single package
+#
+package="$1"
+if [ -z "$package" ]; then
+  echo "Usage: ./checkPackageConsistency <nameOfPackage>"
+  echo "nameOfPackage must be one of the package names defined in the DebianBuildVersions repository and must have been built already prior to running this script."
+  exit 1
+fi
+
+WD=`realpath $(dirname "$0")`
+cd "$WD"
+
+declare -A config
+
+# function to extract a variable from a CONFIG file
+function getFromConfig() {  # arguments: package name, config variable; sets variable in environment ("-" repaces with "_")
+  CONFIG="${WD}/DebianBuildVersions/${1}/CONFIG"
+  value=`grep "^${2}:" "${CONFIG}" | sed -e "s:^${2}\: *::"`
+  name=`echo ${2} | sed -e "s|-|_|g"`
+  config[$name]=$value
+}
+
+# load configuration
+source config.sh
+
+# load master-control file
+if [ ! -f master-control ]; then
+    echo "No master_control file found. Run the master script first."
+    exit 1
+fi
+source master-control
+
+# preperations for running pbuilder later
+LOCAL_REPOS="${WD}/pbuilder-result"
+PBUILDER_IMAGE="${WD}/pbuilder-base/base-${distribution}.tgz"
+
+# Check that there are debian packages and return an error if not
+if [ ! -d pbuilder-result ]; then
+    echo "No pbuilder-result directory found. Run the master script first."
+    exit 1
+fi
+cd pbuilder-result/dists/${distribution}/main/binary-${arch}
+
+echo "Checking package ${package}..."
+
+# obtain list of sub-packages from the CONFIG file
+getFromConfig $package "Has-packages"
+
+# obtain list of dependencies from the CONFIG file
+getFromConfig $package "Dependencies"
+  
+# obtain epoch version as part of the Debian package name
+epoch_version=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|-[^/].*/||' -e 's|/|-|' -e 's|\.|-|'`
+  
+# obtain so file version in two different ways and compare
+so_version_nopatch=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|-[^/].*/||' -e 's|/||'`
+mdpconfig="${WD}/`echo ${package_buildcmd[$package]} | sed -e 's|^./makeDebianPackage ||'`/makeDebianPackage.config"
+so_version="`( source $mdpconfig ; echo $SOVERSION )`"
+if [ -z "`echo $so_version | grep ^$so_version_nopatch`" ]; then
+  echo "The .so file version obtained from the makeDebianPackage.config file and from the master-control file do not match."
+  echo "The so version (incl. patch level) from the makeDebianPackage.config is: $so_version"
+  echo "The so version (excl. patch level) from the master-control file is: $so_version_nopatch"
+  ERROR=1
+fi
+
+# check if there is a lib sub-pacakge, in which case we assume a library package
+is_library=0
+package_prefix=""
+if [ -n "`echo \" ${config[Has_packages]} \" | grep \" lib \"`" ]; then
+  is_library=1
+  package_prefix="lib"
+fi
+
+# count number of files checked across calles to this script (needed for the vaildation script)
+nDebianFilesChecked=`cat "${LOCAL_REPOS}/nDebianFilesChecked.txt"`
+
+# loop over the sub-packages
+for subpackage in ${config[Has_packages]} ; do
+  echo " -> subpackage: $subpackage"
+
+  # get name from config, if specified
+  getFromConfig $package "Package-name-$subpackage"
+  name=${config[Package_name_${subpackage}]}
+  
+  # no name specified in the config: build it
+  if [ -z "${name}" ]; then
+    package_suffix=""
+    if [ $subpackage == "dev" -o $subpackage == "doc" ]; then
+      package_suffix="-$subpackage"
+    else
+      package_suffix="${epoch_version}"
+    fi
+    name=${package_prefix}${package}${package_suffix}
+  fi
+
+  # check if there is exacty one .deb file per subpackage
+  nfiles=`ls ${name}_*.deb 2>/dev/null | wc -l`
+  if [ $nfiles -gt 1 ]; then
+    echo "Too many .deb files for package: $name"
+    ERROR=1
+  elif [ $nfiles -lt 1 ]; then
+    echo "Missing .deb file for package: $name"
+    ERROR=1
+  fi
+  
+  # sub-package specific tests:
+  debname=`echo ${name}_*.deb`
+  if [ $subpackage == "lib" ]; then
+
+    # check for presence of .so file with the right name and version number in the pacakge
+    so_file=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}.so.${so_version}$"`
+    if [ -z "$so_file" ]; then
+      echo "Cannot find the .so file in the library pacakge by the name: ./usr/lib/lib${package}.so.${so_version}"
+      ERROR=1
+    fi
+    so_link=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}.so.${so_version_nopatch} -> lib${package}.so.${so_version}$"`
+    if [ -z "$so_link" ]; then
+      echo "Cannot find the link to the .so file in the library pacakge by the name: ./usr/lib/lib${package}.so.${so_version_nopatch}"
+      ERROR=1
+    fi
+
+  elif [ $subpackage == "dev" ]; then
+
+    # check for presence of include files
+    n_include_files=`dpkg -c $debname | grep "\./usr/include/" | wc -l`
+    if [ "$n_include_files" -lt 2 ]; then   # 2 is correct since directories (like /usr/include itself) are counted as well
+      echo "No include files found in the dev package!"
+      ERROR=1
+    fi
+
+    # check for presence of -config script
+    n_config_files=`dpkg -c $debname | grep "\./usr/bin/.*-config" | wc -l`
+    if [ "$n_config_files" -ne 1 ]; then
+      echo "Did not find the config script required for a dev package!"
+      ERROR=1
+    fi
+
+    # check for presence of cmake find package macro
+    n_config_files=`dpkg -c $debname | grep "\./usr/share/cmake-.*/Modules/Find.*\.cmake" | wc -l`
+    if [ "$n_config_files" -ne 1 ]; then
+      echo "Did not find the cmake find_package macro!"
+      ERROR=1
+    fi
+
+    # check for presence of so link
+    so_link=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}.so -> lib${package}.so.${so_version_nopatch}$"`
+    if [ -z "$so_link" ]; then
+      echo "Cannot find the link to the .so file in the dev pacakge by the name: ./usr/lib/lib${package}.so"
+      ERROR=1
+    fi
+
+    # read "Depends:" line from dpkg -I output and parse it into an array (split by commas)
+    temp=`dpkg -I $debname | grep '^ Depends: ' | sed -e 's|^ Depends: ||'`
+    IFS=',' read -r -a dpkg_depends <<< "$temp"
+    # loop over dependencies
+    haveFoundOurLib=0   # will be set if the dev package depends on our lib package
+    isInVersionRange=0  # will be set if the found dependency is a package maintained by these scripts and a second
+                        # entry for the same dependency is expected next (to describe an allowed version range)
+    for dep in "${dpkg_depends[@]}"; do
+      IFS=' ' read -r -a dep_split <<< "$dep"
+      if [[ "${dep_split[0]}" == *-dev ]]; then
+        # dependency on a "-dev" package: check if this is a package maintaned by these scripts
+        dep_packname=`echo "${dep_split[0]}" | sed -e 's|^lib||' -e 's|-dev$||'`
+        if [ -d "${WD}/DebianBuildVersions/${dep_packname}" ]; then
+          # check if the version range is properly specified
+          if [ $isInVersionRange == 0 ]; then    # first of the two entries for this dependency
+            isInVersionRange=1
+            if [ ${dep_split[1]} != "(>=" ]; then
+              echo "The dependency of lib${package}-dev on ${dep_packname} must be limited to a version range but there seems to be no minimum version."
+              ERROR=1
+            fi
+            # extract the specified min version
+            versionRange_minVersion=`echo ${dep_split[2]} | sed -e 's|)$||'`
+          else                                   # second of the two entries for this dependency
+            isInVersionRange=0
+            if [ ${dep_split[1]} != "(<<" ]; then
+              echo "The dependency of lib${package}-dev on ${dep_packname} must be limited to a version range but there seems to be no maximum version."
+              ERROR=1
+            fi
+            # extract the specified max version
+            versionRange_maxVersion=`echo ${dep_split[2]} | sed -e 's|)$||'`
+            # check if the version range is matching one single epoch version
+            versionRange_minVersion_epoch=`echo $versionRange_minVersion | sed -e "s|${distribution}.*$||"`
+            versionRange_minVersion_build=`echo $versionRange_minVersion | sed -e "s|^.*${distribution}||"`
+            versionRange_maxVersion_expected=${versionRange_minVersion_epoch}${distribution}$(( versionRange_minVersion_build + 1 ))
+            if [ "$versionRange_maxVersion" != "$versionRange_maxVersion_expected" ]; then
+              echo "The dependency of lib${package}-dev on ${dep_packname} must be limited to a version range only allowing different patch levels."
+            fi
+          fi
+        fi
+      fi
+    done
+
+  elif [ $subpackage == "doc" ]; then
+
+    # check for presence of html files
+    n_html_files=`dpkg -c $debname | grep "\./usr/share/doc/lib${package}${epoch_version}/html/.*\.html" | wc -l`
+    if [ "$n_html_files" -lt 10 ]; then   # note, this is a quite arbitrary number!
+      echo "Only $n_html_files html files found in the doc package! The validation expects at least 10 (which is arbitrary)."
+      ERROR=1
+    fi
+
+  elif [ $subpackage == "bin" ]; then
+
+    # check for presence of binary files
+    bin_files=`dpkg -c $debname | grep "\./usr/bin/.*" | wc -l`
+    if [ "$bin_files" -lt 1 ]; then
+      echo "No executable files found in the bin package!"
+      ERROR=1
+    fi
+
+    # check that no -config script has leaked into the bin package
+    n_config_files=`dpkg -c $debname | grep "\./usr/bin/.*-config" | wc -l`
+    if [ "$n_config_files" -gt 0 ]; then
+      echo "The config script from the dev package was found in the bin package!"
+      ERROR=1
+    fi
+
+  elif [ $subpackage == "doocs-bin" ]; then
+
+    # check for presence of files in /export/doocs/server/...
+    bin_files=`dpkg -c $debname | grep "\./export/doocs/server/.*" | wc -l`
+    if [ "$bin_files" -lt 1 ]; then
+      echo "No files in the /export/doocs/server directory were found in the bin package!"
+      ERROR=1
+    fi
+    
+  else
+  
+    echo "Unknown sub-package type: $subpackage"
+    ERROR=1
+
+  fi
+  
+  # increment checked number of files
+  nDebianFilesChecked=$(( nDebianFilesChecked + 1 ))
+
+done
+
+# update number of files checked
+echo ${nDebianFilesChecked} > "${LOCAL_REPOS}/nDebianFilesChecked.txt"
+
+exit $ERROR
