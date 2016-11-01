@@ -74,6 +74,9 @@ if [ -n "`echo \" ${config[Has_packages]} \" | grep \" lib \"`" ]; then
 fi
 
 # count number of files checked across calles to this script (needed for the vaildation script)
+if [ ! -f "${LOCAL_REPOS}/nDebianFilesChecked.txt" ]; then
+  echo 0 > "${LOCAL_REPOS}/nDebianFilesChecked.txt"
+fi
 nDebianFilesChecked=`cat "${LOCAL_REPOS}/nDebianFilesChecked.txt"`
 
 # loop over the sub-packages
