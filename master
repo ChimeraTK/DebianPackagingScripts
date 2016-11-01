@@ -172,6 +172,8 @@ for package in "${package_build_order[@]}"; do
   # actually build the package
   echo "Building $package in version ${package_list[$package]} for ${distribution}..."
   ${package_buildcmd[$package]}
+  # check consistency of the package
+  ./checkPackageConsistency "$package" || exit 1
 done
 rm $TEMPFILE
 
