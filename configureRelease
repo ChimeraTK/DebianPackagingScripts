@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from __future__ import print_function
 import debian.debian_support
 import urllib
 import subprocess
@@ -44,6 +45,20 @@ def resolveDeps(dependencies, filename):
         dependency_versions[dependency] = PackageAsDictionary["Version"]
   
   return dependency_versions
+
+# get package version from a Packages file, or "none" if package not found
+def getPackageVersion(packageName, filename):
+
+  # open Packages file and parse it
+  PackageFile = debian.debian_support.PackageFile(filename)
+
+  # search for dependencies
+  for Package in ExceptionHandlingIterator(PackageFile):
+    PackageAsDictionary = dict(Package)
+    if packageName == PackageAsDictionary["Package"]:
+      return PackageAsDictionary["Version"]
+  
+  return "none"
 
 # output usage
 if len(sys.argv) != 4 and len(sys.argv) != 5 :
@@ -336,6 +351,26 @@ if not "Package-name-bin" in config:
   config["Package-name-bin"] = config["package-basename"]+config["debversion"]
 if not "Install-pattern-bin" in config:
   config["Install-pattern-bin"] = "usr/bin/*"
+  
+# check if Debian packages which will built are already in the Debian repositories in the same version
+for package in hasPackages:
+  currentVersion = getPackageVersion(config["Package-name-"+package], "Packages.DESY")
+  print("Current version in Debian repository for package "+package+": "+currentVersion)
+  if(currentVersion == config["package-version"]):
+    print("*** WARNING ***")
+    print("You are building a package, which is already in the Debian repository in the same version. Publication will not be allowed!")
+    
+    # ask whether to continue
+    print("Do you want to continue (y/N)? ", end="")
+    sys.stdout.flush()
+    userinput = sys.stdin.readline().rstrip()
+    if(userinput != 'y'):
+      print("Aborted.")
+      exit(1)
+    
+    # set flag in master-control file that publication is not allowed
+    subprocess.call(["echo 'do_not_publish=1' >> master-control"], shell=True)
+    
 
 # create directory holding the debian control files
 controldir="DebianBuildVersions/"+version_base_dir+"/"+str(build_number)
