@@ -352,25 +352,45 @@ if not "Package-name-bin" in config:
 if not "Install-pattern-bin" in config:
   config["Install-pattern-bin"] = "usr/bin/*"
   
-# check if Debian packages which will built are already in the Debian repositories in the same version
+# check if Debian packages which will built are already in the Debian repositories in the same version or newer version
+askIfContinue = False
 for package in hasPackages:
   currentVersion = getPackageVersion(config["Package-name-"+package], "Packages.DESY")
-  print("Current version in Debian repository for package "+package+": "+currentVersion)
+  
+  # same version: disallow publication
   if(currentVersion == config["package-version"]):
+    askIfContinue = True
+  
+    # print warning
     print("*** WARNING ***")
     print("You are building a package, which is already in the Debian repository in the same version. Publication will not be allowed!")
     
-    # ask whether to continue
-    print("Do you want to continue (y/N)? ", end="")
-    sys.stdout.flush()
-    userinput = sys.stdin.readline().rstrip()
-    if(userinput != 'y'):
-      print("Aborted.")
-      exit(1)
-    
     # set flag in master-control file that publication is not allowed
     subprocess.call(["echo 'do_not_publish=1' >> master-control"], shell=True)
-    
+
+  # check if newer source version present in repository
+  currentVersionNoBuildVersion = re.sub(r"" + codename + "[0-9]+", "", currentVersion)
+  [ currentMajor, currentMinor, currentPatch ] = currentVersionNoBuildVersion.split('.')
+  newVersionNoBuildVersion = re.sub(r"" + codename + "[0-9]+", "", config["package-version"])
+  [ newMajor, newMinor, newPatch ] = newVersionNoBuildVersion.split('.')
+  if(    (newMajor < currentMajor)
+      or (newMajor == currentMajor and newMinor < currentMinor)
+      or (newMajor == currentMajor and newMinor == currentMinor and newPatch < currentPatch) ):
+    askIfContinue = True
+
+    # print warning
+    print("*** WARNING ***")
+    print("You are building source-code version " + newVersionNoBuildVersion + " of the sub-package "+package+
+          ", but the newer version " + currentVersionNoBuildVersion + " is already in the Debian repositories!")
+  
+# ask whether to continue, if version problem detected
+if askIfContinue:
+  print("Do you want to continue (y/N)? ", end="")
+  sys.stdout.flush()
+  userinput = sys.stdin.readline().rstrip()
+  if(userinput != 'y'):
+    print("Aborted.")
+    exit(1)
 
 # create directory holding the debian control files
 controldir="DebianBuildVersions/"+version_base_dir+"/"+str(build_number)
