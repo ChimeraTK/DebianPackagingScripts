@@ -84,36 +84,43 @@ else:
 # preset optional config variables
 config = {}
 config["Dependencies-bin"] = ""
+config["Dependencies-extra"] = ""
 config["Install-additional-pattern-dev"] = ""
 
 config["Conflicts-lib"] = ""
 config["Conflicts-dev"] = ""
 config["Conflicts-bin"] = ""
+config["Conflicts-extra"] = ""
 config["Conflicts-doc"] = ""
 
 config["Replaces-lib"] = ""
 config["Replaces-dev"] = ""
 config["Replaces-bin"] = ""
+config["Replaces-extra"] = ""
 config["Replaces-doc"] = ""
 
 config["Enhances-lib"] = ""
 config["Enhances-dev"] = ""
 config["Enhances-bin"] = ""
+config["Enhances-extra"] = ""
 config["Enhances-doc"] = ""
 
 config["Suggests-lib"] = ""
 config["Suggests-dev"] = ""
 config["Suggests-bin"] = ""
+config["Suggests-extra"] = ""
 config["Suggests-doc"] = ""
 
 config["Recommends-lib"] = ""
 config["Recommends-dev"] = ""
 config["Recommends-bin"] = ""
+config["Recommends-extra"] = ""
 config["Recommends-doc"] = ""
 
 config["Provides-lib"] = ""
 config["Provides-dev"] = ""
 config["Provides-bin"] = ""
+config["Provides-extra"] = ""
 config["Provides-doc"] = ""
 
 # check if DebianBuildVersions is checked out
@@ -351,6 +358,8 @@ if not "Package-name-bin" in config:
   config["Package-name-bin"] = config["package-basename"]+config["debversion"]
 if not "Install-pattern-bin" in config:
   config["Install-pattern-bin"] = "usr/bin/*"
+if not "Package-name-extra" in config:
+  config["Package-name-extra"] = config["package-basename"]+"-extra"
   
 # check if Debian packages which will built are already in the Debian repositories in the same version or newer version
 askIfContinue = False

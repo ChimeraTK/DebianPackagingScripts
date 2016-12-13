@@ -221,6 +221,22 @@ for subpackage in ${config[Has_packages]} ; do
       ERROR=1
     fi
 
+  elif [ $subpackage == "extra" ]; then
+
+    # check for presence of files
+    extra_files=`dpkg -c $debname | wc -l`
+    if [ "$extra_files" -lt 1 ]; then
+      echo "No files found in the extra package!"
+      ERROR=1
+    fi
+
+    # check that no -config script has leaked into the extra package
+    n_config_files=`dpkg -c $debname | grep "\./usr/bin/.*-config" | wc -l`
+    if [ "$n_config_files" -gt 0 ]; then
+      echo "The config script from the dev package was found in the extra package!"
+      ERROR=1
+    fi
+
   elif [ $subpackage == "doocs-bin" ]; then
 
     # check for presence of files in /export/doocs/server/...
