@@ -50,9 +50,16 @@ getFromConfig $package "Has-packages"
 
 # obtain list of dependencies from the CONFIG file
 getFromConfig $package "Dependencies"
+
+# obtain flag whether to include the build version in the package name from the CONFIG file
+getFromConfig $package "package-name-contains-buildversion"
+if [ -z "${config[package_name_contains_buildversion]}" ]; then
+  config[package_name_contains_buildversion]=1
+fi
   
 # obtain epoch version as part of the Debian package name
 epoch_version=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|-[^/].*/||' -e 's|/|-|' -e 's|\.|-|'`
+epoch_version_no_builversion=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|/.*$||' -e 's|\.|-|'`
   
 # obtain so file version in two different ways and compare
 so_version_nopatch=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|-[^/].*/||' -e 's|/||'`
@@ -93,7 +100,11 @@ for subpackage in ${config[Has_packages]} ; do
     if [ $subpackage == "dev" -o $subpackage == "doc" ]; then
       package_suffix="-$subpackage"
     else
-      package_suffix="${epoch_version}"
+      if [ "${config[package_name_contains_buildversion]}" == "1" ]; then
+        package_suffix="${epoch_version}"
+      else
+        package_suffix="${epoch_version_no_buildversion}"
+      fi
     fi
     name=${package_prefix}${package}${package_suffix}
   fi
