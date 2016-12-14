@@ -83,6 +83,8 @@ else:
 
 # preset optional config variables
 config = {}
+config["package-name-contains-buildversion"] = "1"
+
 config["Dependencies-bin"] = ""
 config["Dependencies-extra"] = ""
 config["Install-additional-pattern-dev"] = ""
@@ -341,7 +343,10 @@ config["version"] = version
 config["tagversion"] = tagversion
 config["buildversion"] = codename+str(build_number)
 config["soversion"] = epoch+config["buildversion"]+"."+patchlevel
-config["debversion"] = epoch.replace(".","-")+"-"+config["buildversion"]
+if config["package-name-contains-buildversion"] == "1":
+  config["debversion"] = epoch.replace(".","-")+"-"+config["buildversion"]
+else:
+  config["debversion"] = epoch.replace(".","-")
 config["package-version"] = config["soversion"]
 config["build-depends"] = build_depends
 config["dev-depends"] = dev_depends
