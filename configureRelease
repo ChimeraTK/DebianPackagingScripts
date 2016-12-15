@@ -426,8 +426,9 @@ if len(hasPackages) > 1:
   for package in hasPackages:
     filelist.append("package-"+package.strip()+".install")
 
-# copyright file
-filelist.append("copyright."+config["License"])
+# copyright file (only if not provided by the package)
+if not os.path.isfile("DebianBuildVersions/"+project+"/copyright"):
+  filelist.append("copyright."+config["License"])
 
 # if we have a lib package, add the shlib file
 if "lib" in hasPackages:
@@ -489,7 +490,11 @@ if isDoocsServer == True:
   f.close()
 
 # rename files which need a different name
-os.rename(controldir+"/copyright."+config["License"], controldir+"/copyright")
+if os.path.isfile("DebianBuildVersions/"+project+"/copyright"):
+  shutil.copy("DebianBuildVersions/"+project+"/copyright", controldir+"/copyright");
+else:
+  os.rename(controldir+"/copyright."+config["License"], controldir+"/copyright")
+
 if len(hasPackages) > 1:
   for package in hasPackages:
     os.rename(controldir+"/package-"+package+".install", controldir+"/"+config["Package-name-"+package]+".install")
