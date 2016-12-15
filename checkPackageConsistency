@@ -97,8 +97,10 @@ for subpackage in ${config[Has_packages]} ; do
   # no name specified in the config: build it
   if [ -z "${name}" ]; then
     package_suffix=""
-    if [ $subpackage == "dev" -o $subpackage == "doc" ]; then
+    if [ $subpackage == "dev" -o $subpackage == "doc" -o $subpackage == "extra" ]; then
       package_suffix="-$subpackage"
+    elif [ $subpackage == "python" ]; then
+      package_suffix=""
     else
       if [ "${config[package_name_contains_buildversion]}" == "1" ]; then
         package_suffix="${epoch_version}"
@@ -245,6 +247,22 @@ for subpackage in ${config[Has_packages]} ; do
     n_config_files=`dpkg -c $debname | grep "\./usr/bin/.*-config" | wc -l`
     if [ "$n_config_files" -gt 0 ]; then
       echo "The config script from the dev package was found in the extra package!"
+      ERROR=1
+    fi
+
+  elif [ $subpackage == "python" ]; then
+
+    # check for presence of python files
+    python_files=`dpkg -c $debname | grep "\./usr/lib/python" | wc -l`
+    if [ "$python_files" -lt 1 ]; then
+      echo "No files found in the python package!"
+      ERROR=1
+    fi
+
+    # check that no -config script has leaked into the extra package
+    n_config_files=`dpkg -c $debname | grep "\./usr/bin/.*-config" | wc -l`
+    if [ "$n_config_files" -gt 0 ]; then
+      echo "The config script from the dev package was found in the python package!"
       ERROR=1
     fi
 

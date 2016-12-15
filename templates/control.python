@@ -1,0 +1,12 @@
+Package: #Package-name-python#
+Section: #Section#
+Architecture: #architecture#
+Conflicts: #Conflicts-python#
+Replaces: #Replaces-python#
+Recommends: #Recommends-python#
+Suggests: #Suggests-python#
+Enhances: #Enhances-python#
+Provides: #Provides-python#
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, #Dependencies-python#
+Description: #Description-python#
+

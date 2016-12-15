@@ -87,42 +87,49 @@ config["package-name-contains-buildversion"] = "1"
 
 config["Dependencies-bin"] = ""
 config["Dependencies-extra"] = ""
+config["Dependencies-python"] = ""
 config["Install-additional-pattern-dev"] = ""
 
 config["Conflicts-lib"] = ""
 config["Conflicts-dev"] = ""
 config["Conflicts-bin"] = ""
 config["Conflicts-extra"] = ""
+config["Conflicts-python"] = ""
 config["Conflicts-doc"] = ""
 
 config["Replaces-lib"] = ""
 config["Replaces-dev"] = ""
 config["Replaces-bin"] = ""
 config["Replaces-extra"] = ""
+config["Replaces-python"] = ""
 config["Replaces-doc"] = ""
 
 config["Enhances-lib"] = ""
 config["Enhances-dev"] = ""
 config["Enhances-bin"] = ""
 config["Enhances-extra"] = ""
+config["Enhances-python"] = ""
 config["Enhances-doc"] = ""
 
 config["Suggests-lib"] = ""
 config["Suggests-dev"] = ""
 config["Suggests-bin"] = ""
 config["Suggests-extra"] = ""
+config["Suggests-python"] = ""
 config["Suggests-doc"] = ""
 
 config["Recommends-lib"] = ""
 config["Recommends-dev"] = ""
 config["Recommends-bin"] = ""
 config["Recommends-extra"] = ""
+config["Recommends-python"] = ""
 config["Recommends-doc"] = ""
 
 config["Provides-lib"] = ""
 config["Provides-dev"] = ""
 config["Provides-bin"] = ""
 config["Provides-extra"] = ""
+config["Provides-python"] = ""
 config["Provides-doc"] = ""
 
 # check if DebianBuildVersions is checked out
@@ -363,8 +370,12 @@ if not "Package-name-bin" in config:
   config["Package-name-bin"] = config["package-basename"]+config["debversion"]
 if not "Install-pattern-bin" in config:
   config["Install-pattern-bin"] = "usr/bin/*"
+if not "Install-pattern-python" in config:
+  config["Install-pattern-python"] = "usr/lib/python*/*"
 if not "Package-name-extra" in config:
   config["Package-name-extra"] = config["package-basename"]+"-extra"
+if not "Package-name-python" in config:
+  config["Package-name-python"] = config["package-basename"]
   
 # check if Debian packages which will built are already in the Debian repositories in the same version or newer version
 askIfContinue = False
