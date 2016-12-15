@@ -437,6 +437,7 @@ if "lib" in hasPackages:
 for var1 in config.keys():
   for var2 in config.keys():
     config[var1] = config[var1].replace("#"+var2+"#", config[var2])
+    config[var1] = config[var1].replace("#newline#", '\n')
 
 # replace config variables in files
 for filna in filelist:
