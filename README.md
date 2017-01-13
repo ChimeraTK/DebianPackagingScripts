@@ -24,14 +24,14 @@ Currently available distributions are
 * `xenial` = Ubuntu 16.04
 
 Syntax:
-```bash
+```
 ./master <distribution_codename> <package_name1> <package_version1> [<package_name2> <package_version2>] [...]
 ```
 Example:
 You want do build version 00.16.00 of the DeviceAccess library (debian package base name mtca4u-deviceaccess),
 and also recompile the QtHardMon application in version 00.17.07  against this new DeviceAccess version for
 Ubuntu 16.06 (xenial)
-```bash
+```
 ~/DebianPackagingScripts$ ./master xenial mtca4u-deviceaccess 00.16.00 qthardmon 00.17.07
 The following packages will be build (in that order):
 mtca4u-deviceaccess 00.16.00
@@ -50,14 +50,14 @@ The script will not only build those two packages but also all other libraries w
 ##DOOCS and other dependencies
 
 In case a library is updated which is not packages with these scripts, you can trigger all dependent libraries
-to be build using the `runMasterForDependencies` script. The input is a REGEX expression describing the packages which have changed, and all dependent packages which can be build with the ChimeraTK debian packaging scripts are updated.
+to be build using the `runMasterForDependencies` script. The input is a REGEX pattern describing the packages which have changed, and all dependent packages which can be build with the ChimeraTK debian packaging scripts are updated.
 
 ###Example: The DOOCS libraries
 
 DOOCS consists of several library packages, their names start with 'dev-doocs', hence we use the wildcard 'dev-doocs.*'.
 
 Example:
-```bash
+```
 ~/DebianPackagingScripts$ ./runMasterForDependencies xenial "dev-doocs.*"
 No config for 'dev-doocswrappers' found. No packages for this project will be build.
 The following packages will be build (in that order):
