@@ -1,0 +1,21 @@
+#!/bin/bash -e
+cd $(dirname "$0")
+
+# This script resolves all dependencies for a given input patter, using the findReverseDependencies script.
+# It then calls the master script with all found dependencies.
+# Typical use case: Use it for DOOCS, which is not build with the ChimeraTK mechanism,
+# and rebuild all of it dependent packages.
+
+#check the input.
+if [[ $# != 2 ]]; then
+  echo "Usage: ./runMasterForDependencies <distribution_codename> <package_pattern>"
+  echo "Example: ./runMasterForDependencies xenial \"dev-doocs.*\""
+  exit 1
+fi
+
+codename=$1
+package_pattern=$2
+
+input_to_master=`./findReverseDependencies "${package_pattern}" ${codename} | sed -e 's/^lib//' -e 's/-dev / /'`
+
+./master ${codename} ${input_to_master}
