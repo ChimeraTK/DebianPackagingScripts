@@ -119,6 +119,11 @@ while [ "$sorting_done" == "0" ]; do
   declare -a package_build_order_sort
   sorting_done=1
   for package in "${package_build_order[@]}"; do
+    #check if the package has a config. If not print a warning and ignore it  
+    if ! [ -e DebianBuildVersions/$package/CONFIG ]; then
+      echo "No config for '$package' found. No packages for this project will be build."
+      continue
+    fi
     # add the dependencies of the package to the new list, if not yet present
     DEPENDENCIES=`grep "^Dependencies: " DebianBuildVersions/$package/CONFIG | sed -e 's|^Dependencies: ||'`
     for dependency in $DEPENDENCIES; do
