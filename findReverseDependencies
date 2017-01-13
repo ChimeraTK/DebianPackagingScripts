@@ -10,6 +10,7 @@ import sys
 import time
 import tempfile
 import shutil
+import re #regular expressions library
 
 def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies):
   for Package in Packages:
@@ -30,16 +31,26 @@ def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies
           # recursive search: find packages depending on the found package as well
           findReverseDependencies(PackageAsDictionary['Package'], Packages, ReverseDependencies)
 
+def resolvePackagePattern(packagePattern, Packages):
+  resolvedPackages = []
+  pattern = re.compile(packagePattern)
+  for Package in Packages:
+    PackageAsDictionary = dict(Package)
+    if pattern.match(PackageAsDictionary['Package']):
+        resolvedPackages.append(PackageAsDictionary['Package'])
+
+  return resolvedPackages
 
 # output usage
 if len(sys.argv) != 3 and len(sys.argv) != 4 :
   print("Usage: ./findReverseDependencies <package_name> <distribution_codename> [<architecture>]")
   print("Example: ./findReverseDependencies libmtca4u-deviceaccess-dev xenial")
   print("  This will output all packages depending on a specific version of libmtca4u-deviceaccess-dev. It will recursively repeat the search for all found packages.")
+  print("  The command resolves regular expressions, so \"dev-doocs.*\" for instance searches for all packages starting with \"dev-doocs\".")
   sys.exit()
 
 # parse command line arguments
-package = sys.argv[1]
+packagePattern = sys.argv[1]
 codename = sys.argv[2]
 if len(sys.argv) == 4 :
   arch = sys.argv[3]
@@ -55,9 +66,12 @@ Packages = []
 for Package in PackageFile:
   Packages.append(Package)
 
+inputPackages = resolvePackagePattern(packagePattern, Packages)
+
 # search for packages depending on the specified package
 ReverseDependencies = []
-findReverseDependencies(package, Packages, ReverseDependencies)
+for package in inputPackages:
+  findReverseDependencies(package, Packages, ReverseDependencies)
 
 # output list (as a set, to make it unique)
 for dep in set(ReverseDependencies):
