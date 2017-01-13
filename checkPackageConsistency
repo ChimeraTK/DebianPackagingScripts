@@ -109,6 +109,9 @@ for subpackage in ${config[Has_packages]} ; do
       fi
     fi
     name=${package_prefix}${package}${package_suffix}
+  # if name was specified, replace #debversion# with the epoch version
+  else
+    name=`echo $name | sed -e "s|#debversion#|${epoch_version}|"`
   fi
 
   # check if there is exacty one .deb file per subpackage
