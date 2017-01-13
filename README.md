@@ -17,11 +17,14 @@ The packages are published to the repositories on `doocs.desy.de` and `doocspkgs
 
 Run the master script with the distriction you want to build for, and the (debian) package name and the version you want to build for.
 
-Currently available distributions are
+Currently available Ubuntu releases are
 
 * `precice` = Ubuntu 12.04 (until April 2017)
 * `trusty` = Ubuntu 14.04
 * `xenial` = Ubuntu 16.04
+
+The system uses pbuilder, which allows you to build packages also for other Ubuntu releases. Currently **the host system has to be Ubuntu 16.04** or newer. For the older versions pbuilder still has too many bugs. You need root privileges to run pbuilder and you need write permissions to the ChimeraTK DebianBuildVersions repository and
+the doocspkgs host.
 
 Syntax:
 ```
@@ -45,7 +48,11 @@ beam-arrival-time-monitor 01.01.00
 
 Do you want to proceed with configuring and building the packages in the given versions (y/N)? 
 ```
-The script will not only build those two packages but also all other libraries which have development packages that depend on the DeviceAccess library. Not that it will not update any applications automatically. If you wanted also the ChimeraTK command line tools to be recompiled with the new DeviceAccess version, you would have to specify this in the call to the master script.
+The script will not only build those two packages but also all other libraries which have development packages that depend on the DeviceAccess library. Note that it will not update any applications automatically. If you wanted also the ChimeraTK command line tools to be recompiled with the new DeviceAccess version, you would have to specify this in the call to the master script.
+
+**FIXME**
+
+Describe which questions the master script might ask, under which conditions it allows or block publishing of the results.
 
 ##DOOCS and other dependencies
 
