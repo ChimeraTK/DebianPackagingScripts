@@ -19,6 +19,12 @@ fi
 source "${CONTROLDIR}/makeDebianPackage.config"
 export PROJECT_BUILDVERSION
 
+if [ -z ${N_PBUILDER_THREADS} ]; then
+  export N_PBUILDER_THREADS=1
+fi
+
+echo "using ${N_PBUILDER_THREADS} thread(s)"
+
 # directory with local Debian repository and where the created packages should be placed
 LOCAL_REPOS="`pwd`/pbuilder-result"
 
@@ -56,7 +62,9 @@ debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION} --distrib
 # Now everything is prepared and we can actually build the package.
 # If you have a gpg signature you can remove the -us and -uc flags and sign the package.
 MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main"
-pdebuild -- --distribution ${DISTRIBUTION} --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"   \
+
+#Note: --debbuildopts must be before the -- to be effectice
+time pdebuild --debbuildopts -j${N_PBUILDER_THREADS} -- --distribution ${DISTRIBUTION} --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"   \
             --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} /dev /run/shm"      || exit 1
 echo ""
 echo "You can find the resulting debian packages in this directory: ${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"

@@ -77,3 +77,11 @@ beam-arrival-time-monitor 01.01.00
 Do you want to proceed with configuring and building the packages in the given versions (y/N)?
 ```
 The package `dev-doocswrappers` is a reverse depenency of DOOCS, but it cannot be build using the ChimeraTK packaging scripts. This package would have to be updated manually (if it wasn't an obsolete, leftover library).
+
+## Performance optimisation
+
+Set the environment variable N_PBUILDER_THREADS to allow pbuilder to use more than one core.
+
+```
+$ export N_PBUILDER_THREADS=5
+```
