@@ -1,4 +1,4 @@
 # change install prefix for doocs servers
 override_dh_auto_configure:
-	dh_auto_configure -- -DCMAKE_INSTALL_PREFIX=/export/doocs/server
+	dh_auto_configure -- #Override-auto-configure-flags#
 

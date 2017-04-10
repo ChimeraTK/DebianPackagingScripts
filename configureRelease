@@ -131,6 +131,24 @@ config["Provides-bin"] = ""
 config["Provides-extra"] = ""
 config["Provides-python"] = ""
 config["Provides-doc"] = ""
+config["Override-auto-configure-flags"] = ""
+
+def replace_config_variables(filename):
+  content = open(filename).read()
+  # replace all variables
+  for var in config.keys():
+    content = content.replace("#"+var+"#", config[var])
+  # check for unknown variables which have not been replaced
+  if content.find("#") != -1:
+    pos1 = content.find("#")
+    pos2 = content.find("#",pos1+1)
+    # two consecutive # are not a variable but will be replaced with a single #, so ignore it
+    if pos2 > pos1+1:
+      print("File "+filename+" has an unknown variable: "+content[pos1:pos2+1])
+      sys.exit(1)
+  # replace ## with #, so we can still write single # if needed
+  content = content.replace("##", "#")
+  return content
 
 # check if DebianBuildVersions is checked out
 if not os.path.isdir("DebianBuildVersions/.git"):
@@ -213,6 +231,8 @@ if "doocs-bin" in hasPackages:
   hasPackages.remove("doocs-bin")
   hasPackages.append("bin")
   isDoocsServer=True
+  config["Override-auto-configure-flags"] = "-DCMAKE_INSTALL_PREFIX=/export/doocs/server "\
+                                            + config["Override-auto-configure-flags"]
 
 # parse lists of dependencies
 dependencies = config["Dependencies"].split(" ")
@@ -451,23 +471,11 @@ for var1 in config.keys():
     config[var1] = config[var1].replace("#"+var2+"#", config[var2])
     config[var1] = config[var1].replace("#newline#", '\n')
 
+    
 # replace config variables in files
 for filna in filelist:
   # read file into string
-  content = open("templates/"+filna).read()
-  # replace all variables
-  for var in config.keys():
-    content = content.replace("#"+var+"#", config[var])
-  # check for unknown variables which have not been replaced
-  if content.find("#") != -1:
-    pos1 = content.find("#")
-    pos2 = content.find("#",pos1+1)
-    # two consecutive # are not a variable but will be replaced with a single #, so ignore it
-    if pos2 > pos1+1:
-      print("File "+filna+" has an unknown variable: "+content[pos1:pos2+1])
-      sys.exit(1)
-  # replace ## with #, so we can still write single # if needed
-  content = content.replace("##", "#")
+  content = replace_config_variables("templates/"+filna)
   # write out the resulting file
   f = open(controldir+"/"+filna,"w")
   f.write(content)
@@ -491,11 +499,12 @@ if "Disable-tests" in config and config["Disable-tests"] == "yes":
   f.write(content)
   f.close()
 
-# if building a doocs server, change the install prefix
-if isDoocsServer == True:
+# extend the rules file to include override_dh_auto_configure if
+# applicable. (as in case of dooc packages)
+if(config["Override-auto-configure-flags"] !=  ""):
   content = open(controldir+"/rules").read()
   for package in hasPackages:
-    content += open("templates/rules.doocs-bin").read()
+    content += replace_config_variables("templates/rules.doocs-bin")
   f = open(controldir+"/rules","w")
   f.write(content)
   f.close()
