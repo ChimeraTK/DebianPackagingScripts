@@ -493,18 +493,16 @@ subprocess.call(["rm "+controldir+"/control.*"], shell=True)
 # add override parts to the rules file, if needed
 if "Disable-tests" in config and config["Disable-tests"] == "yes":
   content = open(controldir+"/rules").read()
-  for package in hasPackages:
-    content += open("templates/rules.notests").read()
+  content += open("templates/rules.notests").read()
   f = open(controldir+"/rules","w")
   f.write(content)
   f.close()
 
 # extend the rules file to include override_dh_auto_configure if
-# applicable. (as in case of dooc packages)
+# applicable. (as in case of doocs packages)
 if(config["Override-auto-configure-flags"] !=  ""):
   content = open(controldir+"/rules").read()
-  for package in hasPackages:
-    content += replace_config_variables("templates/rules.doocs-bin")
+  content += replace_config_variables("templates/rules.override")
   f = open(controldir+"/rules","w")
   f.write(content)
   f.close()
