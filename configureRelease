@@ -139,13 +139,10 @@ def replace_config_variables(filename):
   for var in config.keys():
     content = content.replace("#"+var+"#", config[var])
   # check for unknown variables which have not been replaced
-  if content.find("#") != -1:
-    pos1 = content.find("#")
-    pos2 = content.find("#",pos1+1)
-    # two consecutive # are not a variable but will be replaced with a single #, so ignore it
-    if pos2 > pos1+1:
-      print("File "+filename+" has an unknown variable: "+content[pos1:pos2+1])
-      sys.exit(1)
+  # The regular expression matches a string of alpha-numeric characters enclosed within single hash characters
+  if re.match('[^#]#[a-zA-Z0-9]#[^#]', content) != None:
+    print("File "+filename+" has an unknown variable: "+content[pos1:pos2+1])
+    sys.exit(1)
   # replace ## with #, so we can still write single # if needed
   content = content.replace("##", "#")
   return content
@@ -172,8 +169,18 @@ for line in configfile:
   except (ValueError):
     print("Error parsing file 'DebianBuildVersions/"+project+"/CONFIG' in line "+str(line_counter))
     sys.exit(1)
-  config[key.strip()] = value.strip()
+  key = key.strip()
+  if re.match('[^a-zA-Z0-9]',key) != None:
+    print("Error parsing file 'DebianBuildVersions/"+project+"/CONFIG' in line "+str(line_counter)+". Variable names must contain only alpha-numeric characters.")
+    sys.exit(1)
+  config[key] = value.strip()
 
+# resolve variables inside the configuration
+for var in config.keys():
+  for var2 in config.keys():
+    config[var] = config[var].replace("#"+var2+"#", config[var2])
+
+# create hasPackages array from space-separated list
 hasPackages = config["Has-packages"].split(" ")
 
 # check for mandatory variables in the config
