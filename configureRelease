@@ -524,9 +524,19 @@ subprocess.call(["chmod", "+x", controldir+"/rules"])
 
 # copy postinst and postrm scripts if existent
 if os.path.isfile("DebianBuildVersions/"+project+"/postinst"):
-  shutil.copy("DebianBuildVersions/"+project+"/postinst", controldir+"/postinst");
+  # read file into string
+  content = replace_config_variables("DebianBuildVersions/"+project+"/postinst")
+  # write out the resulting file
+  f = open(controldir+"/postinst","w")
+  f.write(content)
+  f.close()
 if os.path.isfile("DebianBuildVersions/"+project+"/postrm"):
-  shutil.copy("DebianBuildVersions/"+project+"/postrm", controldir+"/postrm");
+  # read file into string
+  content = replace_config_variables("DebianBuildVersions/"+project+"/postrm")
+  # write out the resulting file
+  f = open(controldir+"/postrm","w")
+  f.write(content)
+  f.close()
 
 # output the command to build the package
 print("")
