@@ -499,8 +499,16 @@ subprocess.call(["rm "+controldir+"/control.*"], shell=True)
 
 # add override parts to the rules file, if needed
 if "Disable-tests" in config and config["Disable-tests"] == "yes":
+  # disable the tests?
   content = open(controldir+"/rules").read()
   content += open("templates/rules.notests").read()
+  f = open(controldir+"/rules","w")
+  f.write(content)
+  f.close()
+else:
+  # tests not disabled: don't run them in parallel
+  content = open(controldir+"/rules").read()
+  content += open("templates/rules.tests").read()
   f = open(controldir+"/rules","w")
   f.write(content)
   f.close()

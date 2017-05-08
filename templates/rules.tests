@@ -1,0 +1,3 @@
+# don't run test in parallel
+override_dh_auto_test:
+	dh $@ --no-parallel
