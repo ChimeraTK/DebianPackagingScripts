@@ -8,7 +8,9 @@ fi
 cd DebianBuildVersions
 
 if [ -n "`git status --porcelain`" ]; then
+    echo "************************* WARNING *************************"
     echo "You have still uncommitted changes in the DebianBuildVersions repository. You are not allowed to publish packages like this!"
+    echo "************************* WARNING *************************"
     exit 1
 fi
 
@@ -16,12 +18,16 @@ LATEST_COMMIT_ORIGIN=`git log origin/master | head -n1`
 LATEST_COMMIT_LOCAL=`git log | head -n1`
 
 if [ "${LATEST_COMMIT_ORIGIN}" != "${LATEST_COMMIT_LOCAL}" ]; then
+    echo "************************* WARNING *************************"
     echo "Your probably have not pushed your commits. You are not allowed to publish packages like this!"
+    echo "************************* WARNING *************************"
     exit 1
 fi
 
 if [ "`git remote get-url origin`" != "git@github.com:ChimeraTK/DebianBuildVersions.git" ]; then
+    echo "************************* WARNING *************************"
     echo "Your DebianBuildVersions repository was cloned from a different origin. You are not allowed to publish packages like this!"
+    echo "************************* WARNING *************************"
     exit 1
 fi
 
