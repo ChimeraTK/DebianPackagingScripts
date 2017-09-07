@@ -233,11 +233,9 @@ print("Distribution: "+codename)
 print("Architecture: "+arch)
 
 # check if we are building a doocs server
-isDoocsServer=False
 if "doocs-bin" in hasPackages:
   hasPackages.remove("doocs-bin")
   hasPackages.append("bin")
-  isDoocsServer=True
   config["Override-auto-configure-flags"] = "-DCMAKE_INSTALL_PREFIX=/export/doocs/server "\
                                             + config["Override-auto-configure-flags"]
 
