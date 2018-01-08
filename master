@@ -95,7 +95,7 @@ done
 for package in "${!package_list[@]}"; do
   # obtain possible reverse dependencies for lib${package}-dev
   TEMPFILE=`mktemp`
-  ./findReverseDependencies lib${package}-dev $distribution $arch | grep "^lib" | grep -- "-dev " | sed -e 's/^lib//' -e 's/-dev / /' > $TEMPFILE
+  ./findReverseDependencies lib${package}-dev $distribution $DebianRepository $arch | grep "^lib" | grep -- "-dev " | sed -e 's/^lib//' -e 's/-dev / /' > $TEMPFILE
   readarray revdeps_with_versions < $TEMPFILE
   rm -f $TEMPFILE
   # loop over any found reverse dependencies
@@ -168,9 +168,9 @@ for package in "${package_build_order[@]}"; do
   echo ""
   echo "Configuring $package in version ${package_list[$package]} for ${distribution}..."
   # update pbuilder chroot environment (needed for every package, since dependencies might be added)
-  ./updatePBuilder "$distribution"
+  ./updatePBuilder "$distribution" "$DebianRepository"
   # configure the package (possibly using just built dependencies)
-  ./configureRelease "$package" "${package_list[$package]}" "$distribution" "$arch" | tee $TEMPFILE ; test ${PIPESTATUS[0]} -eq 0
+  ./configureRelease "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee $TEMPFILE ; test ${PIPESTATUS[0]} -eq 0
   package_buildcmd[$package]=`tail -n1 $TEMPFILE`
   echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
   echo ""

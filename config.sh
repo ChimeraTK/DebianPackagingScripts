@@ -7,8 +7,14 @@
 ########################################################################################################################
 
 # URI of the DebianBuildVersions git repository
-DebianBuildVersionsURI=git@github.com:ChimeraTK/DebianBuildVersions.git
+#DebianBuildVersionsURI=git@github.com:ChimeraTK/DebianBuildVersions.git
+DebianBuildVersionsURI=https://github.com/ChimeraTK/DebianBuildVersions.git
 
+# URI of the repository to connect to
+# a) DESY internal repository
+DebianRepository=http://doocspkgs.desy.de/
+# b) DESY public repository
+#DebianRepository=http://doocs.desy.de/
 ########################################################################################################################
 # Variables used to control the installation process
 

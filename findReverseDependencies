@@ -41,38 +41,43 @@ def resolvePackagePattern(packagePattern, Packages):
 
   return resolvedPackages
 
-# output usage
-if len(sys.argv) != 3 and len(sys.argv) != 4 :
-  print("Usage: ./findReverseDependencies <package_name> <distribution_codename> [<architecture>]")
-  print("Example: ./findReverseDependencies libmtca4u-deviceaccess-dev xenial")
-  print("  This will output all packages depending on a specific version of libmtca4u-deviceaccess-dev. It will recursively repeat the search for all found packages.")
-  print("  The command resolves regular expressions, so \"dev-doocs.*\" for instance searches for all packages starting with \"dev-doocs\".")
-  sys.exit()
+def main():
+    # output usage
+    if len(sys.argv) != 4 and len(sys.argv) != 5 :
+      print("Usage: ./findReverseDependencies <package_name> <distribution_codename> <debian_repository> [<architecture>]")
+      print("Example: ./findReverseDependencies libmtca4u-deviceaccess-dev xenial http://doocspkgs.desy.de/")
+      print("  This will output all packages depending on a specific version of libmtca4u-deviceaccess-dev. It will recursively repeat the search for all found packages.")
+      print("  The command resolves regular expressions, so \"dev-doocs.*\" for instance searches for all packages starting with \"dev-doocs\".")
+      sys.exit()
+    
+    # parse command line arguments
+    packagePattern = sys.argv[1]
+    codename = sys.argv[2]
+    debianrepository = sys.argv[4]                  # repository base name used to retrieve a package list
+    if len(sys.argv) == 4 :
+      arch = sys.argv[3]
+    else:
+      arch = "amd64"
+    
+    # download Packages file from the DESY DOOCS apt repositories
+    subprocess.call(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
+    
+    # open Packages file and parse it
+    PackageFile = debian.debian_support.PackageFile("Packages.DESY")
+    Packages = []
+    for Package in PackageFile:
+      Packages.append(Package)
+    
+    inputPackages = resolvePackagePattern(packagePattern, Packages)
+    
+    # search for packages depending on the specified package
+    ReverseDependencies = []
+    for package in inputPackages:
+      findReverseDependencies(package, Packages, ReverseDependencies)
+    
+    # output list (as a set, to make it unique)
+    for dep in set(ReverseDependencies):
+      print(dep)
 
-# parse command line arguments
-packagePattern = sys.argv[1]
-codename = sys.argv[2]
-if len(sys.argv) == 4 :
-  arch = sys.argv[3]
-else:
-  arch = "amd64"
-
-# download Packages file from the DESY DOOCS apt repositories
-subprocess.call(["wget", "-q", "http://doocspkgs.desy.de/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
-
-# open Packages file and parse it
-PackageFile = debian.debian_support.PackageFile("Packages.DESY")
-Packages = []
-for Package in PackageFile:
-  Packages.append(Package)
-
-inputPackages = resolvePackagePattern(packagePattern, Packages)
-
-# search for packages depending on the specified package
-ReverseDependencies = []
-for package in inputPackages:
-  findReverseDependencies(package, Packages, ReverseDependencies)
-
-# output list (as a set, to make it unique)
-for dep in set(ReverseDependencies):
-  print(dep)
+if __name__ == "__main__":
+    main()
