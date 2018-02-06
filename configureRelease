@@ -304,6 +304,15 @@ if is_using_local:
 version_base_dir = project+"/"+epoch+"/"+codename+"-"+arch
 dependency_dir = version_base_dir
 
+# make dependency versions available in the config
+for dependency in dependencies:
+  if dependency != "":
+    deps_epoch_array = re.findall("^.*"+codename+"[0-9]*\.", dependency_versions[dependency])
+    if(len(deps_epoch_array) != 0):
+      deps_epoch = deps_epoch_array[0][:-1]
+      deps_epoch_split = deps_epoch.split(codename)
+      config["dependency-debversion-"+dependency] = deps_epoch_split[0].replace(".","-")+"-"+codename+deps_epoch_split[1]
+
 # create list of dependencies with versions
 build_depends=""
 for dependency in dependencies:
