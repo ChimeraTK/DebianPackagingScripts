@@ -55,6 +55,34 @@ if [ "$NEED_CLEANUP" == "1" ]; then
   echo ""
 fi
 
+# check for local modifications in the DebianBuildVersions directory
+do_not_publish=0
+./checkIfBuildVersionsCommitted || do_not_publish=1
+if [ $do_not_publish == 1 ]; then
+  echo ""
+  echo -n "Continue anyway or reset the DebianBuildVersions directory (y/r/N)? "
+  read answer
+  if [ "$answer" = "r" -o "$answer" = "R" ]; then
+    echo ""
+    echo "*** ATTENTION ***"
+    echo "All modifications to the DebianBuildVersions directory including new files will be lost irreversible!"
+    ask "Do you really want to reset the DebianBuildVersions directory (y/N)? "
+    ( cd DebianBuildVersions ; git reset --hard ; git clean -f -d )
+    do_not_publish=0
+    ./checkIfBuildVersionsCommitted
+    if [ $do_not_publish == 1 ]; then
+      echo "Sorry, automatic cleaning did not work. Aborted."
+      false
+    else
+      echo "The DebianBuildVersions directory has been cleaned successfully."
+    fi
+  elif [ "$answer" != "y" -a "$answer" != "Y" ]; then
+    echo "Aborted."
+    false
+  fi
+fi
+echo "do_not_publish=${do_not_publish}" >> master-control
+
 # obtain distribution code name
 distribution="$1"
 arch="amd64"      # note: changing this has not been tested!
@@ -65,14 +93,6 @@ touch master-control
 echo "distribution=${distribution}" >> master-control
 echo "arch=${arch}" >> master-control
 echo "declare -A package_buildcmd" >> master-control
-
-# check for local modifications in the DebianBuildVersions directory
-do_not_publish=0
-./checkIfBuildVersionsCommitted || do_not_publish=1
-if [ $do_not_publish == 1 ]; then
-  ask "Continue anyway (y/N)?" || ( rm master-control ; exit 1 )
-fi
-echo "do_not_publish=${do_not_publish}" >> master-control
 
 # checkout or update the control git repository
 source config.sh
