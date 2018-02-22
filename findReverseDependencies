@@ -12,7 +12,7 @@ import tempfile
 import shutil
 import re #regular expressions library
 
-def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies):
+def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies, codename):
   for Package in Packages:
     PackageAsDictionary = dict(Package)
     if 'Depends' in PackageAsDictionary:
@@ -29,7 +29,7 @@ def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies
           # add the found package to the list
           ReverseDependencies.append(PackageAsDictionary['Package']+' '+version)
           # recursive search: find packages depending on the found package as well
-          findReverseDependencies(PackageAsDictionary['Package'], Packages, ReverseDependencies)
+          findReverseDependencies(PackageAsDictionary['Package'], Packages, ReverseDependencies, codename)
 
 def resolvePackagePattern(packagePattern, Packages):
   resolvedPackages = []
@@ -53,9 +53,9 @@ def main():
     # parse command line arguments
     packagePattern = sys.argv[1]
     codename = sys.argv[2]
-    debianrepository = sys.argv[4]                  # repository base name used to retrieve a package list
-    if len(sys.argv) == 4 :
-      arch = sys.argv[3]
+    debianrepository = sys.argv[3]                  # repository base name used to retrieve a package list
+    if len(sys.argv) == 5 :
+      arch = sys.argv[4]
     else:
       arch = "amd64"
     
@@ -73,7 +73,7 @@ def main():
     # search for packages depending on the specified package
     ReverseDependencies = []
     for package in inputPackages:
-      findReverseDependencies(package, Packages, ReverseDependencies)
+      findReverseDependencies(package, Packages, ReverseDependencies, codename)
     
     # output list (as a set, to make it unique)
     for dep in set(ReverseDependencies):
