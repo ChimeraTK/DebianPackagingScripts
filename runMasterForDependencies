@@ -7,15 +7,16 @@ cd $(dirname "$0")
 # and rebuild all of it dependent packages.
 
 #check the input.
-if [[ $# != 2 ]]; then
-  echo "Usage: ./runMasterForDependencies <distribution_codename> <package_pattern>"
-  echo "Example: ./runMasterForDependencies xenial \"dev-doocs.*\""
+if [[ $# != 3 ]]; then
+  echo "Usage: ./runMasterForDependencies <distribution_codename> <package_pattern> <debian_repository>"
+  echo "Example: ./runMasterForDependencies xenial \"dev-doocs.*\" http://doocspkgs.desy.de/"
   exit 1
 fi
 
 codename=$1
 package_pattern=$2
+debian_repository=$3
 
-input_to_master=`./findReverseDependencies "${package_pattern}" ${codename} | sed -e 's/^lib//' -e 's/-dev / /'`
+input_to_master=`./findReverseDependencies "${package_pattern}" ${codename} ${debian_repository}| sed -e 's/^lib//' -e 's/-dev / /'`
 
 ./master ${codename} ${input_to_master}
