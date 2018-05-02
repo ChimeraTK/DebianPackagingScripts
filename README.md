@@ -56,8 +56,12 @@ Describe which questions the master script might ask, under which conditions it 
 
 ##DOOCS and other dependencies
 
-In case a library is updated which is not packages with these scripts, you can trigger all dependent libraries
-to be build using the `runMasterForDependencies` script. The input is a REGEX pattern describing the packages which have changed, and all dependent packages which can be build with the ChimeraTK debian packaging scripts are updated.
+In case a library is updated which is not packaged with these scripts, you can trigger all dependent libraries
+to be build using the `runMasterForDependencies` script. The input is a REGEX pattern describing the packages which have changed, and all dependent libraries which can be build with the ChimeraTK debian packaging scripts are updated.
+
+**FIXME**
+
+Currently there is a filter to lib.*-dev in the package name. Is this too restrictive (for instance for python bindings)?
 
 ###Example: The DOOCS libraries
 
@@ -65,7 +69,7 @@ DOOCS consists of several library packages, their names start with 'dev-doocs', 
 
 Example:
 ```
-~/DebianPackagingScripts$ ./runMasterForDependencies xenial "dev-doocs.*"
+~/DebianPackagingScripts$ ./runMasterForDependencies xenial "dev-doocs.*" http://doocspkgs.desy.de/
 No config for 'dev-doocswrappers' found. No packages for this project will be build.
 The following packages will be build (in that order):
 bam 01.00.02
