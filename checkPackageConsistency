@@ -99,7 +99,7 @@ for subpackage in ${config[Has_packages]} ; do
     package_suffix=""
     if [ $subpackage == "dev" -o $subpackage == "doc" -o $subpackage == "extra" ]; then
       package_suffix="-$subpackage"
-    elif [ $subpackage == "dev-noheader" ]; then
+    elif [ $subpackage == "dev-noheader" -o $subpackage == "dev-headeronly" ]; then
       package_suffix="-dev"
     elif [ $subpackage == "python" ]; then
       package_suffix=""
@@ -142,10 +142,10 @@ for subpackage in ${config[Has_packages]} ; do
       ERROR=1
     fi
 
-  elif [ $subpackage == "dev" -o $subpackage == "dev-noheader" ]; then
+  elif [ $subpackage == "dev" -o $subpackage == "dev-noheader" -o $subpackage == "dev-headeronly" ]; then
 
     # check for presence of include files
-    if [ $subpackage == "dev" ]; then
+    if [ $subpackage == "dev" -o $subpackage == "dev-headeronly" ]; then
       n_include_files=`dpkg -c $debname | grep "\./usr/include/" | wc -l`
       if [ "$n_include_files" -lt 2 ]; then   # 2 is correct since directories (like /usr/include itself) are counted as well
         echo "No include files found in the dev package!"
@@ -168,10 +168,12 @@ for subpackage in ${config[Has_packages]} ; do
     fi
 
     # check for presence of so link
-    so_link=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}.so -> lib${package}.so.${so_version_nopatch}$"`
-    if [ -z "$so_link" ]; then
-      echo "Cannot find the link to the .so file in the dev pacakge by the name: ./usr/lib/lib${package}.so"
-      ERROR=1
+    if [ $subpackage == "dev" -o $subpackage == "dev-noheader" ]; then
+      so_link=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}.so -> lib${package}.so.${so_version_nopatch}$"`
+      if [ -z "$so_link" ]; then
+        echo "Cannot find the link to the .so file in the dev pacakge by the name: ./usr/lib/lib${package}.so"
+        ERROR=1
+      fi
     fi
 
     # read "Depends:" line from dpkg -I output and parse it into an array (split by commas)

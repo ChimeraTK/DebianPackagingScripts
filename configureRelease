@@ -246,6 +246,8 @@ if "dev" in hasPackages:
   dependencies_dev = config["Dependencies-dev"].split(" ")
 elif "dev-noheader" in hasPackages:
   dependencies_dev = config["Dependencies-dev"].split(" ")
+elif "dev-headeronly" in hasPackages:
+  dependencies_dev = config["Dependencies-dev"].split(" ")
 else:
   dependencies_dev = {}
 
@@ -403,6 +405,8 @@ if not "Package-name-dev" in config:
   config["Package-name-dev"] = config["package-basename"]+"-dev"
 if not "Package-name-dev-noheader" in config:
   config["Package-name-dev-noheader"] = config["Package-name-dev"]
+if not "Package-name-dev-headeronly" in config:
+  config["Package-name-dev-headeronly"] = config["Package-name-dev"]
 if not "Package-name-doc" in config:
   config["Package-name-doc"] = config["package-basename"]+"-doc"
 if not "Package-name-bin" in config:

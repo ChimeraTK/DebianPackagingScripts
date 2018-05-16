@@ -1,0 +1,4 @@
+usr/bin/*-config
+usr/include/*
+usr/share/cmake*
+#Install-additional-pattern-dev#
