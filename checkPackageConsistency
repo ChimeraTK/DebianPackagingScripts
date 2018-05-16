@@ -8,6 +8,7 @@ if [ -z "$package" ]; then
   echo "nameOfPackage must be one of the package names defined in the DebianBuildVersions repository and must have been built already prior to running this script."
   exit 1
 fi
+package_lc=`echo "$package" | tr '[:upper:]' '[:lower:]'`
 
 WD=`realpath $(dirname "$0")`
 cd "$WD"
@@ -79,6 +80,10 @@ if [ -n "`echo \" ${config[Has_packages]} \" | grep \" lib \"`" ]; then
   is_library=1
   package_prefix="lib"
 fi
+if [ -n "`echo \" ${config[Has_packages]} \" | grep \" dev-headeronly \"`" ]; then
+  is_library=1
+  package_prefix="lib"
+fi
 
 # count number of files checked across calles to this script (needed for the vaildation script)
 if [ ! -f "${LOCAL_REPOS}/nDebianFilesChecked.txt" ]; then
@@ -110,7 +115,7 @@ for subpackage in ${config[Has_packages]} ; do
         package_suffix="${epoch_version_no_buildversion}"
       fi
     fi
-    name=${package_prefix}${package}${package_suffix}
+    name=${package_prefix}${package_lc}${package_suffix}
   # if name was specified, replace #debversion# with the epoch version
   else
     name=`echo $name | sed -e "s|#debversion#|${epoch_version}|"`
@@ -221,7 +226,7 @@ for subpackage in ${config[Has_packages]} ; do
   elif [ $subpackage == "doc" ]; then
 
     # check for presence of html files
-    n_html_files=`dpkg -c $debname | grep "\./usr/share/doc/lib${package}${epoch_version}/html/.*\.html" | wc -l`
+    n_html_files=`dpkg -c $debname | grep -i "\./usr/share/doc/lib${package}${epoch_version}/html/.*\.html" | wc -l`
     if [ "$n_html_files" -lt 10 ]; then   # note, this is a quite arbitrary number!
       echo "Only $n_html_files html files found in the doc package! The validation expects at least 10 (which is arbitrary)."
       ERROR=1
