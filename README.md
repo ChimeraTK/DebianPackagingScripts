@@ -1,6 +1,6 @@
-#Debian Packaging Scripts
+# Debian Packaging Scripts
 
-##Introduction
+## Introduction
 
 The denian packaging system is designed for stable libraries which are not upgraded to a newer version in the lifetime
 of a debian distribution. Hence it is not foreseen to have more than one development package, and if it is upated, the dependent debian packages are not affected due to binary compatibility.
@@ -13,7 +13,7 @@ The scripts also automatically determine the build number and count it up if a p
 
 The packages are published to the repositories on `doocs.desy.de` and `doocspkgs.desy.de`.
 
-##Usage
+## Usage
 
 Run the master script with the distriction you want to build for, and the (debian) package name and the version you want to build for.
 
@@ -54,7 +54,7 @@ The script will not only build those two packages but also all other libraries w
 
 Describe which questions the master script might ask, under which conditions it allows or block publishing of the results.
 
-##DOOCS and other dependencies
+## DOOCS and other dependencies
 
 In case a library is updated which is not packaged with these scripts, you can trigger all dependent libraries
 to be build using the `runMasterForDependencies` script. The input is a REGEX pattern describing the packages which have changed, and all dependent libraries which can be build with the ChimeraTK debian packaging scripts are updated.
@@ -63,7 +63,7 @@ to be build using the `runMasterForDependencies` script. The input is a REGEX pa
 
 Currently there is a filter to lib.*-dev in the package name. Is this too restrictive (for instance for python bindings)?
 
-###Example: The DOOCS libraries
+### Example: The DOOCS libraries
 
 DOOCS consists of several library packages, their names start with 'dev-doocs', hence we use the wildcard 'dev-doocs.*'.
 
