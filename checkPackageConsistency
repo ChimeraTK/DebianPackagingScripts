@@ -133,6 +133,8 @@ for subpackage in ${config[Has_packages]} ; do
   
   # sub-package specific tests:
   debname=`echo ${name}_*.deb`
+  debug_name=`echo ${name}*dbgsym*_*.deb`
+  package_increment=1
   if [ $subpackage == "lib" ]; then
 
     # check for presence of .so file with the right name and version number in the pacakge
@@ -144,6 +146,14 @@ for subpackage in ${config[Has_packages]} ; do
     so_link=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}.so.${so_version_nopatch} -> lib${package}.so.${so_version}$"`
     if [ -z "$so_link" ]; then
       echo "Cannot find the link to the .so file in the library pacakge by the name: ./usr/lib/lib${package}.so.${so_version_nopatch}"
+      ERROR=1
+    fi
+
+    # There should be a debug package as well
+    debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+    package_increment=2
+    if [ "$debug_files" -lt 1 ]; then
+      echo "Debug package for doocs server is empty!"
       ERROR=1
     fi
 
@@ -223,12 +233,24 @@ for subpackage in ${config[Has_packages]} ; do
       fi
     done
 
+    # There should NOT be a debug package for this
+    if [ -e $debug_name ] ; then
+      echo "Unexpected debug file $debug_name found for development package"
+      ERROR=1
+    fi
+
   elif [ $subpackage == "doc" ]; then
 
     # check for presence of html files
     n_html_files=`dpkg -c $debname | grep -i "\./usr/share/doc/lib${package}${epoch_version}/html/.*\.html" | wc -l`
     if [ "$n_html_files" -lt 10 ]; then   # note, this is a quite arbitrary number!
       echo "Only $n_html_files html files found in the doc package! The validation expects at least 10 (which is arbitrary)."
+      ERROR=1
+    fi
+
+    # There should NOT be a debug package for this
+    if [ -e $debug_name ] ; then
+      echo "Unexpected debug file $debug_name found for doc package"
       ERROR=1
     fi
 
@@ -248,6 +270,14 @@ for subpackage in ${config[Has_packages]} ; do
       ERROR=1
     fi
 
+    # There should be a debug package as well
+    debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+    package_increment=2
+    if [ "$debug_files" -lt 1 ]; then
+      echo "Debug package for doocs server is empty!"
+      ERROR=1
+    fi
+
   elif [ $subpackage == "extra" ]; then
 
     # check for presence of files
@@ -262,6 +292,18 @@ for subpackage in ${config[Has_packages]} ; do
     if [ "$n_config_files" -gt 0 ]; then
       echo "The config script from the dev package was found in the extra package!"
       ERROR=1
+    fi
+
+    # May or may not have a debug package. If it has one, check for consistency
+    if [ -e "$debug_name" ] ; then
+      package_increment=2
+
+      # There should be a debug package as well
+      debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+      if [ "$debug_files" -lt 1 ]; then
+        echo "Debug package for doocs server is empty!"
+        ERROR=1
+      fi
     fi
 
   elif [ $subpackage == "python" ]; then
@@ -280,6 +322,18 @@ for subpackage in ${config[Has_packages]} ; do
       ERROR=1
     fi
 
+    # May or may not have a debug package. If it has one, check for consistency
+    if [ -e "$debug_name" ] ; then
+      package_increment=2
+
+      # There should be a debug package as well
+      debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+      if [ "$debug_files" -lt 1 ]; then
+        echo "Debug package for doocs server is empty!"
+        ERROR=1
+      fi
+    fi
+
   elif [ $subpackage == "doocs-bin" ]; then
 
     # check for presence of files in /export/doocs/server/...
@@ -288,7 +342,14 @@ for subpackage in ${config[Has_packages]} ; do
       echo "No files in the /export/doocs/server directory were found in the bin package!"
       ERROR=1
     fi
-    
+
+    # There should be a debug package as well
+    debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+    package_increment=2
+    if [ "$debug_files" -lt 1 ]; then
+      echo "Debug package for doocs server is empty!"
+      ERROR=1
+    fi
   else
   
     echo "Unknown sub-package type: $subpackage"
@@ -297,7 +358,7 @@ for subpackage in ${config[Has_packages]} ; do
   fi
   
   # increment checked number of files
-  nDebianFilesChecked=$(( nDebianFilesChecked + 1 ))
+  nDebianFilesChecked=$(( nDebianFilesChecked + package_increment ))
 
 done
 
