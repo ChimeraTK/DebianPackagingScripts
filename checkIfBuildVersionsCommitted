@@ -19,7 +19,7 @@ LATEST_COMMIT_LOCAL=`git log | head -n1`
 
 if [ "${LATEST_COMMIT_ORIGIN}" != "${LATEST_COMMIT_LOCAL}" ]; then
     echo "************************* WARNING *************************"
-    echo "Your probably have not pushed your commits. You are not allowed to publish packages like this!"
+    echo "You probably have not pushed your commits. You are not allowed to publish packages like this!"
     echo "************************* WARNING *************************"
     exit 1
 fi
