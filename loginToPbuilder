@@ -1,7 +1,6 @@
 #!/bin/bash -e
 
 # Shell script to log into the pbuilder chroot environment (needed for debugging purposes only)
-source config.sh
 # create directory holding pbuilder images
 WD=`realpath $(dirname "$0")`
 mkdir -p "${WD}/pbuilder-base"
@@ -15,6 +14,7 @@ if [ -z "$1" ] ; then
   exit 1
 fi
 DISTRIBUTION="$1"
+source config.sh
 
 echo "Using repository ${DEBIANREPOSITORY}"
 
@@ -25,9 +25,8 @@ if [ ! -f ${PBUILDER_IMAGE} ]; then
 fi
 
 ${WD}/updateLocalRepos
-LOCAL_REPOS=${WD}/pbuilder-result
 
-MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [trusted=yes] ${DebianRepository}/pub/doocs ${DISTRIBUTION} main"
+main universe|deb http://de.archive.ubuntu.com/ubuntu/ ${DISTRIBUTION}-security main universe"
 sudo pbuilder --login --distribution ${DISTRIBUTION} --override-config --components "main universe"                  \
               --othermirror "${MIRRORLIST}"  \
               --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}"         || exit 1

@@ -10,7 +10,7 @@ mkdir -p "${WD}/pbuilder-base"
 if [ -z "$1" ] ; then
   # print usage
   echo "Usage:"
-  echo "  ./updatePBuilder <distributionCodeName> <debian_repository>"
+  echo "  ./updatePBuilder <distributionCodeName>"
   echo "     - Update the image for the given distribution. If no image exists, create it first."
   echo ""
   echo "  ./updatePBuilder --setup <distributionCodeName>"
@@ -22,12 +22,13 @@ elif [ "$1" == "--setup" ] ; then
     exit 1
   fi
   DISTRIBUTION=$2
-  DEBIANREPOSITORY=$3
   rm -rf "pbuilder-base/base-${DISTRIBUTION}.tgz"
 else
   DISTRIBUTION=$1
-  DEBIANREPOSITORY=$2
 fi
+
+# load configuration
+source ${WD}/config.sh
 
 # form the file name of the image
 PBUILDER_IMAGE="${WD}/pbuilder-base/base-${DISTRIBUTION}.tgz"
@@ -35,7 +36,6 @@ PBUILDER_IMAGE="${WD}/pbuilder-base/base-${DISTRIBUTION}.tgz"
 # build the mirror list including the local repository
 LOCAL_REPOS=${WD}/pbuilder-result
 mkdir -p "${LOCAL_REPOS}"
-MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [trusted=yes] ${DEBIANREPOSITORY}/pub/doocs ${DISTRIBUTION} main"
 
 # if image does not exist, create it first
 if [ ! -f ${PBUILDER_IMAGE} ]; then

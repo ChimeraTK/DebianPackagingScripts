@@ -5,6 +5,7 @@
 # Default values are suitable for use at DESY
 #
 ########################################################################################################################
+WD=`realpath $(dirname "$0")`
 
 # URI of the DebianBuildVersions git repository
 DebianBuildVersionsURI=git@github.com:ChimeraTK/DebianBuildVersions.git
@@ -29,4 +30,12 @@ PackageArchive='/home/debian/${distribution}/stable'  # evalulate later
 declare -A RepositoryDirectories
 RepositoryDirectories["intern"]=/export/reprepro/intern/doocs
 RepositoryDirectories["pub"]=/export/reprepro/pub/doocs
+
+# Path to the local Debian "repository"
+LOCAL_REPOS=${WD}/pbuilder-result
+
+DEBIANREPOSITORY="${DebianRepository}"
+
+# List of mirrors / package repositories used inside the pbuilder environment by apt
+MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [trusted=yes] ${DEBIANREPOSITORY}/pub/doocs ${DISTRIBUTION} main|deb http://de.archive.ubuntu.com/ubuntu/ ${DISTRIBUTION}-updates main universe|deb http://de.archive.ubuntu.com/ubuntu/ ${DISTRIBUTION}-security main universe"
 

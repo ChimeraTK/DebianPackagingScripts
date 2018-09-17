@@ -1,7 +1,6 @@
 #!/bin/bash -e
 
 # Shell script to generate a debian package from a particular tag (configured during the cmake configuration).
-
 # Parse command line arguments
 if [ -z "$1" ] ; then
   # print usage
@@ -17,6 +16,7 @@ if [ ! -f "${CONTROLDIR}/makeDebianPackage.config" ]; then
   exit 1
 fi
 source "${CONTROLDIR}/makeDebianPackage.config"
+source config.sh
 export PROJECT_BUILDVERSION
 
 if [ -z ${N_PBUILDER_THREADS} ]; then
@@ -61,7 +61,6 @@ debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION} --distrib
 
 # Now everything is prepared and we can actually build the package.
 # If you have a gpg signature you can remove the -us and -uc flags and sign the package.
-MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [trusted=yes] http://doocspkgs.desy.de/pub/doocs ${DISTRIBUTION} main"
 
 #Note: --debbuildopts must be before the -- to be effectice
 time pdebuild --debbuildopts -j${N_PBUILDER_THREADS} -- --distribution ${DISTRIBUTION} --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"   \

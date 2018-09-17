@@ -15,15 +15,16 @@ function getFromConfig() {  # arguments: package name, config variable; sets var
   config[$name]=$value
 }
 
-# load configuration
-source config.sh
-
 # load master-control file
 if [ ! -f master-control ]; then
     echo "No master_control file found. Run the master script first."
     exit 1
 fi
 source master-control
+DISTRIBUTION=${distribution}
+
+# load configuration
+source ${WD}/config.sh
 
 # preperations for running pbuilder later
 LOCAL_REPOS="${WD}/pbuilder-result"
@@ -53,7 +54,6 @@ SCRIPT=`mktemp -p ${LOCAL_REPOS}`  # must be in the pbuilder-result directory, s
 echo "#!/bin/bash -e" > $SCRIPT
 echo "apt-get install -y `echo $PACKAGE_LIST`" >> $SCRIPT
 
-MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${distribution} main|deb [trusted=yes] ${DebianRepository}/pub/doocs ${distribution} main"
 sudo pbuilder --execute --distribution ${distribution} --override-config --components "main universe" \
               --othermirror "${MIRRORLIST}"                                                           \
               --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} /run/shm" "${SCRIPT}"
