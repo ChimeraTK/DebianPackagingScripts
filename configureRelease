@@ -413,7 +413,8 @@ else:
 print("Build number: "+str(build_number))
   
 # extend the config by dynamic variables
-config["project"] = project
+if "project" not in config:
+  config["project"] = project
 if "lib" in hasPackages or "dev-headeronly" in hasPackages:
   config["package-basename"] = "lib"+project.lower()
 else:
