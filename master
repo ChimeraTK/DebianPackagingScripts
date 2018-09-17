@@ -31,7 +31,9 @@ function hasValue() {
 # check command line arguments
 if [ $# -lt 3 -o $(($#%2)) -eq 0 ]; then
   echo "Usage: ./master <distribution_codename> <package_name1> <package_version1> [<package_name2> <package_version2>] [...]"
-  echo "Example: ./master xenial mtca4u-deviceaccess 00.16.00 qthardmon 00.17.07"
+  echo "Example: ./master xenial chimeratk-deviceaccess 00.16.00 qthardmon latest"
+  echo ""
+  echo "Specifying 'latest' as a version will build the greatest version (see sort -V) found on the source repository."
   exit 1
 fi
 
@@ -112,6 +114,7 @@ while [ -n "$1" ]; do
 done
 
 # search for reverse dependencies of dev packages
+echo "Searching for reverse dependencies..."
 for package in "${!package_list[@]}"; do
   # obtain possible reverse dependencies for lib${package}-dev
   TEMPFILE=`mktemp`
@@ -129,7 +132,29 @@ for package in "${!package_list[@]}"; do
   done
 done
 
+# check versions and deal with "latest" version spec
+echo "Verifying versions..."
+for package in "${!package_list[@]}"; do
+  REPO=`grep "^SourceURI: " DebianBuildVersions/$package/CONFIG | sed -e 's|^SourceURI: ||'`
+  if [ ${package_list["${package}"]} == "latest" ]; then
+    package_list["${package}"]=`git ls-remote --tags ${REPO} | sed -e 's_^.*refs/tags/__' | grep -v "\^{}$" | sort -V | tail -1`
+  else
+    VERSION_OK=0
+    for version in `git ls-remote --tags ${REPO} | sed -e 's_^.*refs/tags/__' | grep -v "\^{}$"`; do
+      if [ ${package_list["${package}"]} == $version ]; then
+        VERSION_OK=1
+      fi
+    done
+    if [ $VERSION_OK == 0 ]; then
+      rm master-control
+      echo "*** ERROR: Version "${package_list["${package}"]}" of package ${package} is not found on the repository!"
+      exit 1
+    fi
+  fi
+done
+
 # sort package list so dependencies are built first
+echo "Sorting package list..."
 declare -a package_build_order  # non-associative array so we have a well-defined order
 for package in "${!package_list[@]}"; do    # fill array initially with package names from the list
   package_build_order+=("$package")
@@ -139,7 +164,7 @@ while [ "$sorting_done" == "0" ]; do
   declare -a package_build_order_sort
   sorting_done=1
   for package in "${package_build_order[@]}"; do
-    #check if the package has a config. If not print a warning and ignore it  
+    # check if the package has a config. If not print a warning and ignore it  
     if ! [ -e DebianBuildVersions/$package/CONFIG ]; then
       echo "No config for '$package' found. No packages for this project will be build."
       continue
@@ -170,6 +195,7 @@ while [ "$sorting_done" == "0" ]; do
 done
 
 # output list of packages to be build
+echo ""
 echo "The following packages will be build (in that order):"
 for package in "${package_build_order[@]}"; do
   echo "$package ${package_list[$package]}"
