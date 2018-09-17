@@ -15,7 +15,7 @@ The packages are published to the repositories on `doocs.desy.de` and `doocspkgs
 
 ## Usage
 
-Run the master script with the distriction you want to build for, and the (debian) package name and the version you want to build for.
+Run the master script with the distibution you want to build for, and the (debian) package name and the version you want to build for.
 
 Currently available Ubuntu releases are
 

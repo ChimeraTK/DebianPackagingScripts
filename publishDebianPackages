@@ -40,19 +40,25 @@ for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the 
   BUILD_CONTROL_FILE=`echo ${package_buildcmd[$package]} | sed -e "s|^./makeDebianPackage |${WD}/|"`/control
   
   # obtain list of package names from the control file and form wildcards to match the deb files
-  TEMPFILE=`mktemp`
-  grep "^Package: " ${BUILD_CONTROL_FILE} | sed -e 's|^Package: ||g' > $TEMPFILE
-  PACKAGE_FILES_WILDCARDS_DEB=`cat $TEMPFILE | sed -e 's|$|_*.deb|g' | sed -e ':a;N;$!ba;s/\n/ /g'`
-  rm $TEMPFILE
-  
+  PACKAGE_FILES_WILDCARDS_DEB=$(awk 'BEGIN{ORS=" "} /^Package:/{print $2"_*.deb"}' ${BUILD_CONTROL_FILE})
+
+  # derive list of debug packages from this - they are not mentioned in the control files
+  PACKAGE_FILES_WILDCARDS_DBGSYM=$(awk 'BEGIN{ORS=" "} /^Package:/{print $2"-dbgsym_*.deb"}' ${BUILD_CONTROL_FILE})
+
+  # Filter dbgsym package names against available packages since they may or may not have been build
+  TMPPKG=""
+  for p in ${PACKAGE_FILES_WILDCARDS_DBGSYM} ; do
+      if ls ${p} >/dev/null 2>&1 ; then
+          TMPPKG="${TMPPKG} ${p}"
+      fi
+  done
+  PACKAGE_FILES_WILDCARDS_DBGSYM="${TMPPKG}"
+
   # obtain source package name from the control file and form wildcards to match the changes file
-  TEMPFILE=`mktemp`
-  grep "^Source: " ${BUILD_CONTROL_FILE} | sed -e 's|^Source: ||g' > $TEMPFILE
-  PACKAGE_FILES_WILDCARDS_CHANGES=`cat $TEMPFILE | sed -e 's|$|_*.changes|g' | sed -e ':a;N;$!ba;s/\n/ /g'`
-  rm $TEMPFILE
+  PACKAGE_FILES_WILDCARDS_CHANGES=$(awk 'BEGIN{ORS=" "} /^Source:/{print $2"_*.changes"}' ${BUILD_CONTROL_FILE})
 
   # merge the wildcards
-  PACKAGE_FILES_WILDCARDS="${PACKAGE_FILES_WILDCARDS_DEB} ${PACKAGE_FILES_WILDCARDS_CHANGES}"
+  PACKAGE_FILES_WILDCARDS="${PACKAGE_FILES_WILDCARDS_DEB} ${PACKAGE_FILES_WILDCARDS_CHANGES} ${PACKAGE_FILES_WILDCARDS_DBGSYM}"
   
 
   # obtain content of Target-repositories variable from CONFIG file
@@ -63,6 +69,7 @@ for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the 
   # -- from the actual repository
   # This is done by writing a script, copying it to the InstallHost and executing it there.
   echo "${PACKAGE_FILES_WILDCARDS_DEB}"
+  echo "${PACKAGE_FILES_WILDCARDS_DBGSYM}"
   TEMPFILE=`mktemp -p .`
   echo "#!/bin/bash -e" > $TEMPFILE
   echo "cd ${PackageArchive}" >> $TEMPFILE
@@ -71,11 +78,21 @@ for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the 
   echo "  echo mv \"\$p\" ../old" >> $TEMPFILE
   echo "  mv \"\$p\" ../old" >> $TEMPFILE
   echo "done" >> $TEMPFILE
-  echo "for p in ${PACKAGE_FILES_WILDCARDS_DEB}; do" >> $TEMPFILE
+  echo "for p in ${PACKAGE_FILES_WILDCARDS_DBGSYM}; do" >> $TEMPFILE
   echo "  if [ ! -f \"\$p\" ]; then continue ; fi" >> $TEMPFILE
+  echo "  packname=\`dpkg-deb -f \$p Package\`" >> $TEMPFILE
   echo "  echo mv \"\$p\" ../old" >> $TEMPFILE
   echo "  mv \"\$p\" ../old" >> $TEMPFILE
-  echo "  packname=\`echo \$p | sed -e 's|_.*\.deb$||'\`" >> $TEMPFILE
+  for REPO in ${TARGET_REPOSITORIES}; do
+    echo "  echo sudo -H reprepro --waitforlock 2 -Vb ${RepositoryDirectories[${REPO}]} remove ${distribution} \"\$packname\"" >> $TEMPFILE
+    echo "  sudo -H reprepro --waitforlock 2 -Vb ${RepositoryDirectories[${REPO}]} remove ${distribution} \"\$packname\"" >> $TEMPFILE
+  done
+  echo "done" >> $TEMPFILE
+  echo "for p in ${PACKAGE_FILES_WILDCARDS_DEB}; do" >> $TEMPFILE
+  echo "  if [ ! -f \"\$p\" ]; then continue ; fi" >> $TEMPFILE
+  echo "  packname=\`dpkg-deb -f \$p Package\`" >> $TEMPFILE
+  echo "  echo mv \"\$p\" ../old" >> $TEMPFILE
+  echo "  mv \"\$p\" ../old" >> $TEMPFILE
   for REPO in ${TARGET_REPOSITORIES}; do
     echo "  echo sudo -H reprepro --waitforlock 2 -Vb ${RepositoryDirectories[${REPO}]} remove ${distribution} \"\$packname\"" >> $TEMPFILE
     echo "  sudo -H reprepro --waitforlock 2 -Vb ${RepositoryDirectories[${REPO}]} remove ${distribution} \"\$packname\"" >> $TEMPFILE
@@ -92,7 +109,8 @@ for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the 
 
   # Step 3: Install to the repository
   for REPO in ${TARGET_REPOSITORIES}; do
-      for FILE in ${PACKAGE_FILES_WILDCARDS_DEB}; do
+      PUBLISH_FILES_WILDCARDS="${PACKAGE_FILES_WILDCARDS_DEB} ${PACKAGE_FILES_WILDCARDS_DBGSYM}"
+      for FILE in ${PUBLISH_FILES_WILDCARDS} ; do
           ssh ${InstallHost} sudo -H reprepro --waitforlock 2 -Vb \
               ${RepositoryDirectories[${REPO}]} includedeb ${distribution} \
               ${PackageArchive}/${FILE}
