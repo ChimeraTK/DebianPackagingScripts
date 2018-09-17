@@ -3,6 +3,7 @@ Section: #Section#
 Architecture: #architecture#
 Conflicts: #Conflicts-extra#
 Replaces: #Replaces-extra#
+Breaks: #Breaks-extra#
 Recommends: #Recommends-extra#
 Suggests: #Suggests-extra#
 Enhances: #Enhances-extra#

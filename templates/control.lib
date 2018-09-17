@@ -3,6 +3,7 @@ Section: libs
 Architecture: #architecture#
 Conflicts: #Conflicts-lib#
 Replaces: #Replaces-lib#
+Breaks: #Breaks-lib#
 Recommends: #Recommends-lib#
 Suggests: #Suggests-lib#
 Enhances: #Enhances-lib#

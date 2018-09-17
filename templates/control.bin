@@ -3,6 +3,7 @@ Section: #Section#
 Architecture: #architecture#
 Conflicts: #Conflicts-bin#
 Replaces: #Replaces-bin#
+Breaks: #Breaks-bin#
 Recommends: #Recommends-bin#
 Suggests: #Suggests-bin#
 Enhances: #Enhances-bin#

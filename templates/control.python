@@ -3,6 +3,7 @@ Section: #Section#
 Architecture: #architecture#
 Conflicts: #Conflicts-python#
 Replaces: #Replaces-python#
+Breaks: #Breaks-python#
 Recommends: #Recommends-python#
 Suggests: #Suggests-python#
 Enhances: #Enhances-python#
