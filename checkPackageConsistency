@@ -153,7 +153,7 @@ for subpackage in ${config[Has_packages]} ; do
     debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
     package_increment=2
     if [ "$debug_files" -lt 1 ]; then
-      echo "Debug package for doocs server is empty!"
+      echo "Debug package for lib package is empty!"
       ERROR=1
     fi
 
@@ -177,7 +177,7 @@ for subpackage in ${config[Has_packages]} ; do
 
     # check for presence of cmake find package macro
     n_config_files=`dpkg -c $debname | grep "\./usr/share/cmake-.*/Modules/Find.*\.cmake" | wc -l`
-    if [ "$n_config_files" -ne 1 ]; then
+    if [ "$n_config_files" -lt 1 ]; then
       echo "Did not find the cmake find_package macro!"
       ERROR=1
     fi
@@ -270,12 +270,14 @@ for subpackage in ${config[Has_packages]} ; do
       ERROR=1
     fi
 
-    # There should be a debug package as well
-    debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
-    package_increment=2
-    if [ "$debug_files" -lt 1 ]; then
-      echo "Debug package for doocs server is empty!"
-      ERROR=1
+    # Bin packages may or may not have a debug package (could contain only scripts). If it has one, check for consistency
+    if [ -e "$debug_name" ] ; then
+      debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+      package_increment=2
+      if [ "$debug_files" -lt 1 ]; then
+        echo "Debug package for bin package is empty!"
+        ERROR=1
+      fi
     fi
 
   elif [ $subpackage == "extra" ]; then
@@ -296,12 +298,10 @@ for subpackage in ${config[Has_packages]} ; do
 
     # May or may not have a debug package. If it has one, check for consistency
     if [ -e "$debug_name" ] ; then
-      package_increment=2
-
-      # There should be a debug package as well
       debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+      package_increment=2
       if [ "$debug_files" -lt 1 ]; then
-        echo "Debug package for doocs server is empty!"
+        echo "Debug package for extra packagte is empty!"
         ERROR=1
       fi
     fi
@@ -329,7 +329,7 @@ for subpackage in ${config[Has_packages]} ; do
       # There should be a debug package as well
       debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
       if [ "$debug_files" -lt 1 ]; then
-        echo "Debug package for doocs server is empty!"
+        echo "Debug package for python package is empty!"
         ERROR=1
       fi
     fi
