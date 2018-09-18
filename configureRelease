@@ -105,6 +105,13 @@ config["Replaces-extra"] = ""
 config["Replaces-python"] = ""
 config["Replaces-doc"] = ""
 
+config["Breaks-lib"] = ""
+config["Breaks-dev"] = ""
+config["Breaks-bin"] = ""
+config["Breaks-extra"] = ""
+config["Breaks-python"] = ""
+config["Breaks-doc"] = ""
+
 config["Enhances-lib"] = ""
 config["Enhances-dev"] = ""
 config["Enhances-bin"] = ""
