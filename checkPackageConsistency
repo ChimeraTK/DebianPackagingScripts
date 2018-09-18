@@ -60,7 +60,7 @@ fi
   
 # obtain epoch version as part of the Debian package name
 epoch_version=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|-[^/].*/||' -e 's|/|-|' -e 's|\.|-|'`
-epoch_version_no_builversion=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|/.*$||' -e 's|\.|-|'`
+epoch_version_no_buildversion=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|/.*$||' -e 's|\.|-|'`
   
 # obtain so file version in two different ways and compare
 so_version_nopatch=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|-[^/].*/||' -e 's|/||'`
@@ -133,7 +133,7 @@ for subpackage in ${config[Has_packages]} ; do
   
   # sub-package specific tests:
   debname=`echo ${name}_*.deb`
-  debug_name=`echo ${name}*dbgsym*_*.deb`
+  debug_name=`echo ${name}-dbgsym*_*.deb`
   package_increment=1
   if [ $subpackage == "lib" ]; then
 
@@ -152,6 +152,7 @@ for subpackage in ${config[Has_packages]} ; do
     # There should be a debug package as well
     debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
     package_increment=2
+    echo " -> debug package for subpackage: lib"
     if [ "$debug_files" -lt 1 ]; then
       echo "Debug package for lib package is empty!"
       ERROR=1
@@ -274,6 +275,7 @@ for subpackage in ${config[Has_packages]} ; do
     if [ -e "$debug_name" ] ; then
       debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
       package_increment=2
+      echo " -> debug package for subpackage: bin"
       if [ "$debug_files" -lt 1 ]; then
         echo "Debug package for bin package is empty!"
         ERROR=1
@@ -300,6 +302,7 @@ for subpackage in ${config[Has_packages]} ; do
     if [ -e "$debug_name" ] ; then
       debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
       package_increment=2
+      echo " -> debug package for subpackage: extra"
       if [ "$debug_files" -lt 1 ]; then
         echo "Debug package for extra packagte is empty!"
         ERROR=1
@@ -325,6 +328,7 @@ for subpackage in ${config[Has_packages]} ; do
     # May or may not have a debug package. If it has one, check for consistency
     if [ -e "$debug_name" ] ; then
       package_increment=2
+      echo " -> debug package for subpackage: python"
 
       # There should be a debug package as well
       debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
@@ -346,6 +350,7 @@ for subpackage in ${config[Has_packages]} ; do
     # There should be a debug package as well
     debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
     package_increment=2
+    echo " -> debug package for subpackage: doocs-bin"
     if [ "$debug_files" -lt 1 ]; then
       echo "Debug package for doocs server is empty!"
       ERROR=1
@@ -355,6 +360,14 @@ for subpackage in ${config[Has_packages]} ; do
     echo "Unknown sub-package type: $subpackage"
     ERROR=1
 
+  fi
+  
+  # Additional saftey check that the expected and counted packages are really there
+  if [ ! -f "${debname}" ]; then
+    echo "    *** MISSING PACKAGE: ${debname}"
+  fi
+  if [ ! -f "${debug_name}" -a ${package_increment} -gt 1 ]; then
+    echo "    *** MISSING PACKAGE: ${debug_name}"
   fi
   
   # increment checked number of files
