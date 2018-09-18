@@ -77,7 +77,8 @@ done
 
 # check total number of .deb files
 nfiles=`ls *.deb 2>/dev/null | wc -l`
-if [ $nfiles -ne `cat "${LOCAL_REPOS}/nDebianFilesChecked.txt"` ]; then
+nDebianFilesChecked=`cat "${LOCAL_REPOS}/nDebianFilesChecked.txt"`
+if [ $nfiles -ne $nDebianFilesChecked ]; then
   echo "Wrong number of .deb files in the pbuilder-results directory: $nfiles files found, $nDebianFilesChecked expected and checked."
   ERROR=1
 fi
