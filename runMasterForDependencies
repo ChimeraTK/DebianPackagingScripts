@@ -19,4 +19,6 @@ debian_repository=$3
 
 input_to_master=`./findReverseDependencies "${package_pattern}" ${codename} ${debian_repository}| sed -e 's/^lib//' -e 's/-dev / /'`
 
+echo ./master ${codename} ${input_to_master}
+
 ./master ${codename} ${input_to_master}
