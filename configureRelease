@@ -480,7 +480,7 @@ for package in hasPackages:
   # check if newer source version present in repository
   if(currentVersion != "none"):
     currentVersionNoBuildVersion = re.sub(r"" + codename + "[0-9]+", "", currentVersion)
-    [ currentMajor, currentMinor, currentPatch ] = currentVersionNoBuildVersion.split('.')
+    [ currentMajor, currentMinor, currentPatch ] = currentVersionNoBuildVersion.split('.',2)
     newVersionNoBuildVersion = re.sub(r"" + codename + "[0-9]+", "", config["package-version"])
     [ newMajor, newMinor, newPatch ] = newVersionNoBuildVersion.split('.')
     if(    (newMajor < currentMajor)
