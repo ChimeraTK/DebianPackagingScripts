@@ -58,6 +58,7 @@ if [ -z "${config[package_name_contains_buildversion]}" ]; then
   config[package_name_contains_buildversion]=1
 fi
   
+  
 # obtain epoch version as part of the Debian package name
 epoch_version=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|-[^/].*/||' -e 's|/|-|' -e 's|\.|-|'`
 epoch_version_no_buildversion=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|/.*$||' -e 's|\.|-|'`
@@ -118,7 +119,11 @@ for subpackage in ${config[Has_packages]} ; do
     name=${package_prefix}${package_lc}${package_suffix}
   # if name was specified, replace #debversion# with the epoch version
   else
-    name=`echo $name | sed -e "s|#debversion#|${epoch_version}|"`
+    if [ "${config[package_name_contains_buildversion]}" == "1" ]; then
+      name=`echo $name | sed -e "s|#debversion#|${epoch_version}|"`
+    else
+      name=`echo $name | sed -e "s|#debversion#|${epoch_version_no_buildversion}|"`
+    fi
   fi
 
   # check if there is exacty one .deb file per subpackage
