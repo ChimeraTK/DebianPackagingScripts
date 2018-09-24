@@ -88,6 +88,7 @@ config["package-name-contains-buildversion"] = "1"
 
 config["Dependencies-bin"] = ""
 config["Dependencies-extra"] = ""
+config["Dependencies-extra2"] = ""
 config["Dependencies-python"] = ""
 config["Install-additional-pattern-dev"] = ""
 
@@ -95,6 +96,7 @@ config["Conflicts-lib"] = ""
 config["Conflicts-dev"] = ""
 config["Conflicts-bin"] = ""
 config["Conflicts-extra"] = ""
+config["Conflicts-extra2"] = ""
 config["Conflicts-python"] = ""
 config["Conflicts-doc"] = ""
 
@@ -102,6 +104,7 @@ config["Replaces-lib"] = ""
 config["Replaces-dev"] = ""
 config["Replaces-bin"] = ""
 config["Replaces-extra"] = ""
+config["Replaces-extra2"] = ""
 config["Replaces-python"] = ""
 config["Replaces-doc"] = ""
 
@@ -109,6 +112,7 @@ config["Breaks-lib"] = ""
 config["Breaks-dev"] = ""
 config["Breaks-bin"] = ""
 config["Breaks-extra"] = ""
+config["Breaks-extra2"] = ""
 config["Breaks-python"] = ""
 config["Breaks-doc"] = ""
 
@@ -116,6 +120,7 @@ config["Enhances-lib"] = ""
 config["Enhances-dev"] = ""
 config["Enhances-bin"] = ""
 config["Enhances-extra"] = ""
+config["Enhances-extra2"] = ""
 config["Enhances-python"] = ""
 config["Enhances-doc"] = ""
 
@@ -123,6 +128,7 @@ config["Suggests-lib"] = ""
 config["Suggests-dev"] = ""
 config["Suggests-bin"] = ""
 config["Suggests-extra"] = ""
+config["Suggests-extra2"] = ""
 config["Suggests-python"] = ""
 config["Suggests-doc"] = ""
 
@@ -130,6 +136,7 @@ config["Recommends-lib"] = ""
 config["Recommends-dev"] = ""
 config["Recommends-bin"] = ""
 config["Recommends-extra"] = ""
+config["Recommends-extra2"] = ""
 config["Recommends-python"] = ""
 config["Recommends-doc"] = ""
 
@@ -137,6 +144,7 @@ config["Provides-lib"] = ""
 config["Provides-dev"] = ""
 config["Provides-bin"] = ""
 config["Provides-extra"] = ""
+config["Provides-extra2"] = ""
 config["Provides-python"] = ""
 config["Provides-doc"] = ""
 config["Override-auto-configure-flags"] = ""
@@ -458,6 +466,8 @@ if not "Install-pattern-python" in config:
   config["Install-pattern-python"] = "usr/lib/python*/*"
 if not "Package-name-extra" in config:
   config["Package-name-extra"] = config["package-basename"]+"-extra"
+if not "Package-name-extra2" in config:
+  config["Package-name-extra2"] = config["package-basename"]+"-extra2"
 if not "Package-name-python" in config:
   config["Package-name-python"] = config["package-basename"]
   

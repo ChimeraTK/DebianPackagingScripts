@@ -1,0 +1,13 @@
+Package: #Package-name-extra2#
+Section: #Section#
+Architecture: #architecture#
+Conflicts: #Conflicts-extra2#
+Replaces: #Replaces-extra2#
+Breaks: #Breaks-extra2#
+Recommends: #Recommends-extra2#
+Suggests: #Suggests-extra2#
+Enhances: #Enhances-extra2#
+Provides: #Provides-extra2#
+Depends: ${shlibs:Depends}, ${misc:Depends}, #Dependencies-extra2#
+Description: #Description-extra2#
+

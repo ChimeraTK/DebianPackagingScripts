@@ -103,7 +103,7 @@ for subpackage in ${config[Has_packages]} ; do
   # no name specified in the config: build it
   if [ -z "${name}" ]; then
     package_suffix=""
-    if [ $subpackage == "dev" -o $subpackage == "doc" -o $subpackage == "extra" ]; then
+    if [ $subpackage == "dev" -o $subpackage == "doc" -o $subpackage == "extra" -o $subpackage == "extra2" ]; then
       package_suffix="-$subpackage"
     elif [ $subpackage == "dev-noheader" -o $subpackage == "dev-headeronly" ]; then
       package_suffix="-dev"
@@ -287,19 +287,19 @@ for subpackage in ${config[Has_packages]} ; do
       fi
     fi
 
-  elif [ $subpackage == "extra" ]; then
+  elif [ $subpackage == "extra" -o $subpackage == "extra2" ]; then
 
     # check for presence of files
     extra_files=`dpkg -c $debname | wc -l`
     if [ "$extra_files" -lt 1 ]; then
-      echo "No files found in the extra package!"
+      echo "No files found in the $subpackage package!"
       ERROR=1
     fi
 
     # check that no -config script has leaked into the extra package
     n_config_files=`dpkg -c $debname | grep "\./usr/bin/.*-config" | wc -l`
     if [ "$n_config_files" -gt 0 ]; then
-      echo "The config script from the dev package was found in the extra package!"
+      echo "The config script from the dev package was found in the $subpackage package!"
       ERROR=1
     fi
 
@@ -307,9 +307,9 @@ for subpackage in ${config[Has_packages]} ; do
     if [ -e "$debug_name" ] ; then
       debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
       package_increment=2
-      echo " -> debug package for subpackage: extra"
+      echo " -> debug package for subpackage: $subpackage"
       if [ "$debug_files" -lt 1 ]; then
-        echo "Debug package for extra packagte is empty!"
+        echo "Debug package for $subpackage package is empty!"
         ERROR=1
       fi
     fi
@@ -323,7 +323,7 @@ for subpackage in ${config[Has_packages]} ; do
       ERROR=1
     fi
 
-    # check that no -config script has leaked into the extra package
+    # check that no -config script has leaked into the python package
     n_config_files=`dpkg -c $debname | grep "\./usr/bin/.*-config" | wc -l`
     if [ "$n_config_files" -gt 0 ]; then
       echo "The config script from the dev package was found in the python package!"
