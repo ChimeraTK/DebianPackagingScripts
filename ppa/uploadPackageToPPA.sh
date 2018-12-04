@@ -66,6 +66,7 @@ touch "${SourceBaseName}/debian/control-new"
 while read line; do
   line_new=""
   IFS=','
+  # tokenise the line to handle dependency versions properly
   for token in $line ; do
     IFS=' '
     # does the token contain a ChimeraTK build version (i.e. contain 'xenial')? -> replace 'xenial' with 'ubuntu'
@@ -81,6 +82,10 @@ while read line; do
       line_new="${line_new},${token}"
     fi
   done
+  # replace lines "Architecture: amd64" with "Architecture: any"
+  if [ "$line" == "Architecture: amd64" ]; then
+    line_new="Architecture: any"
+  fi
   echo ${line_new} >> "${SourceBaseName}/debian/control-new"
 done < "${SourceBaseName}/debian/control"
 mv "${SourceBaseName}/debian/control-new" "${SourceBaseName}/debian/control"
@@ -100,9 +105,13 @@ if [ `bzr status | wc -l` -eq 0 ]; then
   exit 0
 fi
 
+# form the Debian version
+DEBIAN_VERSION=`echo ${SOURCE_VERSION} | sed -e 's/\(..\...\)/\1ubuntu'${LAST_BUILD_NUMBER}'/'`
+
 # generate changelog file
 SOURCE_PACKAGE=`grep "^Source:" "debian/control" | sed -e 's/^Source: *//'`
-debchange --create --package ${SOURCE_PACKAGE} -v ${SOURCE_VERSION} "Automated preparation for the PPA"
+rm -f debian/changelog
+debchange --create --package ${SOURCE_PACKAGE} -v ${DEBIAN_VERSION} "Automated preparation for the PPA"
 
 # Commit everything to launchpad
 bzr add .
