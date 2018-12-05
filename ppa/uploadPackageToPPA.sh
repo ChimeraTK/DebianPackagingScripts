@@ -45,6 +45,7 @@ mkdir -p "${SourceBaseName}"
 cd "${SourceBaseName}"
 if [ ! -d .bzr ]; then
   bzr branch lp:~chimeratk/chimeratk/${SOURCE_PACKAGE}-package . --use-existing-dir || bzr init
+  bzr ignore .git
 else
   bzr merge lp:~chimeratk/chimeratk/${SOURCE_PACKAGE}-package
 fi
@@ -123,7 +124,7 @@ sed -i "${SourceBaseName}/debian/rules" -e 's,^#!/usr/bin/make -f$,#!/usr/bin/ma
 
 # check if anything modified. if not, we are done
 cd "${SourceBaseName}"
-if [ `bzr status | grep -v ".git" | grep -v "^modified:$" | grep -v "^unknown:$" | wc -l` -eq 0 ]; then
+if [ `bzr status | wc -l` -eq 0 ]; then
   echo "*** No changes, nothing to commit."
   exit 0
 fi
