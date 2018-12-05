@@ -15,7 +15,7 @@ REFERENCE_CODENAME=xenial
 # Update DebianBuildVersions
 if [ ! -d "DebianBuildVersions/.git" ]; then
   git clone https://github.com/ChimeraTK/DebianBuildVersions
-else 
+else
   cd DebianBuildVersions
   git pull
   cd ..
@@ -71,8 +71,14 @@ while read line; do
     IFS=' '
     # does the token contain a ChimeraTK build version (i.e. contain 'xenial')? -> replace 'xenial' with 'ubuntu'
     # otherwise remove everything within parenthesis
-    if [[ "$token" == *"xenial"* ]]; then
-      token="`echo "$token" | sed -e 's/xenial/ubuntu/'`"
+    if [[ "$token" == *"${REFERENCE_CODENAME}"* ]]; then
+      token="`echo "$token" | sed -e 's/'${REFERENCE_CODENAME}'/ubuntu/'`"
+      # exact version match? losen the match a bit, since the PPA adds a suffix to the version
+      if [[ "$token" == *"(="* ]]; then
+        dependency=`echo $token | sed -e 's/(=.*$//'`
+        version=`echo $token | sed -e 's/.*(=//' -e 's/)//'`
+        token="${dependency} (> ${version}-0~0), ${dependency} (< ${version}-999~999)"
+      fi
     else
       token="`echo "$token" | sed -e 's/ ([^)]*)//'`"
     fi
@@ -89,6 +95,10 @@ while read line; do
   echo ${line_new} >> "${SourceBaseName}/debian/control-new"
 done < "${SourceBaseName}/debian/control"
 mv "${SourceBaseName}/debian/control-new" "${SourceBaseName}/debian/control"
+
+# rename install files, replace 'xenial' in the filenames with 'ubuntu'
+rm -f ${SourceBaseName}/debian/*ubuntu*.install
+rename s/${REFERENCE_CODENAME}/ubuntu/ ${SourceBaseName}/debian/*.install
 
 # Hack the rules file to set the build version
 sed -i "${SourceBaseName}/debian/rules" -e 's,^#!/usr/bin/make -f$,#!/usr/bin/make -f\nexport PROJECT_BUILDVERSION=ubuntu'${LAST_BUILD_NUMBER}','
