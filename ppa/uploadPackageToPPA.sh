@@ -121,10 +121,12 @@ rename s/${REFERENCE_CODENAME}/ubuntu/ "${SourceBaseName}"/debian/*.install
 
 # process shlib files, replace 'xenial' in the filenames and inside the file with 'ubuntu'
 rm -f "${SourceBaseName}"/debian/*ubuntu*.shlib
-rename s/${REFERENCE_CODENAME}/ubuntu/ "${SourceBaseName}"/debian/*.shlib
-for f in "${SourceBaseName}"/debian/*.shlib ; do
-  sed -i $f -e 's/xenial/ubuntu/g'
-done
+if [ -e "${SourceBaseName}"/debian/*.shlib ]; then
+  rename s/${REFERENCE_CODENAME}/ubuntu/ "${SourceBaseName}"/debian/*.shlib
+  for f in "${SourceBaseName}"/debian/*.shlib ; do
+    sed -i $f -e 's/xenial/ubuntu/g'
+  done
+fi
 
 # Hack the rules file to set the build version
 sed -i "${SourceBaseName}/debian/rules" -e 's,^#!/usr/bin/make -f$,#!/usr/bin/make -f\nexport PROJECT_BUILDVERSION=ubuntu'${LAST_BUILD_NUMBER}','
