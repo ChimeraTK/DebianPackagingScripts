@@ -71,7 +71,7 @@ SOURCE_VERSION_NOPATCH=`echo "${LAST_BUILD_FILE}" | sed -e "s_^DebianBuildVersio
 cd "${SourceBaseName}"
 SOURCE_VERSION=`git tag | grep "^${SOURCE_VERSION_NOPATCH}" | sort | tail -n1`
 echo "Using source version $SOURCE_VERSION"
-git reset ${SOURCE_VERSION}
+git reset --hard ${SOURCE_VERSION}
 git checkout ${SOURCE_VERSION}
 cd ..
 
@@ -116,8 +116,15 @@ done < "${SourceBaseName}/debian/control"
 mv "${SourceBaseName}/debian/control-new" "${SourceBaseName}/debian/control"
 
 # rename install files, replace 'xenial' in the filenames with 'ubuntu'
-rm -f ${SourceBaseName}/debian/*ubuntu*.install
-rename s/${REFERENCE_CODENAME}/ubuntu/ ${SourceBaseName}/debian/*.install
+rm -f "${SourceBaseName}"/debian/*ubuntu*.install
+rename s/${REFERENCE_CODENAME}/ubuntu/ "${SourceBaseName}"/debian/*.install
+
+# process shlib files, replace 'xenial' in the filenames and inside the file with 'ubuntu'
+rm -f "${SourceBaseName}"/debian/*ubuntu*.shlib
+rename s/${REFERENCE_CODENAME}/ubuntu/ "${SourceBaseName}"/debian/*.shlib
+for f in "${SourceBaseName}"/debian/*.shlib ; do
+  sed -i $f -e 's/xenial/ubuntu/g'
+done
 
 # Hack the rules file to set the build version
 sed -i "${SourceBaseName}/debian/rules" -e 's,^#!/usr/bin/make -f$,#!/usr/bin/make -f\nexport PROJECT_BUILDVERSION=ubuntu'${LAST_BUILD_NUMBER}','
