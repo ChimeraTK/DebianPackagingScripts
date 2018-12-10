@@ -39,6 +39,7 @@ fi
 
 # check for other unfinished operations
 NEED_CLEANUP=0
+CONTINUE_BUILD=0
 if [ -e "master-control" ]; then
   echo "You file 'master-control' exists. Are you running another instance of this script in the same directory?"
   NEED_CLEANUP=1
@@ -52,14 +53,41 @@ if [ -e "debian_package" ]; then
   NEED_CLEANUP=1
 fi
 if [ "$NEED_CLEANUP" == "1" ]; then
-  ask "Do you want to remove any leftovers from the previous (or current!?) run and continue (y/N)?"
-  rm -rf pbuilder-result debian_package master-control
   echo ""
+  echo -n "Do you want to remove any leftovers from the previous (or current!?) run [y], try to continue the previous build [c], or abort [n] (y/c/N)? "
+  read answer
+  if [ "$answer" == "c" -o "$answer" == "C" ]; then
+    echo ""
+    echo " **************************************************"
+    echo " ***  Trying to continue the last build chain.  ***"
+    echo " ***  This feature has not been well tested.    ***"
+    echo " ***  Please double check the result before     ***"
+    echo " ***  publishing the packages and report any    ***"
+    echo " ***  issues immediately!                       ***"
+    echo " **************************************************"
+    echo ""
+    echo -n "Waiting for 10 seconds before proceeding."
+    for ((i=0; i<10; i++)); do
+      sleep 1
+      echo -n .
+    done
+    echo ""
+    CONTINUE_BUILD=1
+  elif [ "$answer" != "y" -a "$answer" != "Y" ]; then
+    echo ""
+    echo "Aborted."
+    false
+  else
+    rm -rf pbuilder-result debian_package master-control
+    echo ""
+  fi
 fi
 
 # check for local modifications in the DebianBuildVersions directory
 do_not_publish=0
-./checkIfBuildVersionsCommitted || do_not_publish=1
+if [ $CONTINUE_BUILD != 1 ]; then
+  ./checkIfBuildVersionsCommitted || do_not_publish=1
+fi
 if [ $do_not_publish == 1 ]; then
   echo ""
   echo -n "Continue anyway or reset the DebianBuildVersions directory (y/r/N)? "
@@ -83,18 +111,25 @@ if [ $do_not_publish == 1 ]; then
     false
   fi
 fi
-echo "do_not_publish=${do_not_publish}" >> master-control
 
 # obtain distribution code name
 distribution="$1"
 arch="amd64"      # note: changing this has not been tested!
 shift
 
+# continue build: read previous master-control file
+if [ $CONTINUE_BUILD == 1 ]; then
+  source master-control
+fi
+
 # create the master control file
-touch master-control
-echo "distribution=${distribution}" >> master-control
-echo "arch=${arch}" >> master-control
-echo "declare -A package_buildcmd" >> master-control
+if [ $CONTINUE_BUILD != 1 ]; then
+  touch master-control
+  echo "do_not_publish=${do_not_publish}" >> master-control
+  echo "distribution=${distribution}" >> master-control
+  echo "arch=${arch}" >> master-control
+  echo "declare -A package_buildcmd" >> master-control
+fi
 
 # checkout or update the control git repository
 source config.sh
@@ -198,7 +233,12 @@ done
 echo ""
 echo "The following packages will be build (in that order):"
 for package in "${package_build_order[@]}"; do
-  echo "$package ${package_list[$package]}"
+  echo -n "$package ${package_list[$package]}"
+  if [ -n "${package_buildcmd[$package]}" ]; then
+    echo " [already done]"
+    continue
+  fi
+  echo ""  
 done
 
 # ask if we want to proceed
@@ -211,6 +251,10 @@ sudo echo "We have root rights now."
 TEMPFILE=`mktemp`
 declare -A package_buildcmd        # associative array: package name -> command to build the package
 for package in "${package_build_order[@]}"; do
+  if [ -n "${package_buildcmd[$package]}" ]; then
+    echo "Package $package has already been built, continuing with next package..."
+    continue
+  fi
   echo ""
   echo "Configuring $package in version ${package_list[$package]} for ${distribution}..."
   # update pbuilder chroot environment (needed for every package, since dependencies might be added)
@@ -218,11 +262,12 @@ for package in "${package_build_order[@]}"; do
   # configure the package (possibly using just built dependencies)
   ./configureRelease "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee $TEMPFILE ; test ${PIPESTATUS[0]} -eq 0
   package_buildcmd[$package]=`tail -n1 $TEMPFILE`
-  echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
   echo ""
   # actually build the package
   echo "Building $package in version ${package_list[$package]} for ${distribution}..."
   ${package_buildcmd[$package]}
+  # put buildcmd into master-control file
+  echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
   # check consistency of the package
   ./checkPackageConsistency "$package"
 done
