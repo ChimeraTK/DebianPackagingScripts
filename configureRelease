@@ -19,6 +19,8 @@ def extract_tokens(input_string):
   return re.findall('#([a-zA-Z0-9-]+?)#', input_string)
 
 def replace_token(content, token):
+  if not token in config:
+    return ""
   if 'Install-pattern-' in token or 'Install-additional-pattern-' in token:
     install_pattern = re.sub(",[' ']*", '\n', config[token].strip())
     return content.replace("#"+token+"#", install_pattern)
