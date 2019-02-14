@@ -1,5 +1,6 @@
 #!/bin/bash -e
 cd $(dirname "$0")
+full_cmdline="$*"
 
 # master shell script for creating debian packages for multiple packages, with proper reverse-dependency checking
 # and other safetly checks.
@@ -120,11 +121,18 @@ shift
 # continue build: read previous master-control file
 if [ $CONTINUE_BUILD == 1 ]; then
   source master-control
+  if [ "$cmdline" != "$full_cmdline" ]; then
+    echo "Cannot continue build, the command line arguments passed are not identical to the last run."
+    echo "Old arguments were: $cmdline"
+    echo "New arguments are: $full_cmdline"
+    exit 1
+  fi
 fi
 
 # create the master control file
 if [ $CONTINUE_BUILD != 1 ]; then
   touch master-control
+  echo "cmdline='$full_cmdline'" >> master-control
   echo "do_not_publish=${do_not_publish}" >> master-control
   echo "distribution=${distribution}" >> master-control
   echo "arch=${arch}" >> master-control
