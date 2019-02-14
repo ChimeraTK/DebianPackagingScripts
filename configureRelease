@@ -477,6 +477,8 @@ if not "Package-name-doc" in config:
   config["Package-name-doc"] = config["package-basename"]+"-doc"
 if not "Package-name-bin" in config:
   config["Package-name-bin"] = config["package-basename"]+config["debversion"]
+if not "Install-pattern-lib" in config:
+  config["Install-pattern-lib"] = "usr/lib/lib*.so.*"
 if not "Install-pattern-bin" in config:
   config["Install-pattern-bin"] = "usr/bin/*"
 if not "Install-pattern-python" in config:
