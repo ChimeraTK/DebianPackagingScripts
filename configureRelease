@@ -18,13 +18,15 @@ def extract_tokens(input_string):
   """
   return re.findall('#([a-zA-Z0-9-]+?)#', input_string)
 
-def replace_token(content, token):
-  if not token in config:
-    return ""
+def replace_token(content_string, token):
+  resolved_token = "" # defaults to empty string (when resolution fails)
+
   if 'Install-pattern-' in token or 'Install-additional-pattern-' in token:
-    install_pattern = re.sub(",[' ']*", '\n', config[token].strip())
-    return content.replace("#"+token+"#", install_pattern)
-  return content.replace("#"+token+"#", config[token])
+    resolved_token = re.sub(",[' ']*", '\n', config[token].strip())
+  elif token in config:
+    resolved_token = config[token]
+
+  return content_string.replace("#"+token+"#", resolved_token)
 
 # wrapper around e.g. debian.debian_support.PackageFile to catch exceptions and continue the loop
 class ExceptionHandlingIterator(object):
