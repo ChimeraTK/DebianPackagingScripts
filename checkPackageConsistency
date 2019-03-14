@@ -406,6 +406,12 @@ for subpackage in ${config[Has_packages]} ; do
 
   fi
   
+  # Check if description field exists in package
+  if [ -z "`dpkg -I ${debname}  | grep '^ Description: '`" ]; then
+    echo "Description field missing!"
+    ERROR=1
+  fi
+  
   # Additional saftey check that the expected and counted packages are really there
   if [ ! -f "${debname}" ]; then
     echo "    *** MISSING PACKAGE: ${debname}"
