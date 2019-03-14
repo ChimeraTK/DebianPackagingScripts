@@ -147,6 +147,10 @@ for subpackage in ${config[Has_packages]} ; do
   # sub-package specific tests:
   debname=`echo ${name}_*.deb`
   debug_name=`echo ${name}-dbgsym*_*.deb`
+  if [ ! -f "${debug_name}" ]; then
+    # on bionic automatic dbgsym packages are called *.ddeb
+    debug_name=`echo ${name}-dbgsym*_*.ddeb`
+  fi
   package_increment=1
   if [ $subpackage == "lib" -a $IS_ALIEN != 1 ]; then
 
