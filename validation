@@ -76,7 +76,7 @@ for package in "${!package_buildcmd[@]}"; do
 done
 
 # check total number of .deb files
-nfiles=`ls *.deb 2>/dev/null | wc -l`
+nfiles=`ls *.deb *.ddeb 2>/dev/null | wc -l`
 nDebianFilesChecked=`cat "${LOCAL_REPOS}/nDebianFilesChecked.txt"`
 if [ $nfiles -ne $nDebianFilesChecked ]; then
   echo "Wrong number of .deb files in the pbuilder-results directory: $nfiles files found, $nDebianFilesChecked expected and checked."
