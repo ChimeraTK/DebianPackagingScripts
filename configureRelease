@@ -506,6 +506,8 @@ for package in hasPackages:
     # print warning
     print("*** WARNING ***")
     print("You are building a package, which is already in the Debian repository in the same version. Publication will not be allowed!")
+    print(" Package name: "+config["Package-name-"+package])
+    print(" Version: "+currentVersion)
 
     # set flag in master-control file that publication is not allowed
     subprocess.call(["echo 'do_not_publish=1' >> master-control"], shell=True)
