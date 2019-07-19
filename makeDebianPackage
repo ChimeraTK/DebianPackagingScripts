@@ -63,8 +63,17 @@ debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION} --distrib
 # If you have a gpg signature you can remove the -us and -uc flags and sign the package.
 
 #Note: --debbuildopts must be before the -- to be effectice
+
+# The pbuilder on Ubuntu 18.04 (and presumably later) mounts /dev and /run/shm by itself
+# If we bind it into the container, it cannot unbind it properly if any browser is running on bionic
+our_version=$(lsb_release -r | awk '{print $2}' | tr -d .)
+bind_mounts="${LOCAL_REPOS}"
+if "$our_version" -lt "1804"; then
+    bind_mounts="${bind_mounts} /dev /run/shm"
+fi
+
 time pdebuild --debbuildopts -j${N_PBUILDER_THREADS} -- --distribution ${DISTRIBUTION} --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"   \
-            --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} /dev /run/shm"      || exit 1
+            --basetgz "${PBUILDER_IMAGE}" --bindmounts "${bind_mounts}"      || exit 1
 echo ""
 echo "You can find the resulting debian packages in this directory: ${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"
 
