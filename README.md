@@ -27,6 +27,7 @@ The system uses pbuilder, which allows you to build packages also for other Ubun
 the doocspkgs host.
 
 Syntax:
+
 ```
 ./master <distribution_codename> <package_name1> <package_version1> [<package_name2> <package_version2>] [...]
 ```
@@ -34,6 +35,7 @@ Example:
 You want do build version 00.16.00 of the DeviceAccess library (debian package base name mtca4u-deviceaccess),
 and also recompile the QtHardMon application in version 00.17.07  against this new DeviceAccess version for
 Ubuntu 16.06 (xenial)
+
 ```
 ~/DebianPackagingScripts$ ./master xenial mtca4u-deviceaccess 00.16.00 qthardmon 00.17.07
 The following packages will be build (in that order):
@@ -68,6 +70,7 @@ Currently there is a filter to lib.*-dev in the package name. Is this too restri
 DOOCS consists of several library packages, their names start with 'dev-doocs', hence we use the wildcard 'dev-doocs.*'.
 
 Example:
+
 ```
 ~/DebianPackagingScripts$ ./runMasterForDependencies xenial "dev-doocs.*" http://doocspkgs.desy.de/
 No config for 'dev-doocswrappers' found. No packages for this project will be build.
@@ -80,6 +83,7 @@ beam-arrival-time-monitor 01.01.00
 
 Do you want to proceed with configuring and building the packages in the given versions (y/N)?
 ```
+
 The package `dev-doocswrappers` is a reverse depenency of DOOCS, but it cannot be build using the ChimeraTK packaging scripts. This package would have to be updated manually (if it wasn't an obsolete, leftover library).
 
 ## Performance optimisation
