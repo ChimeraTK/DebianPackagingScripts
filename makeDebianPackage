@@ -48,7 +48,7 @@ tar -czf ${BUILD_DIR_NAME}.orig.tar.gz ${BUILD_DIR_NAME}
 
 # Copy the prepared debian packaging config files to the source code directroy
 mkdir -p ${BUILD_DIR_NAME}/debian
-cp -r ${CONTROLDIR}/* ${BUILD_DIR_NAME}/debian
+cp -a ${CONTROLDIR}/* ${BUILD_DIR_NAME}/debian
 cd ${BUILD_DIR_NAME}
 
 # Before building the package we will update the changelog. This is easier from a shell script
