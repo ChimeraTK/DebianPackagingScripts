@@ -288,6 +288,8 @@ rm $TEMPFILE
 source master-control       # might be changed e.g. during configureRelease
 if [ $do_not_publish -eq 0 ]; then
   echo "You can find the packages in the following directory: pbuilder-result/dists/${distribution}/main/binary-${arch}"
+  # before asking a question now let's clear the input buffer (at least up to 10000 chars) so we don't accidentally abort.
+  read -t 1 -n 10000 discard
   ask "Publish the build versions to git and the packages to the DESY Debian repositories (y/N)?"
   ./commitDebianBuildVersions
   ./publishDebianPackages
