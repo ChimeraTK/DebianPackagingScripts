@@ -1,1 +1,2 @@
 USENETWORK=yes
+BUILD_HOME=/build
