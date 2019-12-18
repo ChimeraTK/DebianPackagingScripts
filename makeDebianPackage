@@ -31,6 +31,8 @@ LOCAL_REPOS="`pwd`/pbuilder-result"
 # directory with pbuilder base image
 PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${DISTRIBUTION}.tgz"
 
+PBUILDER_RC="`pwd`/pbuilderrc"
+
 # Create a working directory in order not to merge with the rest in the build directory
 rm -rf debian_package
 mkdir debian_package
@@ -67,13 +69,13 @@ debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION} --distrib
 # The pbuilder on Ubuntu 18.04 (and presumably later) mounts /dev and /run/shm by itself
 # If we bind it into the container, it cannot unbind it properly if any browser is running on bionic
 our_version=$(lsb_release -r | awk '{print $2}' | tr -d .)
-bind_mounts="${LOCAL_REPOS}"
+bind_mounts="${LOCAL_REPOS} ${ADDITIONAL_BIND_MOUNTS}"
 if test "$our_version" -lt "1804"; then
     bind_mounts="${bind_mounts} /dev /run/shm"
 fi
 
 time pdebuild --debbuildopts -j${N_PBUILDER_THREADS} -- --distribution ${DISTRIBUTION} --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"   \
-            --basetgz "${PBUILDER_IMAGE}" --bindmounts "${bind_mounts}"      || exit 1
+              --basetgz "${PBUILDER_IMAGE}" --bindmounts "${bind_mounts}" --configfile "${PBUILDER_RC}"     || exit 1
 echo ""
 echo "You can find the resulting debian packages in this directory: ${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"
 
