@@ -17,7 +17,9 @@ codename=$1
 package_pattern=$2
 debian_repository=$3
 
-input_to_master=`./findReverseDependencies "${package_pattern}" ${codename} ${debian_repository}| sed -e 's/^lib//' -e 's/-dev / /'`
+# grep -v "^dev-" gets rid of doocs packages
+# sed -e 's/^lib//' -e 's/-dev / /' extracts the name we need for the DebianBuildVersions
+input_to_master=`./findReverseDependencies "${package_pattern}" ${codename} ${debian_repository}| grep -v "^dev-" | sed -e 's/^lib//' -e 's/-dev / /'`
 
 echo ./master ${codename} ${input_to_master}
 
