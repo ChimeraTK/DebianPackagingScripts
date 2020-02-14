@@ -67,8 +67,8 @@ if [ "$NEED_CLEANUP" == "1" ]; then
     echo " ***  Report any issues immediately!            ***"
     echo " **************************************************"
     echo ""
-    echo -n "Waiting for 10 seconds before proceeding."
-    for ((i=0; i<10; i++)); do
+    echo -n "Waiting for 2 seconds before proceeding."
+    for ((i=0; i<2; i++)); do
       sleep 1
       echo -n .
     done
