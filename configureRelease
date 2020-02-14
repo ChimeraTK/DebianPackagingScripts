@@ -60,7 +60,13 @@ def resolveDeps(dependencies, filename):
     for dependency in dependencies:
       PackageAsDictionary = dict(Package)
       if dependency == PackageAsDictionary["Package"]:
-        dependency_versions[dependency] = PackageAsDictionary["Version"]
+        if not dependency in dependency_versions.keys() or PackageAsDictionary["Version"] > dependency_versions[dependency]:
+          dependency_versions[dependency] = PackageAsDictionary["Version"]
+
+      if "Provides" in PackageAsDictionary.keys() :
+        if dependency == PackageAsDictionary["Provides"]:
+          if not dependency in dependency_versions.keys() or PackageAsDictionary["Version"] > dependency_versions[dependency]:
+            dependency_versions[dependency] = PackageAsDictionary["Version"]
 
   return dependency_versions
 
