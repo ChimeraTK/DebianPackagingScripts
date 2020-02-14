@@ -410,9 +410,11 @@ for dependency in dependencies:
       deps_epoch = deps_epoch_array[0][:-1]
       deps_epoch_split = deps_epoch.split(codename)
       config["dependency-debversion-"+dependency] = deps_epoch_split[0].replace(".","-")+"-"+codename+deps_epoch_split[1]
+      config["dependency-epochdashversion-"+dependency] = deps_epoch_split[0].replace(".","-")
       config["dependency-epochversion-"+dependency] = deps_epoch_split[0]
       # allow to find dependency-debversion also by virtual package name
       config["dependency-debversion-"+map_virtual_real_names_reverse[dependency]] = config["dependency-debversion-"+dependency]
+      config["dependency-epochdashversion-"+map_virtual_real_names_reverse[dependency]] = config["dependency-epochdashversion-"+dependency]
       config["dependency-epochversion-"+map_virtual_real_names_reverse[dependency]] = config["dependency-epochversion-"+dependency]
 
 # create list of dependencies with versions
