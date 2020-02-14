@@ -54,6 +54,7 @@ def resolveDeps(dependencies, filename):
   # open Packages file and parse it
   PackageFile = debian.debian_support.PackageFile(filename)
   dependency_versions = {}
+  map_virtual_to_real = {}
 
   # search for dependencies
   for Package in ExceptionHandlingIterator(PackageFile):
@@ -62,13 +63,15 @@ def resolveDeps(dependencies, filename):
       if dependency == PackageAsDictionary["Package"]:
         if not dependency in dependency_versions.keys() or PackageAsDictionary["Version"] > dependency_versions[dependency]:
           dependency_versions[dependency] = PackageAsDictionary["Version"]
+          map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
 
       if "Provides" in PackageAsDictionary.keys() :
         if dependency == PackageAsDictionary["Provides"]:
           if not dependency in dependency_versions.keys() or PackageAsDictionary["Version"] > dependency_versions[dependency]:
             dependency_versions[dependency] = PackageAsDictionary["Version"]
+            map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
 
-  return dependency_versions
+  return (dependency_versions, map_virtual_to_real)
 
 # get package version from a Packages file, or "none" if package not found
 def getPackageVersion(packageName, filename):
@@ -324,50 +327,70 @@ subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-SECURITY.gz"])
 subprocess.call(['./updateLocalRepos'])
 
 # parse all sources
-dependency_versions_universe = resolveDeps(dependencies, "Packages.UNIVERSE")
-dependency_versions_main_updates = resolveDeps(dependencies, "Packages.MAIN-UPDATES")
-dependency_versions_universe_updates = resolveDeps(dependencies, "Packages.UNIVERSE-UPDATES")
-dependency_versions_main_security = resolveDeps(dependencies, "Packages.MAIN-SECURITY")
-dependency_versions_universe_security = resolveDeps(dependencies, "Packages.UNIVERSE-SECURITY")
-dependency_versions_main = resolveDeps(dependencies, "Packages.MAIN")
-dependency_versions_universe = resolveDeps(dependencies, "Packages.UNIVERSE")
-dependency_versions_desy = resolveDeps(dependencies, "Packages.DESY")
-dependency_versions_local = resolveDeps(dependencies, "pbuilder-result/dists/"+codename+"/main/binary-"+arch+"/Packages")
+(dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE")
+(dependency_versions_main_updates, map_virtual_real_names_main_updates) = resolveDeps(dependencies, "Packages.MAIN-UPDATES")
+(dependency_versions_universe_updates, map_virtual_real_names_universe_updates) = resolveDeps(dependencies, "Packages.UNIVERSE-UPDATES")
+(dependency_versions_main_security, map_virtual_real_names_main_security) = resolveDeps(dependencies, "Packages.MAIN-SECURITY")
+(dependency_versions_universe_security, map_virtual_real_names_universe_security) = resolveDeps(dependencies, "Packages.UNIVERSE-SECURITY")
+(dependency_versions_main, map_virtual_real_names_main) = resolveDeps(dependencies, "Packages.MAIN")
+(dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE")
+(dependency_versions_desy, map_virtual_real_names_desy) = resolveDeps(dependencies, "Packages.DESY")
+(dependency_versions_local, map_virtual_real_names_local) = resolveDeps(dependencies, "pbuilder-result/dists/"+codename+"/main/binary-"+arch+"/Packages")
 
 # merge the found dependencies with priority, and check for unfound dependencies
 print("")
 print("List of dependencies:")
 dependency_versions = {}
+map_virtual_real_names = {}
 is_using_local = False
 for dependency in dependencies:
   if dependency in dependency_versions_local:
     dependency_versions[dependency] = dependency_versions_local[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_local[dependency]
     print("  "+dependency+" (= "+dependency_versions[dependency]+") from *** LOCAL ***")
     is_using_local = True
   elif dependency in dependency_versions_main_updates:
     dependency_versions[dependency] = dependency_versions_main_updates[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_main_updates[dependency]
     print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu-updates/main")
   elif dependency in dependency_versions_universe_updates:
     dependency_versions[dependency] = dependency_versions_universe_updates[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_universe_updates[dependency]
     print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu-updates/universe")
   elif dependency in dependency_versions_main_security:
     dependency_versions[dependency] = dependency_versions_main_security[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_main_security[dependency]
     print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu-security/main")
   elif dependency in dependency_versions_universe_security:
     dependency_versions[dependency] = dependency_versions_universe_security[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_universe_security[dependency]
     print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu-security/universe")
   elif dependency in dependency_versions_main:
     dependency_versions[dependency] = dependency_versions_main[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_main[dependency]
     print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu/main")
   elif dependency in dependency_versions_universe:
     dependency_versions[dependency] = dependency_versions_universe[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_universe[dependency]
     print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu/universe")
   elif dependency in dependency_versions_desy:
     dependency_versions[dependency] = dependency_versions_desy[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_desy[dependency]
     print("  "+dependency+" (= "+dependency_versions[dependency]+") from desy/main")
   else:
     print("Dependency "+dependency+" cannot be found in any of the apt repository!")
     sys.exit(1)
+
+# replace virtual packages with real ones
+map_virtual_real_names_reverse={}
+for dependency in map_virtual_real_names.keys() :
+  if dependency != map_virtual_real_names[dependency] :
+    print("Replacing virtual package "+dependency+" with real package "+map_virtual_real_names[dependency])
+    dependency_versions[map_virtual_real_names[dependency]] = dependency_versions[dependency]
+    del dependency_versions[dependency]
+    index = dependencies.index(dependency)
+    dependencies[index] = map_virtual_real_names[dependency]
+    map_virtual_real_names_reverse[map_virtual_real_names[dependency]] = dependency
 
 # print warning if using the local repository
 if is_using_local:
@@ -387,6 +410,10 @@ for dependency in dependencies:
       deps_epoch = deps_epoch_array[0][:-1]
       deps_epoch_split = deps_epoch.split(codename)
       config["dependency-debversion-"+dependency] = deps_epoch_split[0].replace(".","-")+"-"+codename+deps_epoch_split[1]
+      config["dependency-epochversion-"+dependency] = deps_epoch_split[0]
+      # allow to find dependency-debversion also by virtual package name
+      config["dependency-debversion-"+map_virtual_real_names_reverse[dependency]] = config["dependency-debversion-"+dependency]
+      config["dependency-epochversion-"+map_virtual_real_names_reverse[dependency]] = config["dependency-epochversion-"+dependency]
 
 # create list of dependencies with versions
 build_depends=""
