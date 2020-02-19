@@ -54,15 +54,24 @@ def resolveDeps(dependencies, filename):
   # open Packages file and parse it
   PackageFile = debian.debian_support.PackageFile(filename)
   dependency_versions = {}
+  map_virtual_to_real = {}
 
   # search for dependencies
   for Package in ExceptionHandlingIterator(PackageFile):
     for dependency in dependencies:
       PackageAsDictionary = dict(Package)
       if dependency == PackageAsDictionary["Package"]:
-        dependency_versions[dependency] = PackageAsDictionary["Version"]
+        if not dependency in dependency_versions.keys() or PackageAsDictionary["Version"] > dependency_versions[dependency]:
+          dependency_versions[dependency] = PackageAsDictionary["Version"]
+          map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
 
-  return dependency_versions
+      if "Provides" in PackageAsDictionary.keys() :
+        if dependency == PackageAsDictionary["Provides"]:
+          if not dependency in dependency_versions.keys() or PackageAsDictionary["Version"] > dependency_versions[dependency]:
+            dependency_versions[dependency] = PackageAsDictionary["Version"]
+            map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
+
+  return (dependency_versions, map_virtual_to_real)
 
 # get package version from a Packages file, or "none" if package not found
 def getPackageVersion(packageName, filename):
@@ -208,13 +217,52 @@ for line in configfile:
     sys.exit(1)
   config[key] = value.strip()
 
+
+# create hasPackages array from space-separated list
+hasPackages = config["Has-packages"].split(" ")
+
+# extend the config by dynamic variables
+if "project" not in config:
+  config["project"] = project
+if "lib" in hasPackages or "dev-headeronly" in hasPackages:
+  config["package-basename"] = "lib"+project.lower()
+else:
+  config["package-basename"] = project.lower()
+config["version"] = version
+config["tagversion"] = tagversion
+config["epochdashversion"] = epoch.replace(".","-")
+config["epochversion"] = epoch
+config["distribution"] = codename
+config["architecture"] = arch
+config["package-message"] = "Debian package for the "+project+" library version "+version
+if not "Package-name-dev" in config:
+  config["Package-name-dev"] = config["package-basename"]+"-dev"
+if not "Package-name-dev-noheader" in config:
+  config["Package-name-dev-noheader"] = config["Package-name-dev"]
+if not "Package-name-dev-headeronly" in config:
+  config["Package-name-dev-headeronly"] = config["Package-name-dev"]
+if not "Package-name-dev-alien" in config:
+  config["Package-name-dev-alien"] = config["Package-name-dev"]
+if not "Package-name-doc" in config:
+  config["Package-name-doc"] = config["package-basename"]+"-doc"
+if not "Install-pattern-lib" in config:
+  config["Install-pattern-lib"] = "usr/lib/lib*.so.*"
+if not "Install-pattern-bin" in config:
+  config["Install-pattern-bin"] = "usr/bin/*"
+if not "Install-pattern-python" in config:
+  config["Install-pattern-python"] = "usr/lib/python*/*"
+if not "Package-name-extra" in config:
+  config["Package-name-extra"] = config["package-basename"]+"-extra"
+if not "Package-name-extra2" in config:
+  config["Package-name-extra2"] = config["package-basename"]+"-extra2"
+if not "Package-name-python" in config:
+  config["Package-name-python"] = config["package-basename"]
+
+
 # resolve variables inside the configuration
 for var in config.keys():
   for var2 in config.keys():
     config[var] = config[var].replace("#"+var2+"#", config[var2])
-
-# create hasPackages array from space-separated list
-hasPackages = config["Has-packages"].split(" ")
 
 # check for mandatory variables in the config
 if not "Dependencies" in config:
@@ -345,7 +393,6 @@ if codename in debianCodenames:
       print("Dependency "+dependency+" cannot be found in any of the apt repository!")
       sys.exit(1)
 
-
 else:
   # download Packages file from the DESY DOOCS apt repositories
   subprocess.call(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
@@ -422,6 +469,72 @@ else:
     else:
       print("Dependency "+dependency+" cannot be found in any of the apt repository!")
       sys.exit(1)
+=======
+# parse all sources
+(dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE")
+(dependency_versions_main_updates, map_virtual_real_names_main_updates) = resolveDeps(dependencies, "Packages.MAIN-UPDATES")
+(dependency_versions_universe_updates, map_virtual_real_names_universe_updates) = resolveDeps(dependencies, "Packages.UNIVERSE-UPDATES")
+(dependency_versions_main_security, map_virtual_real_names_main_security) = resolveDeps(dependencies, "Packages.MAIN-SECURITY")
+(dependency_versions_universe_security, map_virtual_real_names_universe_security) = resolveDeps(dependencies, "Packages.UNIVERSE-SECURITY")
+(dependency_versions_main, map_virtual_real_names_main) = resolveDeps(dependencies, "Packages.MAIN")
+(dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE")
+(dependency_versions_desy, map_virtual_real_names_desy) = resolveDeps(dependencies, "Packages.DESY")
+(dependency_versions_local, map_virtual_real_names_local) = resolveDeps(dependencies, "pbuilder-result/dists/"+codename+"/main/binary-"+arch+"/Packages")
+
+# merge the found dependencies with priority, and check for unfound dependencies
+print("")
+print("List of dependencies:")
+dependency_versions = {}
+map_virtual_real_names = {}
+is_using_local = False
+for dependency in dependencies:
+  if dependency in dependency_versions_local:
+    dependency_versions[dependency] = dependency_versions_local[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_local[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from *** LOCAL ***")
+    is_using_local = True
+  elif dependency in dependency_versions_main_updates:
+    dependency_versions[dependency] = dependency_versions_main_updates[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_main_updates[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu-updates/main")
+  elif dependency in dependency_versions_universe_updates:
+    dependency_versions[dependency] = dependency_versions_universe_updates[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_universe_updates[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu-updates/universe")
+  elif dependency in dependency_versions_main_security:
+    dependency_versions[dependency] = dependency_versions_main_security[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_main_security[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu-security/main")
+  elif dependency in dependency_versions_universe_security:
+    dependency_versions[dependency] = dependency_versions_universe_security[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_universe_security[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu-security/universe")
+  elif dependency in dependency_versions_main:
+    dependency_versions[dependency] = dependency_versions_main[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_main[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu/main")
+  elif dependency in dependency_versions_universe:
+    dependency_versions[dependency] = dependency_versions_universe[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_universe[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu/universe")
+  elif dependency in dependency_versions_desy:
+    dependency_versions[dependency] = dependency_versions_desy[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_desy[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from desy/main")
+  else:
+    print("Dependency "+dependency+" cannot be found in any of the apt repository!")
+    sys.exit(1)
+
+# replace virtual packages with real ones
+map_virtual_real_names_reverse={}
+for dependency in map_virtual_real_names.keys() :
+  if dependency != map_virtual_real_names[dependency] :
+    print("Replacing virtual package "+dependency+" with real package "+map_virtual_real_names[dependency])
+    dependency_versions[map_virtual_real_names[dependency]] = dependency_versions[dependency]
+    del dependency_versions[dependency]
+    index = dependencies.index(dependency)
+    dependencies[index] = map_virtual_real_names[dependency]
+    map_virtual_real_names_reverse[map_virtual_real_names[dependency]] = dependency
 
 # print warning if using the local repository
 if is_using_local:
@@ -441,6 +554,13 @@ for dependency in dependencies:
       deps_epoch = deps_epoch_array[0][:-1]
       deps_epoch_split = deps_epoch.split(codename)
       config["dependency-debversion-"+dependency] = deps_epoch_split[0].replace(".","-")+"-"+codename+deps_epoch_split[1]
+      config["dependency-epochdashversion-"+dependency] = deps_epoch_split[0].replace(".","-")
+      config["dependency-epochversion-"+dependency] = deps_epoch_split[0]
+      # allow to find dependency-debversion also by virtual package name
+      if dependency in map_virtual_real_names_reverse :
+        config["dependency-debversion-"+map_virtual_real_names_reverse[dependency]] = config["dependency-debversion-"+dependency]
+        config["dependency-epochdashversion-"+map_virtual_real_names_reverse[dependency]] = config["dependency-epochdashversion-"+dependency]
+        config["dependency-epochversion-"+map_virtual_real_names_reverse[dependency]] = config["dependency-epochversion-"+dependency]
 
 # create list of dependencies with versions
 build_depends=""
@@ -506,15 +626,7 @@ else:
 
 print("Build number: "+str(build_number))
 
-# extend the config by dynamic variables
-if "project" not in config:
-  config["project"] = project
-if "lib" in hasPackages or "dev-headeronly" in hasPackages:
-  config["package-basename"] = "lib"+project.lower()
-else:
-  config["package-basename"] = project.lower()
-config["version"] = version
-config["tagversion"] = tagversion
+# Set build version depending config variables
 config["buildversion"] = codename+str(build_number)
 config["soversion"] = epoch+config["buildversion"]+"."+patchlevel
 if config["package-name-contains-buildversion"] == "1":
@@ -524,35 +636,10 @@ else:
 config["package-version"] = config["soversion"]
 config["build-depends"] = build_depends
 config["dev-depends"] = dev_depends
-config["distribution"] = codename
-config["architecture"] = arch
-config["package-message"] = "Debian package for the "+project+" library version "+version
 if not "Package-name-lib" in config:
   config["Package-name-lib"] = config["package-basename"]+config["debversion"]
-if not "Package-name-dev" in config:
-  config["Package-name-dev"] = config["package-basename"]+"-dev"
-if not "Package-name-dev-noheader" in config:
-  config["Package-name-dev-noheader"] = config["Package-name-dev"]
-if not "Package-name-dev-headeronly" in config:
-  config["Package-name-dev-headeronly"] = config["Package-name-dev"]
-if not "Package-name-dev-alien" in config:
-  config["Package-name-dev-alien"] = config["Package-name-dev"]
-if not "Package-name-doc" in config:
-  config["Package-name-doc"] = config["package-basename"]+"-doc"
 if not "Package-name-bin" in config:
   config["Package-name-bin"] = config["package-basename"]+config["debversion"]
-if not "Install-pattern-lib" in config:
-  config["Install-pattern-lib"] = "usr/lib/lib*.so.*"
-if not "Install-pattern-bin" in config:
-  config["Install-pattern-bin"] = "usr/bin/*"
-if not "Install-pattern-python" in config:
-  config["Install-pattern-python"] = "usr/lib/python*/*"
-if not "Package-name-extra" in config:
-  config["Package-name-extra"] = config["package-basename"]+"-extra"
-if not "Package-name-extra2" in config:
-  config["Package-name-extra2"] = config["package-basename"]+"-extra2"
-if not "Package-name-python" in config:
-  config["Package-name-python"] = config["package-basename"]
 
 # check if Debian packages which will built are already in the Debian repositories in the same version or newer version
 askIfContinue = False
