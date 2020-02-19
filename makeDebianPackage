@@ -59,7 +59,7 @@ cd ${BUILD_DIR_NAME}
 #  user@host instead of first.last@institute, for instance killenb@mskpcx18571.desy.de instead of martin.killenberg@desy.de).
 # TODO: move this into the configureRelease script and keep the changelog once it is created (in the DebianBuildVersions repo)
 rm -f debian/changelog
-debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION} --distribution ${DISTRIBUTION} ${PACKAGE_MESSAGE}
+debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION}-0 --distribution ${DISTRIBUTION} ${PACKAGE_MESSAGE}
 
 # Now everything is prepared and we can actually build the package.
 # If you have a gpg signature you can remove the -us and -uc flags and sign the package.

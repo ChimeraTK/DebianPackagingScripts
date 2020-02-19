@@ -62,7 +62,14 @@ if test "$our_version" -lt "1804"; then
     bind_mounts="${bind_mounts} /dev /run/shm"
 fi
 
-sudo pbuilder --execute --distribution ${distribution} --override-config --components "main universe" \
+
+if [[ ${MIRRORLIST} == *"contrib"* ]]; then
+  additionalRepo="contrib"
+else
+  additionalRepo="universe"
+fi
+
+sudo pbuilder --execute --distribution ${distribution} --override-config --components "main $additionalRepo" \
               --othermirror "${MIRRORLIST}"                                                           \
               --basetgz "${PBUILDER_IMAGE}" --bindmounts "${bind_mounts}" "${SCRIPT}"
 if [ $? -ne 0 ]; then
