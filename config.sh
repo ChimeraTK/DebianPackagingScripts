@@ -37,14 +37,10 @@ LOCAL_REPOS=${WD}/pbuilder-result
 DEBIANREPOSITORY="${DebianRepository}"
 
 # List of mirrors / package repositories used inside the pbuilder environment by apt
-MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [trusted=yes] ${DEBIANREPOSITORY}/pub/doocs ${DISTRIBUTION} main|deb http://de.archive.ubuntu.com/ubuntu/ ${DISTRIBUTION}-updates main universe|deb http://de.archive.ubuntu.com/ubuntu/ ${DISTRIBUTION}-security main universe"
+MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${distribution} main|deb [trusted=yes] ${DEBIANREPOSITORY}/pub/doocs ${distribution} main|deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-updates main universe|deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-security main universe"
 ADDITIONALREPO="universe"
-if [ "${DISTRIBUTION}" == *"buster"* ]; then
-	MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${DISTRIBUTION} main|deb [trusted=yes] ${DEBIANREPOSITORY}/pub/doocs ${DISTRIBUTION} main|deb [trusted=yes] ${DesyNimsRepo}/debian ${DISTRIBUTION}-backports main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian ${DISTRIBUTION} main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian-security ${DISTRIBUTION}/updates main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian ${DISTRIBUTION}-updates main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/extra/desy ${DISTRIBUTION} desy|deb [trusted=yes] ${DesyNimsRepo}/extra/hasylab.debian ${DISTRIBUTION} main non-free contrib"
+if [ "${distribution}" == "buster" ] || [ "${distribution}" == "stretch"  ]; then
+	MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${distribution} main|deb [trusted=yes] ${DEBIANREPOSITORY}/pub/doocs ${distribution} main|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution}-backports main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution} main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian-security ${distribution}/updates main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution}-updates main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/extra/desy ${distribution} desy|deb [trusted=yes] ${DesyNimsRepo}/extra/hasylab.debian ${distribution} main non-free contrib"
 	ADDITIONALREPO="contrib"
-	echo "hi"
 fi
 
-echo $MIRRORLIST
-echo $distribution
-echo ${DISTRIBUTION}
