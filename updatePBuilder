@@ -62,7 +62,7 @@ if [ ! -f ${PBUILDER_IMAGE} ]; then
                 --othermirror "${MIRRORLIST}"  --save-after-exec                                        \
                 --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}" "${SCRIPT}"
 fi
-echo "${ADDITIONALREPO}"
+
 # update
 ${WD}/updateLocalRepos
 

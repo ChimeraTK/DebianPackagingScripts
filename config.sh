@@ -21,6 +21,10 @@ DesyNimsRepo=http://nims.desy.de/
 # Host name where to publish the Debian packages on. You will need ssh access to that machine and rights to execute
 # reprepro with sudo as root.
 InstallHost=doocspkgs
+if [ -z ${DISTRIBUTION+x} ]; then 
+DISTRIBUTION=${distribution}; 
+else distribution=${DISTRIBUTION}
+fi
 
 # Debian package archive directory. This is where the new packages will be copied. Packages to be replaced will
 # be first moved into ../old relativ to that directory.
@@ -44,3 +48,4 @@ if [ "${distribution}" == "buster" ] || [ "${distribution}" == "stretch"  ]; the
 	ADDITIONALREPO="contrib"
 fi
 
+echo $MIRRORLIST
