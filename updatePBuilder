@@ -58,11 +58,11 @@ if [ ! -f ${PBUILDER_IMAGE} ]; then
   echo "fi" >> $SCRIPT
   echo "groupadd doocsadm" >> $SCRIPT
   echo "useradd -m -g doocsadm doocsadm" >> $SCRIPT
-  sudo pbuilder --execute --distribution ${distribution} --override-config --components "main contrib" \
+  sudo pbuilder --execute --distribution ${distribution} --override-config --components "main ${ADDITIONALREPO}" \
                 --othermirror "${MIRRORLIST}"  --save-after-exec                                        \
                 --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}" "${SCRIPT}"
 fi
-
+echo "${ADDITIONALREPO}"
 # update
 ${WD}/updateLocalRepos
 
@@ -70,7 +70,7 @@ ${WD}/updateLocalRepos
 sudo pbuilder --update                                                                                                \
               --distribution ${DISTRIBUTION}                                                                          \
               --override-config                                                                                       \
-              --components "main universe"                                                                            \
+              --components "main ${ADDITIONALREPO}"                                                                            \
               --othermirror "${MIRRORLIST}"                                                                           \
               --hookdir "${WD}/pbuilder-hooks"                                                                        \
               --basetgz "${PBUILDER_IMAGE}"                                                                           \
