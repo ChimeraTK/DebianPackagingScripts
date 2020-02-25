@@ -47,5 +47,3 @@ if [ "${distribution}" == "buster" ] || [ "${distribution}" == "stretch"  ]; the
 	MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${distribution} main|deb [trusted=yes] ${DEBIANREPOSITORY}/pub/doocs ${distribution} main|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution}-backports main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution} main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian-security ${distribution}/updates main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution}-updates main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/extra/desy ${distribution} desy|deb [trusted=yes] ${DesyNimsRepo}/extra/hasylab.debian ${distribution} main non-free contrib"
 	ADDITIONALREPO="contrib"
 fi
-
-echo $MIRRORLIST
