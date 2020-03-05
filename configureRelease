@@ -341,6 +341,8 @@ print("Searching for dependencies...")
 if codename in debianCodenames:
   # download Packages file from the DESY DOOCS apt repositories
   subprocess.call(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
+ 
+
   subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/"+codename+"/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN.gz"])
   subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
   subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/"+codename+"/contrib/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
@@ -386,7 +388,8 @@ else:
 
   # update the locake package repository
   subprocess.call(['./updateLocalRepos'])
-
+subprocess.call(["mv","Packages.DESY","TMP.DESY"])
+subprocess.call(["iconv", "-c", "-t", "UTF-8", "TMP.DESY","-o","Packages.DESY"])
 # parse all sources
 (dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE")
 (dependency_versions_main_updates, map_virtual_real_names_main_updates) = resolveDeps(dependencies, "Packages.MAIN-UPDATES")
