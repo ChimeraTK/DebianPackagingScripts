@@ -61,7 +61,8 @@ def main():
     
     # download Packages file from the DESY DOOCS apt repositories
     subprocess.call(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
-    
+    subprocess.call(["mv","Packages.DESY","TMP.DESY"])
+    subprocess.call(["iconv", "-c", "-t", "UTF-8", "TMP.DESY","-o","Packages.DESY"])
     # open Packages file and parse it
     PackageFile = debian.debian_support.PackageFile("Packages.DESY")
     Packages = []

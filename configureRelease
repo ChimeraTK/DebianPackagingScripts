@@ -10,7 +10,7 @@ import time
 import tempfile
 import shutil
 import re
-
+debianCodenames=['jessie','buster','stretch','bullseye']
 
 def extract_tokens(input_string):
   """
@@ -50,7 +50,10 @@ class ExceptionHandlingIterator(object):
 def resolveDeps(dependencies, filename):
 
   # open Packages file and parse it
-  PackageFile = debian.debian_support.PackageFile(filename)
+  if os.path.exists(filename):
+	PackageFile = debian.debian_support.PackageFile(filename)
+  else:
+    return ({},{})
   dependency_versions = {}
   map_virtual_to_real = {}
 
@@ -333,36 +336,58 @@ else:
 
 print("Searching for dependencies...")
 
-# download Packages file from the DESY DOOCS apt repositories
-subprocess.call(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
+if codename in debianCodenames:
+  # download Packages file from the DESY DOOCS apt repositories
+  subprocess.call(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
+ 
 
-# download Packages file from Ubuntu repositories and unpack
-subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN.gz"])
-subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
+  subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/"+codename+"/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN.gz"])
+  subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
+  subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/"+codename+"/contrib/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
+  subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
 
-# download Packages file from Ubuntu repositories and unpack
-subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/universe/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
-subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
+  # download Packages file from Ubuntu repositories and unpack
+  subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/"+codename+"-updates/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN-UPDATES.gz"])
+  subprocess.call(["gunzip", "-f", "Packages.MAIN-UPDATES.gz"])
 
-# download Packages file from Ubuntu repositories and unpack
-subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"-updates/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN-UPDATES.gz"])
-subprocess.call(["gunzip", "-f", "Packages.MAIN-UPDATES.gz"])
+  # download Packages file from Ubuntu repositories and unpack
+  subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/"+codename+"-updates/contrib/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE-UPDATES.gz"])
+  subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-UPDATES.gz"])
+ 
+  subprocess.call(['./updateLocalRepos'])
 
-# download Packages file from Ubuntu repositories and unpack
-subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"-updates/universe/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE-UPDATES.gz"])
-subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-UPDATES.gz"])
+else:
+  # download Packages file from the DESY DOOCS apt repositories
+  subprocess.call(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
 
-# download Packages file from Ubuntu repositories and unpack
-subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"-updates/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN-SECURITY.gz"])
-subprocess.call(["gunzip", "-f", "Packages.MAIN-SECURITY.gz"])
+  # download Packages file from Ubuntu repositories and unpack
+  subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN.gz"])
+  subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
 
-# download Packages file from Ubuntu repositories and unpack
-subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"-updates/universe/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE-SECURITY.gz"])
-subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-SECURITY.gz"])
+  # download Packages file from Ubuntu repositories and unpack
+  subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/universe/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
+  subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
 
-# update the locake package repository
-subprocess.call(['./updateLocalRepos'])
+  # download Packages file from Ubuntu repositories and unpack
+  subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"-updates/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN-UPDATES.gz"])
+  subprocess.call(["gunzip", "-f", "Packages.MAIN-UPDATES.gz"])
 
+  # download Packages file from Ubuntu repositories and unpack
+  subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"-updates/universe/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE-UPDATES.gz"])
+  subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-UPDATES.gz"])
+
+  # download Packages file from Ubuntu repositories and unpack
+  subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"-updates/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN-SECURITY.gz"])
+  subprocess.call(["gunzip", "-f", "Packages.MAIN-SECURITY.gz"])
+
+  # download Packages file from Ubuntu repositories and unpack
+  subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"-updates/universe/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE-SECURITY.gz"])
+  subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-SECURITY.gz"])
+
+  # update the locake package repository
+  subprocess.call(['./updateLocalRepos'])
+subprocess.call(["mv","Packages.DESY","TMP.DESY"])
+subprocess.call(["iconv", "-c", "-t", "UTF-8", "TMP.DESY","-o","Packages.DESY"])
 # parse all sources
 (dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE")
 (dependency_versions_main_updates, map_virtual_real_names_main_updates) = resolveDeps(dependencies, "Packages.MAIN-UPDATES")
@@ -389,27 +414,27 @@ for dependency in dependencies:
   elif dependency in dependency_versions_main_updates:
     dependency_versions[dependency] = dependency_versions_main_updates[dependency]
     map_virtual_real_names[dependency] = map_virtual_real_names_main_updates[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu-updates/main")
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from "+codename+"-updates/main")
   elif dependency in dependency_versions_universe_updates:
     dependency_versions[dependency] = dependency_versions_universe_updates[dependency]
     map_virtual_real_names[dependency] = map_virtual_real_names_universe_updates[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu-updates/universe")
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from "+codename+"-updates/universe")
   elif dependency in dependency_versions_main_security:
     dependency_versions[dependency] = dependency_versions_main_security[dependency]
     map_virtual_real_names[dependency] = map_virtual_real_names_main_security[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu-security/main")
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from "+codename+"-security/main")
   elif dependency in dependency_versions_universe_security:
     dependency_versions[dependency] = dependency_versions_universe_security[dependency]
     map_virtual_real_names[dependency] = map_virtual_real_names_universe_security[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu-security/universe")
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from "+codename+"-security/universe")
   elif dependency in dependency_versions_main:
     dependency_versions[dependency] = dependency_versions_main[dependency]
     map_virtual_real_names[dependency] = map_virtual_real_names_main[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu/main")
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from "+codename+"/main")
   elif dependency in dependency_versions_universe:
     dependency_versions[dependency] = dependency_versions_universe[dependency]
     map_virtual_real_names[dependency] = map_virtual_real_names_universe[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from ubuntu/universe")
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from "+codename+"/universe")
   elif dependency in dependency_versions_desy:
     dependency_versions[dependency] = dependency_versions_desy[dependency]
     map_virtual_real_names[dependency] = map_virtual_real_names_desy[dependency]
