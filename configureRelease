@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from __future__ import print_function
 import debian.debian_support
@@ -32,20 +32,18 @@ def replace_token(content_string, token):
 # wrapper around e.g. debian.debian_support.PackageFile to catch exceptions and continue the loop
 class ExceptionHandlingIterator(object):
     def __init__(self, iterable):
-        self._iter = iter(iterable)
-        self.handlers = []
+        self.__iter = iter(iterable)
+        self.__current = None
     def __iter__(self):
         return self
-    def next(self):
+    def __next__(self):
         try:
-            return self._iter.next()
+            self.__current = self.__iter.__next__()
+            return self.__current
         except StopIteration as e:
             raise e
         except Exception as e:
-            for handler in self.handlers:
-                handler(e)
-            print("Error: "+str(e))
-            return self.next()
+            return self.__next__()
 
 # function for resolving dependencies from a Packages file
 # returns a dictionary: "name" -> "version"
