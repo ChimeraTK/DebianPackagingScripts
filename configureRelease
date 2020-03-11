@@ -556,7 +556,8 @@ for package in hasPackages:
 
   # check if newer source version present in repository
   if(currentVersion != "none"):
-    currentVersionNoBuildVersion = re.sub(r"" + codename + "[0-9]+", "", currentVersion)
+    currentVersionNoBuildVersion = re.sub(r"" + codename + "[0-9]+", "", currentVersion) # removes our build version suffix on the minor
+    currentVersionNoBuildVersion = re.sub(r"-.*", "", currentVersionNoBuildVersion) # remove the 'official' build version which we always set to '-0'
     [ currentMajor, currentMinor, currentPatch ] = currentVersionNoBuildVersion.split('.',2)
     newVersionNoBuildVersion = re.sub(r"" + codename + "[0-9]+", "", config["package-version"])
     [ newMajor, newMinor, newPatch ] = newVersionNoBuildVersion.split('.')
