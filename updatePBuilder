@@ -48,6 +48,7 @@ if [ ! -f ${PBUILDER_IMAGE} ]; then
   # - add the user doocsadm which is needed for the doocs server packages (and their postinst scripts)
   SCRIPT=`mktemp -p ${LOCAL_REPOS}`  # must be in the pbuilder-result directory, since it is bind-mounted in the pbuilder environment
   echo "#!/bin/bash -e" > $SCRIPT
+  echo "echo 'APT { Get { AllowUnauthenticated \"1\"; }; };'>/etc/apt/apt.conf.d/99allow_unauth" >> $SCRIPT # fix for debian to allow apt repos without signature
   echo "echo 'Package: *' > /etc/apt/preferences" >> $SCRIPT
   echo "echo 'Pin: origin \"\"' >> /etc/apt/preferences" >> $SCRIPT
   echo "echo 'Pin-Priority: 1001' >> /etc/apt/preferences" >> $SCRIPT
@@ -57,7 +58,7 @@ if [ ! -f ${PBUILDER_IMAGE} ]; then
   echo "fi" >> $SCRIPT
   echo "groupadd doocsadm" >> $SCRIPT
   echo "useradd -m -g doocsadm doocsadm" >> $SCRIPT
-  sudo pbuilder --execute --distribution ${distribution} --override-config --components "main universe" \
+  sudo pbuilder --execute --distribution ${distribution} --override-config --components "main ${ADDITIONALREPO}" \
                 --othermirror "${MIRRORLIST}"  --save-after-exec                                        \
                 --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}" "${SCRIPT}"
 fi
@@ -69,7 +70,7 @@ ${WD}/updateLocalRepos
 sudo pbuilder --update                                                                                                \
               --distribution ${DISTRIBUTION}                                                                          \
               --override-config                                                                                       \
-              --components "main universe"                                                                            \
+              --components "main ${ADDITIONALREPO}"                                                                            \
               --othermirror "${MIRRORLIST}"                                                                           \
               --hookdir "${WD}/pbuilder-hooks"                                                                        \
               --basetgz "${PBUILDER_IMAGE}"                                                                           \
