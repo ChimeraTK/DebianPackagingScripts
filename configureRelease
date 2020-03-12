@@ -51,7 +51,7 @@ def resolveDeps(dependencies, filename):
 
   # open Packages file and parse it
   if os.path.exists(filename):
-	PackageFile = debian.debian_support.PackageFile(filename)
+    PackageFile = debian.debian_support.PackageFile(filename)
   else:
     return ({},{})
   dependency_versions = {}
