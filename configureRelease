@@ -637,6 +637,12 @@ for var1 in config.keys():
     config[var1] = config[var1].replace("#newline#", '\n')
 
 
+# output the config dicitionary to a file in the control dir for debugging purposes
+f = open(controldir+"/config_dictionary","w")
+f.write(str(config))
+f.close()
+
+
 # replace config variables in files
 for filna in filelist:
   # read file into string
