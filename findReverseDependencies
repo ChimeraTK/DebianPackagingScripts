@@ -23,9 +23,11 @@ def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies
         if(dependency_split[0] == DependencyToSearchFor and len(dependency_split) > 1):
           # extract source version from package version (note that this is a guess, but it holds for packages built with the DebianPackagingScripts)
           version = ""
+            # version numbers are like 123.45xenial3.9-34
+            # split by dots, then remove everything from 'xenial3' (split(codename)[0]) and '-34' (split("-")[0])
           for version_part in PackageAsDictionary['Version'].split("."):
-            version += version_part.split(codename)[0] + "."
-          version = version[:-1]   # remove the trailing dot
+            version += version_part.split(codename)[0].split("-")[0] + "."
+          version = version[:-1]   # remove the trailing dot         
           # add the found package to the list
           ReverseDependencies.append(PackageAsDictionary['Package']+' '+version)
           # recursive search: find packages depending on the found package as well
