@@ -12,6 +12,7 @@ _debian_packaging_master_completions() {
   if [ ${nargs} -eq 1 ]; then
     suggestions+=("xenial")
     suggestions+=("bionic")
+    suggestions+=("focal")
   fi
   
   # even argument: package name
