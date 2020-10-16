@@ -13,14 +13,17 @@ The scripts also automatically determine the build number and count it up if a p
 
 The packages are published to the repositories on `doocs.desy.de` and `doocspkgs.desy.de`.
 
-## Usage
-
 ### Dependencies
 
 To work, the script requries `pbuilder` and `dh-make` packages. Install these with:
 ```
 sudo apt install pbuilder dh-make
 ```
+### Gotchas
+
+It is highly recommended to have vaild kerberos tickets to `doocs.desy.de` and `doocspkgs.desy.de` before running the script. It otherwise asks for consecutive password logins a number of times during the publishing step. A valid kerberos ticket sidesteps the issue.
+
+## Usage
 
 Run the master script with the distibution you want to build for, and the (debian) package name and the version you want to build for.
 
