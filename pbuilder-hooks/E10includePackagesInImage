@@ -1,2 +1,2 @@
 #!/bin/bash
-apt install -y debhelper cmake
+apt install -y debhelper cmake systemd
