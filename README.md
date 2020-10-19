@@ -15,9 +15,9 @@ The packages are published to the repositories on `doocs.desy.de` and `doocspkgs
 
 ### Dependencies
 
-To work, the script requries `pbuilder` and `dh-make` packages. Install these with:
+To work, the script requries:
 ```
-sudo apt install pbuilder dh-make
+sudo apt install pbuilder dh-make python-debian debhelper
 ```
 ### Gotchas
 
