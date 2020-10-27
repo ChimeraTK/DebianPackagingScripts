@@ -215,7 +215,7 @@ while [ "$sorting_done" == "0" ]; do
     # add the dependencies of the package to the new list, if not yet present
     DEPENDENCIES=`grep "^Dependencies: " DebianBuildVersions/$package/CONFIG | sed -e 's|^Dependencies: ||'`
     for dependency in $DEPENDENCIES; do
-      dependency_packagename=`echo $dependency | sed -e 's|^lib||' | sed -e 's|-dev$||'`
+      dependency_packagename=`echo $dependency | sed -e 's|^lib||' | sed -e 's|-dev$||' | sed -e 's|#epoch.*#||'`
       if hasValue package_build_order "$dependency_packagename" ; then
         if ! hasValue package_build_order_sort "$dependency_packagename" ; then
           sorting_done=0
