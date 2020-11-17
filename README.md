@@ -27,14 +27,12 @@ It is highly recommended to have vaild kerberos tickets to `doocs.desy.de` and `
 
 Run the master script with the distibution you want to build for, and the (debian) package name and the version you want to build for.
 
-Currently available Ubuntu releases are
+Currently available and tested Ubuntu releases are
 
-* `precice` = Ubuntu 12.04 (until April 2017)
-* `trusty` = Ubuntu 14.04
 * `xenial` = Ubuntu 16.04
+* `focal` = Ubuntu 20.04
 
-The system uses pbuilder, which allows you to build packages also for other Ubuntu releases. Currently **the host system has to be Ubuntu 16.04** or newer. For the older versions pbuilder still has too many bugs. You need root privileges to run pbuilder and you need write permissions to the ChimeraTK DebianBuildVersions repository and
-the doocspkgs host.
+The system uses pbuilder, which allows you to build packages also for other Ubuntu releases. Currently the host system has to be Ubuntu 18.04 or newer, if you want to build for focal. You need root privileges to run pbuilder and you need write permissions to the ChimeraTK DebianBuildVersions repository and the doocspkgs host.
 
 Syntax:
 
