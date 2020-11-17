@@ -28,6 +28,12 @@ function hasValue() {
   return 1  # False
 }
 
+# check prerequisites
+if ! which dh_make > /dev/null ; then
+  echo "ERROR: dh_make was not found. Please install it first by running:"
+  echo "  sudo apt install dh-make"
+  exit 1
+fi
 
 # check command line arguments
 if [ $# -lt 3 -o $(($#%2)) -eq 0 ]; then
