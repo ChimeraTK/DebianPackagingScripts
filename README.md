@@ -13,8 +13,8 @@ The scripts also automatically determine the build number and count it up if a p
 
 The packages are published to the repositories on `doocs.desy.de` and `doocspkgs.desy.de`; the repository urls are as below:
 ```
-deb http://doocspkgs.desy.de/pub/doocs
-deb http://doocs.desy.de/pub/doocs 
+http://doocspkgs.desy.de/pub/doocs
+http://doocs.desy.de/pub/doocs 
 ```
 
 
