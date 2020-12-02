@@ -11,7 +11,12 @@ he library which has changed have to be recompiled.
 The debian packaging scripts resolve the reverse dependencies and recursively determine which other development packages depend on a particular library development package. All of these dependencies are automatically rebuild.
 The scripts also automatically determine the build number and count it up if a package is build with new dependencies.
 
-The packages are published to the repositories on `doocs.desy.de` and `doocspkgs.desy.de`.
+The packages are published to the repositories on `doocs.desy.de` and `doocspkgs.desy.de`; the repository urls are as below:
+```
+deb http://doocspkgs.desy.de/pub/doocs
+deb http://doocs.desy.de/pub/doocs 
+```
+
 
 ### Dependencies
 
@@ -19,10 +24,21 @@ To work, the script requries:
 ```
 sudo apt install pbuilder dh-make python-debian debhelper
 ```
-### Gotchas
+### Recommendations
 
-It is highly recommended to have vaild kerberos tickets to `doocs.desy.de` and `doocspkgs.desy.de` before running the script. It otherwise asks for consecutive password logins a number of times during the publishing step. A valid kerberos ticket sidesteps the issue.
+#### Kerberos
+Get vaild kerberos tickets to `doocs.desy.de` and `doocspkgs.desy.de` before running the script. This avoids consecutive password prompts during the publishing step. The sequential password prompts give an impression of entered passwords being rejected and needing reentry (besides being inconvenient). Having a valid kerberos ticket sidesteps this issue. For a kerberos ticket:
+```
+kinit <user_name>@DESY.DE
+```
 
+#### Performance optimization
+
+Set the environment variable N_PBUILDER_THREADS to allow pbuilder to use more than one core.
+
+```
+$ export N_PBUILDER_THREADS=5
+```
 ## Usage
 
 Run the master script with the distibution you want to build for, and the (debian) package name and the version you want to build for.
@@ -93,11 +109,3 @@ Do you want to proceed with configuring and building the packages in the given v
 ```
 
 The package `dev-doocswrappers` is a reverse depenency of DOOCS, but it cannot be build using the ChimeraTK packaging scripts. This package would have to be updated manually (if it wasn't an obsolete, leftover library).
-
-## Performance optimisation
-
-Set the environment variable N_PBUILDER_THREADS to allow pbuilder to use more than one core.
-
-```
-$ export N_PBUILDER_THREADS=5
-```
