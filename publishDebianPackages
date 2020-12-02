@@ -45,6 +45,9 @@ for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the 
   # derive list of debug packages from this - they are not mentioned in the control files
   PACKAGE_FILES_WILDCARDS_DBGSYM=$(awk 'BEGIN{ORS=" "} /^Package:/{print $2"-dbgsym_*.deb"}' ${BUILD_CONTROL_FILE})
 
+  # New for focal - debug packages have .ddeb suffix now
+  PACKAGE_FILES_WILDCARDS_DBGSYM="${PACKAGE_FILES_WILDCARDS_DBGSYM} $(awk 'BEGIN{ORS=" "} /^Package:/{print $2"-dbgsym_*.ddeb"}' ${BUILD_CONTROL_FILE})
+
   # Filter dbgsym package names against available packages since they may or may not have been build
   TMPPKG=""
   for p in ${PACKAGE_FILES_WILDCARDS_DBGSYM} ; do
