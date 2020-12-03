@@ -114,7 +114,7 @@ for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the 
   for REPO in ${TARGET_REPOSITORIES}; do
       PUBLISH_FILES_WILDCARDS="${PACKAGE_FILES_WILDCARDS_DEB} ${PACKAGE_FILES_WILDCARDS_DBGSYM}"
       for FILE in ${PUBLISH_FILES_WILDCARDS} ; do
-          ssh ${InstallHost} sudo -H reprepro --waitforlock 2 -Vb \
+          ssh ${InstallHost} sudo -H reprepro --ignore=extension --waitforlock 2 -Vb \
               ${RepositoryDirectories[${REPO}]} includedeb ${distribution} \
               ${PackageArchive}/${FILE}
      done
