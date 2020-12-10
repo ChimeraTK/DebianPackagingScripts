@@ -24,7 +24,7 @@ if [ "${LATEST_COMMIT_ORIGIN}" != "${LATEST_COMMIT_LOCAL}" ]; then
     exit 1
 fi
 
-if [ "`git remote get-url origin`" != "git@github.com:ChimeraTK/DebianBuildVersions.git" ]; then
+if [ "`git remote get-url origin`" != "${DebianBuildVersionsURI}" ]; then
     echo "************************* WARNING *************************"
     echo "Your DebianBuildVersions repository was cloned from a different origin. You are not allowed to publish packages like this!"
     echo "************************* WARNING *************************"
