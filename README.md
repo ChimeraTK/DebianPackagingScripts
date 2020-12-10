@@ -76,6 +76,14 @@ Do you want to proceed with configuring and building the packages in the given v
 ```
 The script will not only build those two packages but also all other libraries which have development packages that depend on the DeviceAccess library. Note that it will not update any applications automatically. If you wanted also the ChimeraTK command line tools to be recompiled with the new DeviceAccess version, you would have to specify this in the call to the master script.
 
+**Overriding the default configuration**
+
+The default configuration, e.g. for the used source and package repositories,
+is defined in `config.sh`. It can be overridden by adding an additional
+`config.sh` in a subdirectory `override_config` to the top level of the working
+copy of this repository. The additional file will be sourced at the end of the
+default one.
+
 **FIXME**
 
 Describe which questions the master script might ask, under which conditions it allows or block publishing of the results.
