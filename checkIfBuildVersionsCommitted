@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source config.sh
+
 if [ ! -e DebianBuildVersions ]; then
     # repository is not even there: no local changes
     exit 0
