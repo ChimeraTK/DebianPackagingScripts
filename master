@@ -243,14 +243,24 @@ while [ "$sorting_done" == "0" ]; do
   unset package_build_order_sort
 done
 
+# read backlist (packages for which the build is skipped)
+declare -A BLACKLIST
+if [ -f blacklist ]; then
+  echo "ATTENTION: Blacklist is in effect!"
+  while read line ; do
+    BLACKLIST[$line]="y"
+  done < blacklist
+fi
+
 # output list of packages to be build
 echo ""
 echo "The following packages will be build (in that order):"
 for package in "${package_build_order[@]}"; do
   echo -n "$package ${package_list[$package]}"
   if [ -n "${package_buildcmd[$package]}" ]; then
-    echo " [already done]"
-    continue
+    echo -n " [already done]"
+  elif [ -n "${BLACKLIST[$package]}" ]; then
+    echo -n " [*** BLACKLISTED ***]"
   fi
   echo ""  
 done
@@ -267,6 +277,9 @@ declare -A package_buildcmd        # associative array: package name -> command 
 for package in "${package_build_order[@]}"; do
   if [ -n "${package_buildcmd[$package]}" ]; then
     echo "Package $package has already been built, continuing with next package..."
+    continue
+  elif [ -n "${BLACKLIST[$package]}" ]; then
+    echo "Package $package is blacklisted, continuing with next package..."
     continue
   fi
   echo ""
