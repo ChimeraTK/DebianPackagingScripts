@@ -6,3 +6,4 @@ pbuilder-result
 pbuilder-base
 master-control
 override_config
+blacklist
