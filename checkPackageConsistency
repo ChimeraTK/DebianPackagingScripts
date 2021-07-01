@@ -57,15 +57,15 @@ getFromConfig $package "package-name-contains-buildversion"
 if [ -z "${config[package_name_contains_buildversion]}" ]; then
   config[package_name_contains_buildversion]=1
 fi
-  
-  
+
 # obtain epoch version as part of the Debian package name
 epoch_version=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|-[^/].*/||' -e 's|/|-|' -e 's|\.|-|'`
 epoch_version_no_buildversion=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|/.*$||' -e 's|\.|-|'`
   
 # obtain so file version in two different ways and compare
 so_version_nopatch=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|-[^/].*/||' -e 's|/||'`
-mdpconfig="${WD}/`echo ${package_buildcmd[$package]} | sed -e 's|^./makeDebianPackage ||'`/makeDebianPackage.config"
+# This cuts of the potential --preseed argument for the build
+mdpconfig="${WD}/`echo ${package_buildcmd[$package]} | sed -e 's|^./makeDebianPackage.*Debian|Debian|'`/makeDebianPackage.config"
 so_version="`( source $mdpconfig ; echo $SOVERSION )`"
 if [ -z "`echo $so_version | grep ^$so_version_nopatch`" ]; then
   echo "The .so file version obtained from the makeDebianPackage.config file and from the master-control file do not match."

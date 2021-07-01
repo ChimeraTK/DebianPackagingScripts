@@ -11,6 +11,7 @@ import tempfile
 import shutil
 import re
 debianCodenames=['jessie','buster','stretch','bullseye']
+import argparse
 
 def extract_tokens(input_string):
   """
@@ -89,26 +90,32 @@ def getPackageVersion(packageName, filename):
   return "none"
 
 # output usage
-if len(sys.argv) != 5 and len(sys.argv) != 6 :
-  print("Usage: ./configureRelease <project_name> <version_tag_name> <distribution_codename> <debian_repository> [<architecture>]")
-  print("Example: ./configureRelease doocswrappers 0.5.0 xenial http://doocspkgs.desy.de/")
-  sys.exit(1)
+
+parser = argparse.ArgumentParser(epilog="Example: ./configureRelease doocswrappers 0.5.0 xenial http://doocspkgs.desy.de/")
+parser.add_argument('project_name')
+parser.add_argument('version_tag_name')
+parser.add_argument('distribution_codename')
+parser.add_argument('debian_repository')
+# nargs='?' makes this argument optional and will use the default otherwise
+parser.add_argument('architecture', nargs='?', default='amd64')
+parser.add_argument('--use-preseed', action='store_true', default=False)
+
+args = parser.parse_args()
+
 
 # parse command line arguments
-project = sys.argv[1]
-tagversion = sys.argv[2]                        # tagversion is the git tag to be checked out for this version
+project = args.project_name
+tagversion = args.version_tag_name              # tagversion is the git tag to be checked out for this version
 version = tagversion                            # version is identical to the git tag but omitting the "v" at the beginning if present
 if tagversion[0:1] == "v":
   version = tagversion[1:]
 splitversion = version.split(".")
 epoch = splitversion[0]+"."+splitversion[1]     # the "epoch" is the part of the version which is identical for binary compatible versions
 patchlevel = splitversion[2]                    # the patchlevel contains any part of the version which differs for binary compatible versions
-codename = sys.argv[3]                          # codename of the distribution to build for (e.g. xenial)
-debianrepository = sys.argv[4]                  # repository base name used to retrieve a package list
-if len(sys.argv) == 6 :
-  arch = sys.argv[5]
-else:
-  arch = "amd64"
+codename = args.distribution_codename           # codename of the distribution to build for (e.g. xenial)
+debianrepository = args.debian_repository       # repository base name used to retrieve a package list
+arch = args.architecture
+use_preseed = args.use_preseed
 
 # preset optional config variables
 config = {}
@@ -397,6 +404,7 @@ subprocess.call(["iconv", "-c", "-t", "UTF-8", "TMP.DESY","-o","Packages.DESY"])
 (dependency_versions_main, map_virtual_real_names_main) = resolveDeps(dependencies, "Packages.MAIN")
 (dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE")
 (dependency_versions_desy, map_virtual_real_names_desy) = resolveDeps(dependencies, "Packages.DESY")
+(dependency_versions_preseed, map_virtual_real_names_preseed) = resolveDeps(dependencies, "preseed/dists/"+codename+"/main/binary-"+arch+"/Packages")
 (dependency_versions_local, map_virtual_real_names_local) = resolveDeps(dependencies, "pbuilder-result/dists/"+codename+"/main/binary-"+arch+"/Packages")
 
 # merge the found dependencies with priority, and check for unfound dependencies
@@ -411,6 +419,10 @@ for dependency in dependencies:
     map_virtual_real_names[dependency] = map_virtual_real_names_local[dependency]
     print("  "+dependency+" (= "+dependency_versions[dependency]+") from *** LOCAL ***")
     is_using_local = True
+  elif use_preseed and dependency in dependency_versions_preseed:
+    dependency_versions[dependency] = dependency_versions_preseed[dependency]
+    map_virtual_real_names[dependency] = map_virtual_real_names_preseed[dependency]
+    print("  "+dependency+" (= "+dependency_versions[dependency]+") from *** PRESEED ***")
   elif dependency in dependency_versions_main_updates:
     dependency_versions[dependency] = dependency_versions_main_updates[dependency]
     map_virtual_real_names[dependency] = map_virtual_real_names_main_updates[dependency]
@@ -734,7 +746,11 @@ if os.path.isfile("DebianBuildVersions/"+project+"/postrm"):
 # output the command to build the package
 print("")
 print("To build the package, run the following command:")
-print("./makeDebianPackage "+controldir)
+if use_preseed:
+    print("./makeDebianPackage --preseed "+controldir)
+else:
+    print("./makeDebianPackage "+controldir)
+
 
 
 

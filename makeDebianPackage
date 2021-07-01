@@ -1,11 +1,39 @@
 #!/bin/bash -e
 
-# Shell script to generate a debian package from a particular tag (configured during the cmake configuration).
-# Parse command line arguments
-if [ -z "$1" ] ; then
+PRESEED_REPOS=""
+HOOKDIR=""
+# check command line arguments
+options=$(getopt -l "preseed,help" -o "p,h" -a -- "$@")
+eval set -- "$options"
+
+function showHelp() {
   # print usage
   echo "Usage: ./makeDebianPackage path/to/control/directory/created/by/configureRelease"
   echo "Hint: configureRelease will print the full command line to run this script after creating the control directory."
+}
+
+while true; do
+    case $1 in
+        -h|--help)
+            showHelp
+            exit 0
+            ;;
+        -p|--preseed)
+            PRESEED_REPOS="`pwd`/preseed"
+            HOOKDIR="--hookdir `pwd`/pbuilder-hooks"
+            ;;
+        --)
+            shift
+            break;;
+    esac
+    shift
+done
+
+
+# Shell script to generate a debian package from a particular tag (configured during the cmake configuration).
+# Parse command line arguments
+if [ -z "$1" ] ; then
+  showHelp
   exit 1
 fi
 CONTROLDIR="`pwd`/$1"
@@ -27,6 +55,7 @@ echo "using ${N_PBUILDER_THREADS} thread(s)"
 
 # directory with local Debian repository and where the created packages should be placed
 LOCAL_REPOS="`pwd`/pbuilder-result"
+
 
 # directory with pbuilder base image
 PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${DISTRIBUTION}.tgz"
@@ -69,13 +98,17 @@ debchange --create --package ${PACKAGE_BASENAME} -v ${PACKAGE_VERSION}-0 --distr
 # The pbuilder on Ubuntu 18.04 (and presumably later) mounts /dev and /run/shm by itself
 # If we bind it into the container, it cannot unbind it properly if any browser is running on bionic
 our_version=$(lsb_release -r | awk '{print $2}' | tr -d .)
-bind_mounts="${LOCAL_REPOS} ${ADDITIONAL_BIND_MOUNTS}"
+bind_mounts="${LOCAL_REPOS} ${PRESEED_REPOS} ${ADDITIONAL_BIND_MOUNTS}"
 if test "$our_version" -lt "1804"; then
     bind_mounts="${bind_mounts} /dev /run/shm"
 fi
 
+# For the pbuilder hooks
+export PRESEED_REPOS
+export DISTRIBUTION
+
 time pdebuild --debbuildopts -j${N_PBUILDER_THREADS} -- --distribution ${DISTRIBUTION} --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"   \
-              --basetgz "${PBUILDER_IMAGE}" --bindmounts "${bind_mounts}" --configfile "${PBUILDER_RC}"     || exit 1
+              --basetgz "${PBUILDER_IMAGE}" --bindmounts "${bind_mounts}" --configfile "${PBUILDER_RC}" $HOOKDIR    || exit 1
 echo ""
 echo "You can find the resulting debian packages in this directory: ${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"
 

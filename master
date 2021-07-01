@@ -28,6 +28,13 @@ function hasValue() {
   return 1  # False
 }
 
+function showHelp() {
+  echo "Usage: ./master <distribution_codename> <package_name1> <package_version1> [<package_name2> <package_version2>] [...]"
+  echo "Example: ./master xenial chimeratk-deviceaccess 00.16.00 qthardmon latest"
+  echo ""
+  echo "Specifying 'latest' as a version will build the greatest version (see sort -V) found on the source repository."
+}
+
 # check prerequisites
 if ! which dh_make > /dev/null ; then
   echo "ERROR: dh_make was not found. Please install it first by running:"
@@ -35,12 +42,29 @@ if ! which dh_make > /dev/null ; then
   exit 1
 fi
 
+use_preseed_repository=0
 # check command line arguments
+options=$(getopt -l "preseed,help" -o "p,h" -a -- "$@")
+eval set -- "$options"
+
+while true; do
+    case $1 in
+        -h|--help)
+            showHelp
+            exit 0
+            ;;
+        -p|--preseed)
+            use_preseed_repository=1
+            ;;
+        --)
+            shift
+            break;;
+    esac
+    shift
+done
+
 if [ $# -lt 3 -o $(($#%2)) -eq 0 ]; then
-  echo "Usage: ./master <distribution_codename> <package_name1> <package_version1> [<package_name2> <package_version2>] [...]"
-  echo "Example: ./master xenial chimeratk-deviceaccess 00.16.00 qthardmon latest"
-  echo ""
-  echo "Specifying 'latest' as a version will build the greatest version (see sort -V) found on the source repository."
+    showHelp
   exit 1
 fi
 
@@ -287,7 +311,11 @@ for package in "${package_build_order[@]}"; do
   # update pbuilder chroot environment (needed for every package, since dependencies might be added)
   ./updatePBuilder "$distribution" "$DebianRepository"
   # configure the package (possibly using just built dependencies)
-  ./configureRelease "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee $TEMPFILE ; test ${PIPESTATUS[0]} -eq 0
+  preseed=""
+  if [ "x$use_preseed_repository" = "x1" ] ; then
+      preseed="--use-preseed"
+  fi
+  ./configureRelease $preseed "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee $TEMPFILE ; test ${PIPESTATUS[0]} -eq 0
   package_buildcmd[$package]=`tail -n1 $TEMPFILE`
   echo ""
   # actually build the package

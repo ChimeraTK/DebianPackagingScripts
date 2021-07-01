@@ -17,7 +17,7 @@ if [ $do_not_publish -eq 0 ]; then
   for package in "${!package_buildcmd[@]}"; do
 
     # get the path to the control directory from the build command (argument to makeDebianPackage)
-    BUILD_CONTROL_DIRECTORY=`echo ${package_buildcmd[$package]} | sed -e 's|^./makeDebianPackage DebianBuildVersions/||'`
+    BUILD_CONTROL_DIRECTORY=`echo ${package_buildcmd[$package]} | sed -e 's|^./makeDebianPackage.*DebianBuildVersions/||'`
 
     # add control direcotry to commit
     git add ${BUILD_CONTROL_DIRECTORY}

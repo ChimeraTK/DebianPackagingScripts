@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The denian packaging system is designed for stable libraries which are not upgraded to a newer version in the lifetime
+The debian packaging system is designed for stable libraries which are not upgraded to a newer version in the lifetime
 of a debian distribution. Hence it is not foreseen to have more than one development package, and if it is upated, the dependent debian packages are not affected due to binary compatibility.
 
 The ChimeraTK libraries, however, are developing much faster and new debian packages are provided when a new version is available. The libraries are not binary compatible. Hence the development packages of all libraries which use
@@ -83,6 +83,21 @@ is defined in `config.sh`. It can be overridden by adding an additional
 `config.sh` in a subdirectory `override_config` to the top level of the working
 copy of this repository. The additional file will be sourced at the end of the
 default one.
+
+### Preseeding
+
+In rare conditions it might be necessary to build against an older set of development packages than what is available in the official repositories.
+In that case it is possible to put the relevant packages into a repository structure below the `preseed` folder.
+
+The `master` script has to be called with the parameter `--preseed` for the packaging scripts to pack them up
+
+#### Example
+
+To build against DOOCS 20.10, on focal with amd64 as the CPU architecture, the required packages are `dev-doocs-clientlib_20.10.1-focal1_amd64.deb`, `dev-doocs-serverlib_20.10.1-focal1_amd64.deb` and
+`dev-doocs-libgul14_20.10.1-focal1_amd64.deb`. Those have to be put into `preseed/dists/focal/main/binary-amd64`, the scripts will take care of the rest.
+
+To build, run `master --preseed focal doocs-legacy-server 01.00.03`
+
 
 **FIXME**
 

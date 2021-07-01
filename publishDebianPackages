@@ -37,7 +37,7 @@ done
 for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the list (note: this is *not* the list of .deb files but the list of projects!)
 
   # get the path to the control file from the build command (argument to makeDebianPackage)
-  BUILD_CONTROL_FILE=`echo ${package_buildcmd[$package]} | sed -e "s|^./makeDebianPackage |${WD}/|"`/control
+  BUILD_CONTROL_FILE=`echo ${package_buildcmd[$package]} | sed -e "s|^./makeDebianPackage.*Debian|${WD}/Debian|"`/control
   
   # obtain list of package names from the control file and form wildcards to match the deb files
   PACKAGE_FILES_WILDCARDS_DEB=$(awk 'BEGIN{ORS=" "} /^Package:/{print $2"_*.deb"}' ${BUILD_CONTROL_FILE})
