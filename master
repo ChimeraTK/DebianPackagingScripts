@@ -309,7 +309,7 @@ for package in "${package_build_order[@]}"; do
   echo ""
   echo "Configuring $package in version ${package_list[$package]} for ${distribution}..."
   # update pbuilder chroot environment (needed for every package, since dependencies might be added)
-  ./updatePBuilder "$distribution" "$DebianRepository"
+  ./helper_compress_output.sh ./updatePBuilder "$distribution" "$DebianRepository"
   # configure the package (possibly using just built dependencies)
   preseed=""
   if [ "x$use_preseed_repository" = "x1" ] ; then
@@ -320,7 +320,7 @@ for package in "${package_build_order[@]}"; do
   echo ""
   # actually build the package
   echo "Building $package in version ${package_list[$package]} for ${distribution}..."
-  ${package_buildcmd[$package]}
+  ./helper_compress_output.sh ${package_buildcmd[$package]}
   # put buildcmd into master-control file
   echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
   # check consistency of the package

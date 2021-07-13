@@ -53,9 +53,12 @@ fi
 
 echo "using ${N_PBUILDER_THREADS} thread(s)"
 
+# directory where logfiles go
+LOGDIR="`pwd`/buildlogs"
+mkdir -p "${LOGDIR}"
+
 # directory with local Debian repository and where the created packages should be placed
 LOCAL_REPOS="`pwd`/pbuilder-result"
-
 
 # directory with pbuilder base image
 PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${DISTRIBUTION}.tgz"
@@ -107,8 +110,17 @@ fi
 export PRESEED_REPOS
 export DISTRIBUTION
 
-time pdebuild --debbuildopts -j${N_PBUILDER_THREADS} -- --distribution ${DISTRIBUTION} --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"   \
-              --basetgz "${PBUILDER_IMAGE}" --bindmounts "${bind_mounts}" --configfile "${PBUILDER_RC}" $HOOKDIR    || exit 1
+LOGFILE="${LOGDIR}/pdebuild.${PACKAGE_BASENAME}.log"
+time pdebuild --debbuildopts -j${N_PBUILDER_THREADS} -- --distribution ${DISTRIBUTION}     \
+              --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"     \
+              --basetgz "${PBUILDER_IMAGE}" --bindmounts "${bind_mounts}"                  \
+              --configfile "${PBUILDER_RC}" $HOOKDIR 2>&1 | tee "${LOGFILE}"
+if (( ${PIPESTATUS[0]} != 0 )); then
+  echo ""
+  echo "Building package ${PACKAGE_BASENAME} failed!"
+  exit 1
+fi
+
 echo ""
 echo "You can find the resulting debian packages in this directory: ${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"
 

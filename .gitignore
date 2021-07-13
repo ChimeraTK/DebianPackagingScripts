@@ -7,3 +7,5 @@ pbuilder-base
 master-control
 override_config
 blacklist
+buildlogs
+preseed
