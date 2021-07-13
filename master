@@ -307,7 +307,7 @@ for package in "${package_build_order[@]}"; do
     continue
   fi
   echo ""
-  echo "Configuring $package in version ${package_list[$package]} for ${distribution}..."
+  echo -e "\033[34;1mConfiguring $package in version ${package_list[$package]} for ${distribution}...\033[0m"
   # update pbuilder chroot environment (needed for every package, since dependencies might be added)
   ./helper_compress_output.sh ./updatePBuilder "$distribution" "$DebianRepository"
   # configure the package (possibly using just built dependencies)
@@ -319,16 +319,20 @@ for package in "${package_build_order[@]}"; do
   package_buildcmd[$package]=`tail -n1 $TEMPFILE`
   echo ""
   # actually build the package
-  echo "Building $package in version ${package_list[$package]} for ${distribution}..."
+  echo -e "\033[34;1mBuilding $package in version ${package_list[$package]} for ${distribution}...\033[0m"
   ./helper_compress_output.sh ${package_buildcmd[$package]}
   # put buildcmd into master-control file
   echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
   # check consistency of the package
+  echo ""
+  echo -e "\033[34;1mChecking $package in version ${package_list[$package]} for ${distribution}...\033[0m"
   ./checkPackageConsistency "$package"
 done
 rm $TEMPFILE
 
 # run validation
+echo ""
+echo -e "\033[34;1mValidating all built packages...\033[0m"
 ./validation
 
 # committing build versions and publish packages
