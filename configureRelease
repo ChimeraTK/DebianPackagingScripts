@@ -466,12 +466,6 @@ for dependency in map_virtual_real_names.keys() :
     dependencies[index] = map_virtual_real_names[dependency]
     map_virtual_real_names_reverse[map_virtual_real_names[dependency]] = dependency
 
-# print warning if using the local repository
-if is_using_local:
-  print("")
-  print("*** WARNING ***")
-  print("You are building against packages in your local ./pbuilder-result directory which may not yet be published!")
-
 # form the directory name for the build version
 version_base_dir = project+"/"+epoch+"/"+codename+"-"+arch
 dependency_dir = version_base_dir
