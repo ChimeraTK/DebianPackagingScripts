@@ -239,7 +239,7 @@ while [ "$sorting_done" == "0" ]; do
   for package in "${package_build_order[@]}"; do
     # check if the package has a config. If not print a warning and ignore it  
     if ! [ -e DebianBuildVersions/$package/CONFIG ]; then
-      echo "No config for '$package' found. No packages for this project will be build."
+      echo "No config for '$package' found. No packages for this project will be built."
       continue
     fi
     # add the dependencies of the package to the new list, if not yet present
@@ -276,9 +276,9 @@ if [ -f blacklist ]; then
   done < blacklist
 fi
 
-# output list of packages to be build
+# output list of packages to be built
 echo ""
-echo "The following packages will be build (in that order):"
+echo "The following packages will be built (in that order):"
 for package in "${package_build_order[@]}"; do
   echo -n "$package ${package_list[$package]}"
   if [ -n "${package_buildcmd[$package]}" ]; then
@@ -292,7 +292,7 @@ done
 # ask if we want to proceed
 ask "Do you want to proceed with configuring and building the packages in the given versions (y/N)?" || ( rm master-control ; exit 1 )
 
-# gain root rights. This (likely) avoids the need to type the passwort later in the middle of the build step
+# gain root rights. This (likely) avoids the need to type the password later in the middle of the build step
 sudo echo "We have root rights now."
 
 # configure and build packages
