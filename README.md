@@ -5,11 +5,10 @@
 The debian packaging system is designed for stable libraries which are not upgraded to a newer version in the lifetime
 of a debian distribution. Hence it is not foreseen to have more than one development package, and if it is upated, the dependent debian packages are not affected due to binary compatibility.
 
-The ChimeraTK libraries, however, are developing much faster and new debian packages are provided when a new version is available. The libraries are not binary compatible. Hence the development packages of all libraries which use
-he library which has changed have to be recompiled.
+The ChimeraTK libraries, however, are developing much faster and new debian packages are provided when a new version is available. The libraries are not binary compatible. Hence the development packages of all libraries which use the library which has changed have to be recompiled.
 
-The debian packaging scripts resolve the reverse dependencies and recursively determine which other development packages depend on a particular library development package. All of these dependencies are automatically rebuild.
-The scripts also automatically determine the build number and count it up if a package is build with new dependencies.
+The debian packaging scripts resolve the reverse dependencies and recursively determine which other development packages depend on a particular library development package. All of these dependencies are automatically rebuilt.
+The scripts also automatically determine the build number and count it up if a package is built with new dependencies.
 
 The packages are published to the repositories on `doocs.desy.de` and `doocspkgs.desy.de`; the repository urls are as below:
 ```
@@ -27,7 +26,7 @@ sudo apt install pbuilder dh-make python-debian debhelper
 ### Recommendations
 
 #### Kerberos
-Get vaild kerberos tickets to `doocs.desy.de` and `doocspkgs.desy.de` before running the script. This avoids consecutive password prompts during the publishing step. The sequential password prompts give an impression of entered passwords being rejected and needing reentry (besides being inconvenient). Having a valid kerberos ticket sidesteps this issue. For a kerberos ticket:
+Get valid kerberos tickets to `doocs.desy.de` and `doocspkgs.desy.de` before running the script. This avoids consecutive password prompts during the publishing step. The sequential password prompts give an impression of entered passwords being rejected and needing reentry (besides being inconvenient). Having a valid kerberos ticket sidesteps this issue. For a kerberos ticket:
 ```
 kinit <user_name>@DESY.DE
 ```
@@ -56,7 +55,7 @@ Syntax:
 ./master <distribution_codename> <package_name1> <package_version1> [<package_name2> <package_version2>] [...]
 ```
 Example:
-You want do build version 00.16.00 of the DeviceAccess library (debian package base name mtca4u-deviceaccess),
+You want to build version 00.16.00 of the DeviceAccess library (debian package base name mtca4u-deviceaccess),
 and also recompile the QtHardMon application in version 00.17.07  against this new DeviceAccess version for
 Ubuntu 16.06 (xenial)
 
@@ -111,7 +110,7 @@ Normally, the scripts will rebuild all reverse-dependencies of library dev packa
 ## DOOCS and other dependencies
 
 In case a library is updated which is not packaged with these scripts, you can trigger all dependent libraries
-to be build using the `runMasterForDependencies` script. The input is a REGEX pattern describing the packages which have changed, and all dependent libraries which can be build with the ChimeraTK debian packaging scripts are updated.
+to be built using the `runMasterForDependencies` script. The input is a REGEX pattern describing the packages which have changed, and all dependent libraries which can be built with the ChimeraTK debian packaging scripts are updated.
 
 **FIXME**
 
@@ -136,4 +135,4 @@ beam-arrival-time-monitor 01.01.00
 Do you want to proceed with configuring and building the packages in the given versions (y/N)?
 ```
 
-The package `dev-doocswrappers` is a reverse depenency of DOOCS, but it cannot be build using the ChimeraTK packaging scripts. This package would have to be updated manually (if it wasn't an obsolete, leftover library).
+The package `dev-doocswrappers` is a reverse depenency of DOOCS, but it cannot be built using the ChimeraTK packaging scripts. This package would have to be updated manually (if it wasn't an obsolete, leftover library).
