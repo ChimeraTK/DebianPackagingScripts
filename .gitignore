@@ -1,5 +1,6 @@
 Packages
 Packages.*
+TMP.*
 debian_package
 DebianBuildVersions
 pbuilder-result
