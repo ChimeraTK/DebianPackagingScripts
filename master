@@ -191,7 +191,10 @@ echo "Searching for reverse dependencies..."
 for package in "${!package_list[@]}"; do
   # obtain possible reverse dependencies for lib${package}-dev
   TEMPFILE=`mktemp`
-  ./findReverseDependencies lib${package}-dev $distribution $DebianRepository $arch | grep "^lib" | grep -- "-dev " | sed -e 's/^lib//' -e 's/-dev / /' > $TEMPFILE
+  # Let 'set -e' check if 'findReverseDependencies' fails; don't care about the rest of the pipeline
+  # (Cannot use 'set -o pipefail', as that would break other stuff in this script)
+  DEPENDENCIES_RESULT=$(./findReverseDependencies lib${package}-dev $distribution $DebianRepository $arch)
+  echo "${DEPENDENCIES_RESULT}" | grep "^lib" | grep -- "-dev " | sed -e 's/^lib//' -e 's/-dev / /' > $TEMPFILE
   readarray revdeps_with_versions < $TEMPFILE
   rm -f $TEMPFILE
   # loop over any found reverse dependencies

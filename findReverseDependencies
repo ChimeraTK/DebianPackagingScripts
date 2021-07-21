@@ -43,6 +43,16 @@ def resolvePackagePattern(packagePattern, Packages):
 
   return resolvedPackages
 
+def subprocessHelper(argList):
+  cmd_cmplt = subprocess.run(
+      argList,
+      capture_output=True,
+  )
+  if cmd_cmplt.returncode != 0:
+      stdout_msg = cmd_cmplt.stdout.decode('utf-8')
+      stderr_msg = cmd_cmplt.stderr.decode('utf-8')
+      raise RuntimeError(f'{argList} failed:\n{stdout_msg}\n{stderr_msg}')
+
 def main():
     # output usage
     if len(sys.argv) != 4 and len(sys.argv) != 5 :
@@ -62,9 +72,14 @@ def main():
       arch = "amd64"
     
     # download Packages file from the DESY DOOCS apt repositories
-    subprocess.call(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
-    subprocess.call(["mv","Packages.DESY","TMP.DESY"])
-    subprocess.call(["iconv", "-c", "-t", "UTF-8", "TMP.DESY","-o","Packages.DESY"])
+    try:
+      subprocessHelper(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
+    except RuntimeError:
+      raise RuntimeError(f'wget from {debianrepository} failed; are you in DESY network?')
+
+    subprocessHelper(["mv","Packages.DESY","TMP.DESY"])
+    subprocessHelper(["iconv", "-c", "-t", "UTF-8", "TMP.DESY","-o","Packages.DESY"])
+
     # open Packages file and parse it
     PackageFile = debian.debian_support.PackageFile("Packages.DESY")
     Packages = []
