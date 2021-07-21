@@ -25,6 +25,10 @@ sudo apt install pbuilder dh-make python-debian debhelper
 ```
 ### Recommendations
 
+#### Linux Distribution
+
+It is recommended to run this script on a standard Ubuntu installation. Non-standard distributions (such as the "yellow Linux" used on some DESY PCs) may break `pbuilder` / `debootstrap` by using apt sources / GPG keys different from the original.
+
 #### Kerberos
 Get valid kerberos tickets to `doocs.desy.de` and `doocspkgs.desy.de` before running the script. This avoids consecutive password prompts during the publishing step. The sequential password prompts give an impression of entered passwords being rejected and needing reentry (besides being inconvenient). Having a valid kerberos ticket sidesteps this issue. For a kerberos ticket:
 ```
@@ -136,3 +140,4 @@ Do you want to proceed with configuring and building the packages in the given v
 ```
 
 The package `dev-doocswrappers` is a reverse depenency of DOOCS, but it cannot be built using the ChimeraTK packaging scripts. This package would have to be updated manually (if it wasn't an obsolete, leftover library).
+
