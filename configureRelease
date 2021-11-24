@@ -10,6 +10,7 @@ import time
 import tempfile
 import shutil
 import re
+import datetime
 debianCodenames=['jessie','buster','stretch','bullseye']
 import argparse
 
@@ -265,6 +266,9 @@ if not "Package-name-extra2" in config:
   config["Package-name-extra2"] = config["package-basename"]+"-extra2"
 if not "Package-name-python" in config:
   config["Package-name-python"] = config["package-basename"]
+
+
+config["current-year"] = str(datetime.datetime.now().year)
 
 
 # resolve variables inside the configuration
