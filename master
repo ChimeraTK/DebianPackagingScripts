@@ -130,10 +130,9 @@ if [ $do_not_publish == 1 ]; then
     ask "Do you really want to reset the DebianBuildVersions directory (y/N)? "
     ( cd DebianBuildVersions ; git reset --hard ; git clean -f -d )
     do_not_publish=0
-    ./checkIfBuildVersionsCommitted
+    ./checkIfBuildVersionsCommitted || do_not_publish=1
     if [ $do_not_publish == 1 ]; then
-      echo "Sorry, automatic cleaning did not work. Aborted."
-      false
+      echo "Sorry, automatic cleaning did not work."
     else
       echo "The DebianBuildVersions directory has been cleaned successfully."
     fi
@@ -157,6 +156,10 @@ if [ $CONTINUE_BUILD == 1 ]; then
     echo "New arguments are: $full_cmdline"
     exit 1
   fi
+fi
+
+if [ $do_not_publish == 1 ]; then
+    ask "Publishing this build will not be possible. Do you still want to continue? (y/N)"
 fi
 
 # create the master control file
