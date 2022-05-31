@@ -95,7 +95,11 @@ fi
 if [ "$NEED_CLEANUP" == "1" ]; then
   echo ""
   echo -n "Do you want to remove any leftovers from the previous (or current!?) run [y], try to continue the previous build [c], or abort [n] (y/c/N)? "
-  read answer
+  if [ -z $AUTOCLEAN ] ; then
+      read answer
+  else
+      answer="y"
+  fi
   if [ "$answer" == "c" -o "$answer" == "C" ]; then
     echo ""
     echo " **************************************************"
@@ -131,12 +135,18 @@ fi
 if [ $do_not_publish == 1 ]; then
   echo ""
   echo -n "Continue anyway or reset the DebianBuildVersions directory (y/r/N)? "
-  read answer
+  if [ -z $AUTOCLEAN ] ; then
+    read answer
+  else
+    answer="r"
+  fi
   if [ "$answer" = "r" -o "$answer" = "R" ]; then
     echo ""
     echo "*** ATTENTION ***"
     echo "All modifications to the DebianBuildVersions directory including new files will be lost irreversible!"
-    ask "Do you really want to reset the DebianBuildVersions directory (y/N)? "
+    if [ -z $AUTOCLEAN ] ; then
+      ask "Do you really want to reset the DebianBuildVersions directory (y/N)? "
+    fi
     ( cd DebianBuildVersions ; git reset --hard ; git clean -f -d )
     do_not_publish=0
     ./checkIfBuildVersionsCommitted || do_not_publish=1
