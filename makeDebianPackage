@@ -70,15 +70,13 @@ rm -rf debian_package
 mkdir debian_package
 cd debian_package
 
-# Check out the correct tag from the master git repository. Note, we first clone and then checkout the tag because the
-# old git version on Ubuntu12.4 does not support to do it in one go.
 BUILD_DIR_NAME=${PACKAGE_BASENAME}_${SOVERSION}
-git clone --recursive ${SOURCE_URI} ${BUILD_DIR_NAME}
-( cd  ${BUILD_DIR_NAME} &&\
-  git checkout tags/${TAGVERSION} &&\
-  rm -rf .git )
-# Debian convention: file has to end on .orig.tar.gz
-tar -czf ${BUILD_DIR_NAME}.orig.tar.gz ${BUILD_DIR_NAME}
+
+# Check out the correct tag from the master git repository.
+git clone --recurse-submodules --depth=1 --branch ${TAGVERSION} ${SOURCE_URI} ${BUILD_DIR_NAME}
+
+## Debian convention for 3.0 (quilt): file has to end on .orig.tar.gz
+tar -czf ${BUILD_DIR_NAME}.orig.tar.gz --exclude-vcs ${BUILD_DIR_NAME}
 
 # Copy the prepared debian packaging config files to the source code directroy
 mkdir -p ${BUILD_DIR_NAME}/debian
