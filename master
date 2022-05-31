@@ -334,7 +334,9 @@ for package in "${package_build_order[@]}"; do
   echo ""
   echo -e "\033[34;1mConfiguring $package in version ${package_list[$package]} for ${distribution}...\033[0m"
   # update pbuilder chroot environment (needed for every package, since dependencies might be added)
-  ./helper_compress_output.sh ./updatePBuilder "$distribution" "$DebianRepository"
+  if [ -z $SKIP_PBUILDER_UPDATE ] ; then
+      ./helper_compress_output.sh ./updatePBuilder "$distribution" "$DebianRepository"
+  fi
   # configure the package (possibly using just built dependencies)
   preseed=""
   if [ "x$use_preseed_repository" = "x1" ] ; then
