@@ -16,7 +16,6 @@ http://doocs.desy.de/pub/doocs
 http://doocspkgs.desy.de/pub/doocs
 ```
 
-
 ### Dependencies
 
 To work, the script requries:
@@ -93,6 +92,22 @@ In rare conditions it might be necessary to build against an older set of develo
 In that case it is possible to put the relevant packages into a repository structure below the `preseed` folder.
 
 The `master` script has to be called with the parameter `--preseed` for the packaging scripts to pack them up
+
+### Additional tweaks
+
+During package development it might be that you have a high turn-around in calling the master script. To accomodate this, it is possible to skip or speed up certain parts of the process:
+
+#### Skipping the initial pbuilder update
+
+If you do not want the pbuilder to be updated on script start, you can use the environment variable `SKIP_PBUILDER_UPDATE`. This will skip running update on the pbuilder image. which might be helpful if you have just done that minutes ago
+
+#### Throwing away everything
+
+The script tries to help you with not accidentally forgetting any changes you made to the Debian package lists or configs. Again, with a high turn-around of `master` calls, this might be a bit hindering.
+
+Setting the `AUTOCLEAN` environment variable will:
+* remove any intermediate data that was left from a previous build
+* reset the DebianBuildVersions directory
 
 #### Example
 
