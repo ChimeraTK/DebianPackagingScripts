@@ -78,14 +78,13 @@ if [ $# -lt 3 -o $(($#%2)) -eq 0 ]; then
 fi
 
 echo "Active overides:"
-v=${AUTOCLEAN:+"\033[0;31myes\033[0m"}
-v=${v:-no}
-echo -e "Will remove all temporary data: $v"
+if [ -n "$AUTOCLEAN" ]; then
+    echo -e "Will remove all temporary and uncommited data: \033[0;31myes\033[0m$v"
+fi
 
-v=${SKIP_PBUILDER_UPDATE:+"\033[0;31mno\033[0m"}
-v=${v:-yes}
-echo -e "Will update pbuilder: ${v}"
-
+if [ -n "$SKIP_PBUILDER_UPDATE" ]; then
+    echo -e "Will update pbuilder: \033[0;31mno\033[0m"
+fi
 
 if [ -n "$AUTOCLEAN" ]; then
     echo "Script will remove all temporary and uncommited data. Press Ctrl-C stop the script"
