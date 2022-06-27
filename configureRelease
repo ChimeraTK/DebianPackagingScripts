@@ -117,6 +117,7 @@ codename = args.distribution_codename           # codename of the distribution t
 debianrepository = args.debian_repository       # repository base name used to retrieve a package list
 arch = args.architecture
 use_preseed = args.use_preseed
+version_major = splitversion[0]
 
 # preset optional config variables
 config = {}
@@ -240,6 +241,7 @@ else:
 config["version"] = version
 config["tagversion"] = tagversion
 config["epochdashversion"] = epoch.replace(".","-")
+config["version-major"] = version_major
 config["epochversion"] = epoch
 config["distribution"] = codename
 config["architecture"] = arch
