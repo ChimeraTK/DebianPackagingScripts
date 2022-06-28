@@ -43,7 +43,7 @@ if ! which dh_make > /dev/null ; then
   exit 1
 fi
 # check for Python module packaging used in configureRelease for version comparison
-if ! python3 -m packagisng.version > /dev/null ; then
+if ! python3 -m packaging.version > /dev/null ; then
   echo "ERROR: python package 'packaging' not found."
   echo "  pip3 install packaging"
   exit 1
