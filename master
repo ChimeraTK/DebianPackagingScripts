@@ -35,12 +35,21 @@ function showHelp() {
   echo "Specifying 'latest' as a version will build the greatest version (see sort -V) found on the source repository."
 }
 
-# check prerequisites
+## check prerequisites ##
+# check for dh_make
 if ! which dh_make > /dev/null ; then
   echo "ERROR: dh_make was not found. Please install it first by running:"
   echo "  sudo apt install dh-make"
   exit 1
 fi
+# check for Python module packaging used in configureRelease for version comparison
+if ! python3 -m packaging.version > /dev/null ; then
+  echo "ERROR: python package 'packaging' not found."
+  echo "  sudo apt install python3-packaging"
+  echo "  or using pip3:"
+  echo "  pip3 install packaging"
+  exit 1
+fi  
 
 use_preseed_repository=0
 # check command line arguments

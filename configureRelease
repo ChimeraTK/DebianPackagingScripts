@@ -14,6 +14,8 @@ import datetime
 debianCodenames=['jessie','buster','stretch','bullseye']
 import argparse
 
+from packaging.version import parse as parseVersion
+
 def extract_tokens(input_string):
   """
   returns a list of all keywords from input_string
@@ -64,13 +66,13 @@ def resolveDeps(dependencies, filename):
     for dependency in dependencies:
       PackageAsDictionary = dict(Package)
       if dependency == PackageAsDictionary["Package"]:
-        if not dependency in dependency_versions.keys() or PackageAsDictionary["Version"] > dependency_versions[dependency]:
+        if not dependency in dependency_versions.keys() or parseVersion(PackageAsDictionary["Version"]) > parseVersion(dependency_versions[dependency]):
           dependency_versions[dependency] = PackageAsDictionary["Version"]
           map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
 
       if "Provides" in PackageAsDictionary.keys() :
         if dependency == PackageAsDictionary["Provides"]:
-          if not dependency in dependency_versions.keys() or PackageAsDictionary["Version"] > dependency_versions[dependency]:
+          if not dependency in dependency_versions.keys() or parseVersion(PackageAsDictionary["Version"]) > parseVersion(dependency_versions[dependency]):
             dependency_versions[dependency] = PackageAsDictionary["Version"]
             map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
 
