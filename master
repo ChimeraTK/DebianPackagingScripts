@@ -45,6 +45,8 @@ fi
 # check for Python module packaging used in configureRelease for version comparison
 if ! python3 -m packaging.version > /dev/null ; then
   echo "ERROR: python package 'packaging' not found."
+  echo "  sudo apt install python3-packaging"
+  echo "  or using pip3:"
   echo "  pip3 install packaging"
   exit 1
 fi  
