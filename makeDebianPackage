@@ -73,7 +73,7 @@ cd debian_package
 BUILD_DIR_NAME=${PACKAGE_BASENAME}_${SOVERSION}
 
 # Check out the correct tag from the master git repository.
-git clone --recurse-submodules --depth=1 --branch ${TAGVERSION} ${SOURCE_URI} ${BUILD_DIR_NAME}
+git clone --recurse-submodules --branch ${TAGVERSION} ${SOURCE_URI} ${BUILD_DIR_NAME}
 
 ## Debian convention for 3.0 (quilt): file has to end on .orig.tar.gz
 tar -czf ${BUILD_DIR_NAME}.orig.tar.gz --exclude-vcs ${BUILD_DIR_NAME}
