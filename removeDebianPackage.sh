@@ -26,7 +26,6 @@ source config.sh
     echo "  sudo -H reprepro --waitforlock 2 -Vb ${RepositoryDirectories[${REPO}]} remove ${distribution} \"\$packname\"" >> $TEMPFILE
   done
   echo " " >> $TEMPFILE
-  echo "Done. Don't forget to move the 'changes' file."  >> $TEMPFILE
   echo "rm \$HOME/$TEMPFILE" >> $TEMPFILE
   chmod +x $TEMPFILE
   scp $TEMPFILE ${InstallHost}:$TEMPFILE
