@@ -39,7 +39,7 @@ mkdir -p "${LOCAL_REPOS}"
 
 # if image does not exist, create it first
 if [ ! -f ${PBUILDER_IMAGE} ]; then
-  sudo pbuilder --create --distribution $DISTRIBUTION --basetgz "${PBUILDER_IMAGE}" || exit 1
+  sudo pbuilder --create --distribution $DISTRIBUTION --basetgz "${PBUILDER_IMAGE}" --extrapackages "apt-transport-https ca-certificates gnupg software-properties-common wget" --basetgz "${PBUILDER_IMAGE}" --othermirror "deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-updates main universe|deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-security main universe"|| exit 1
 
   # Execute a script inside the pbuilder chroot environment to set it up properly for our needs:
   # - Make sure the local package repository gets priority. Not sure how this works and if it's realy correct. Found
