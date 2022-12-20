@@ -1,0 +1,13 @@
+Package: #package-basename#
+Section: libs
+Architecture: #architecture#
+Conflicts: #Conflicts-dynload#
+Replaces: #Replaces-dynload#
+Breaks: #Breaks-dynload#
+Recommends: #Recommends-dynload#
+Suggests: #Suggests-dynload#
+Enhances: #Enhances-dynload#
+Provides: #Provides-dynload#
+Depends: #Package-name-lib#, #dynload-depends#
+Description: #Description-dynload#
+

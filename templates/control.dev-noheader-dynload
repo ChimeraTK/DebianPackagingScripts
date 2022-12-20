@@ -1,0 +1,13 @@
+Package: #Package-name-dev#
+Section: libdevel
+Architecture: #architecture#
+Conflicts: #Conflicts-dev#
+Replaces: #Replaces-dev#
+Breaks: #Breaks-dev#
+Recommends: #Recommends-dev#
+Suggests: #Suggests-dev#
+Enhances: #Enhances-dev#
+Provides: #Provides-dev#
+Depends: #Package-name-dynload#, #dev-depends#
+Description: #Description-dev#
+
