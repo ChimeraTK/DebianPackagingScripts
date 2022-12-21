@@ -132,6 +132,7 @@ config["Dependencies-python"] = ""
 config["Install-additional-pattern-dev"] = ""
 
 config["Conflicts-lib"] = ""
+config["Conflicts-dynload"] = ""
 config["Conflicts-dev"] = ""
 config["Conflicts-bin"] = ""
 config["Conflicts-extra"] = ""
@@ -140,6 +141,7 @@ config["Conflicts-python"] = ""
 config["Conflicts-doc"] = ""
 
 config["Replaces-lib"] = ""
+config["Replaces-dynload"] = ""
 config["Replaces-dev"] = ""
 config["Replaces-bin"] = ""
 config["Replaces-extra"] = ""
@@ -148,6 +150,7 @@ config["Replaces-python"] = ""
 config["Replaces-doc"] = ""
 
 config["Breaks-lib"] = ""
+config["Breaks-dynload"] = ""
 config["Breaks-dev"] = ""
 config["Breaks-bin"] = ""
 config["Breaks-extra"] = ""
@@ -156,6 +159,7 @@ config["Breaks-python"] = ""
 config["Breaks-doc"] = ""
 
 config["Enhances-lib"] = ""
+config["Enhances-dynload"] = ""
 config["Enhances-dev"] = ""
 config["Enhances-bin"] = ""
 config["Enhances-extra"] = ""
@@ -164,6 +168,7 @@ config["Enhances-python"] = ""
 config["Enhances-doc"] = ""
 
 config["Suggests-lib"] = ""
+config["Suggests-dynload"] = ""
 config["Suggests-dev"] = ""
 config["Suggests-bin"] = ""
 config["Suggests-extra"] = ""
@@ -172,6 +177,7 @@ config["Suggests-python"] = ""
 config["Suggests-doc"] = ""
 
 config["Recommends-lib"] = ""
+config["Recommends-dynload"] = ""
 config["Recommends-dev"] = ""
 config["Recommends-bin"] = ""
 config["Recommends-extra"] = ""
@@ -180,6 +186,7 @@ config["Recommends-python"] = ""
 config["Recommends-doc"] = ""
 
 config["Provides-lib"] = ""
+config["Provides-dynload"] = ""
 config["Provides-dev"] = ""
 config["Provides-bin"] = ""
 config["Provides-extra"] = ""
@@ -252,6 +259,8 @@ if not "Package-name-dev" in config:
   config["Package-name-dev"] = config["package-basename"]+"-dev"
 if not "Package-name-dev-noheader" in config:
   config["Package-name-dev-noheader"] = config["Package-name-dev"]
+if not "Package-name-dev-noheader-dynload" in config:
+  config["Package-name-dev-noheader-dynload"] = config["Package-name-dev"]
 if not "Package-name-dev-headeronly" in config:
   config["Package-name-dev-headeronly"] = config["Package-name-dev"]
 if not "Package-name-dev-alien" in config:
@@ -260,6 +269,8 @@ if not "Package-name-doc" in config:
   config["Package-name-doc"] = config["package-basename"]+"-doc"
 if not "Install-pattern-lib" in config:
   config["Install-pattern-lib"] = "usr/lib/lib*.so.*"
+if not "Install-pattern-dynload" in config:
+  config["Install-pattern-dynload"] = "usr/lib/lib*.so.*"
 if not "Install-pattern-bin" in config:
   config["Install-pattern-bin"] = "usr/bin/*"
 if not "Install-pattern-python" in config:
@@ -345,6 +356,8 @@ elif "dev-noheader" in hasPackages:
 elif "dev-headeronly" in hasPackages:
   dependencies_dev = config["Dependencies-dev"].split(" ")
 elif "dev-alien" in hasPackages:
+  dependencies_dev = config["Dependencies-dev"].split(" ")
+elif "dev-noheader-dynload" in hasPackages:
   dependencies_dev = config["Dependencies-dev"].split(" ")
 else:
   dependencies_dev = {}
@@ -570,6 +583,8 @@ config["build-depends"] = build_depends
 config["dev-depends"] = dev_depends
 if not "Package-name-lib" in config:
   config["Package-name-lib"] = config["package-basename"]+config["debversion"]
+if not "Package-name-dynload" in config:
+  config["Package-name-dynload"] = config["package-basename"]
 if not "Package-name-bin" in config:
   config["Package-name-bin"] = config["package-basename"]+config["debversion"]
 

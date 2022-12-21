@@ -113,9 +113,9 @@ for subpackage in ${config[Has_packages]} ; do
     package_suffix=""
     if [ $subpackage == "dev" -o $subpackage == "doc" -o $subpackage == "extra" -o $subpackage == "extra2" ]; then
       package_suffix="-$subpackage"
-    elif [ $subpackage == "dev-noheader" -o $subpackage == "dev-headeronly" -o $subpackage == "dev-alien" ]; then
+    elif [ $subpackage == "dev-noheader" -o $subpackage == "dev-headeronly" -o $subpackage == "dev-alien" -o $subpackage == "dev-noheader-dynload" ]; then
       package_suffix="-dev"
-    elif [ $subpackage == "python" ]; then
+    elif [ $subpackage == "python" -o $subpackage == "dynload" ]; then
       package_suffix=""
     else
       if [ "${config[package_name_contains_buildversion]}" == "1" ]; then
@@ -193,7 +193,7 @@ for subpackage in ${config[Has_packages]} ; do
       ERROR=1
     fi
 
-  elif [ $subpackage == "dev" -o $subpackage == "dev-noheader" -o $subpackage == "dev-headeronly" -o $subpackage == "dev-alien" ]; then
+  elif [ $subpackage == "dev" -o $subpackage == "dev-noheader" -o $subpackage == "dev-headeronly" -o $subpackage == "dev-alien"  -o $subpackage == "dev-noheader-dynload"  -o $subpackage == "dynload" ]; then
 
     # check for presence of include files
     if [ $subpackage == "dev" -o $subpackage == "dev-headeronly" -o $subpackage == "dev-alien" ]; then
@@ -204,22 +204,24 @@ for subpackage in ${config[Has_packages]} ; do
       fi
     fi
 
-    # check for presence of -config script
-    n_config_files=`dpkg -c $debname | grep "\./usr/bin/.*-config" | wc -l`
-    if [ "$n_config_files" -ne 1 -a $subpackage != "dev-alien" ]; then
-      echo "Did not find the config script required for a dev package!"
-      ERROR=1
-    fi
-
-    # check for presence of cmake find package macro
-    n_config_files=`dpkg -c $debname | grep "\./usr/share/cmake-.*/Modules/Find.*\.cmake" | wc -l`
-    if [ "$n_config_files" -lt 1 -a $subpackage != "dev-alien" ]; then
-      echo "Did not find the cmake find_package macro!"
-      ERROR=1
+    if [ $subpackage != "dynload" ]; then
+      # check for presence of -config script
+      n_config_files=`dpkg -c $debname | grep "\./usr/bin/.*-config" | wc -l`
+      if [ "$n_config_files" -ne 1 -a $subpackage != "dev-alien" ]; then
+        echo "Did not find the config script required for a dev package!"
+        ERROR=1
+      fi
+    
+      # check for presence of cmake find package macro
+      n_config_files=`dpkg -c $debname | grep "\./usr/share/cmake-.*/Modules/Find.*\.cmake" | wc -l`
+      if [ "$n_config_files" -lt 1 -a $subpackage != "dev-alien" ]; then
+        echo "Did not find the cmake find_package macro!"
+        ERROR=1
+      fi
     fi
 
     # check for presence of so link
-    if [ $subpackage == "dev" -o $subpackage == "dev-noheader" ]; then
+    if [ $subpackage == "dev" -o $subpackage == "dev-noheader" -o $subpackage == "dynload" ]; then
       so_link=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}\.so -> lib${package}\.so\.${so_version_nopatch}$"`
       if [ -z "$so_link" ]; then
         echo "Cannot find the link to the .so file in the dev pacakge by the name: ./usr/lib/lib${package}.so"

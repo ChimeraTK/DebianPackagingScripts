@@ -8,6 +8,6 @@ Recommends: #Recommends-dev#
 Suggests: #Suggests-dev#
 Enhances: #Enhances-dev#
 Provides: #Provides-dev#
-Depends: #Package-name-dynload#, #dev-depends#
+Depends: #package-basename#, #dev-depends#
 Description: #Description-dev#
 
