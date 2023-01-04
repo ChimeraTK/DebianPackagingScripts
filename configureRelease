@@ -129,6 +129,7 @@ config["Dependencies-bin"] = ""
 config["Dependencies-extra"] = ""
 config["Dependencies-extra2"] = ""
 config["Dependencies-python"] = ""
+config["Dependencies-dynload"] = ""
 config["Install-additional-pattern-dev"] = ""
 
 config["Conflicts-lib"] = ""
@@ -239,6 +240,11 @@ for line in configfile:
 
 # create hasPackages array from space-separated list
 hasPackages = config["Has-packages"].split(" ")
+
+for package in hasPackages:
+  if package.endswith("-dynload"):
+    hasPackages.append("dynload")
+    break
 
 # extend the config by dynamic variables
 if "project" not in config:
@@ -361,6 +367,9 @@ elif "dev-noheader-dynload" in hasPackages:
   dependencies_dev = config["Dependencies-dev"].split(" ")
 else:
   dependencies_dev = {}
+
+if "Use-dynload" in config or "dynload" in hasPackages:
+  dependencies.append("libchimeratk-deviceaccess")
 
 print("Searching for dependencies...")
 
@@ -526,6 +535,28 @@ for dependency in dependencies_dev:
       deps_next_epoch = deps_epoch_split[0] + codename + str( int(deps_epoch_split[1])+1 )
       dev_depends += dependency+" (>= "+deps_epoch+"), " + dependency+" (<< "+deps_next_epoch+"), "
 dev_depends = dev_depends[:-2]
+
+# create dependency for dynload with deviceaccess
+dynload_depends = ""
+if "Use-dynload" in config or "dynload" in hasPackages:
+  dynload_deps_epoch_array = re.findall(
+      "^.*"+codename+"[0-9]*\.", dependency_versions["libchimeratk-deviceaccess"])
+  dynload_deps_epoch = dynload_deps_epoch_array[0][:-1]
+  dynload_deps_epoch_split = dynload_deps_epoch.split(codename)
+  dynload_deps_next_epoch = dynload_deps_epoch_split[0] + \
+      codename + str(int(dynload_deps_epoch_split[1])+1)
+  dynload_depends = "libchimeratk-deviceaccess (>= "+dynload_deps_epoch + \
+      "), libchimeratk-deviceaccess (<< "+dynload_deps_next_epoch+")"
+  if "Use-dynload" in config:
+    package = config["Use-dynload"]
+  else:
+    package = "dynload"
+  if config["Dependencies-" + package] == "":
+    config["Dependencies-" + package] = dynload_depends
+  else:
+    config["Dependencies-" + package] += ", " + dynload_depends
+
+
 
 # determine build number
 print("")
