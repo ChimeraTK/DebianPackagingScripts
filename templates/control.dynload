@@ -9,5 +9,5 @@ Suggests: #Suggests-dynload#
 Enhances: #Enhances-dynload#
 Provides: #Provides-dynload#
 Depends: #Package-name-lib#, #Dependencies-dynload#
-Description: #Description-dynload#
+Description: "Provides the so-file symlink without version number for runtime loading without bringing all the dev package dependencies."
 
