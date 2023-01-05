@@ -100,6 +100,14 @@ for subpackage in ${config[Has_packages]} ; do
   fi
 done
 
+# check if we have the dev-noheader-dynload sub-package, in which case we need add a dynload package as well
+for subpackage in ${config[Has_packages]} ; do
+  if [ $subpackage == "dev-noheader-dynload" ]; then
+    config[Has_packages]+=" dynload"
+    break
+  fi
+done
+
 # loop over the sub-packages
 for subpackage in ${config[Has_packages]} ; do
   echo " -> subpackage: $subpackage"
