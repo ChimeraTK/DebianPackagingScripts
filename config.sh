@@ -48,6 +48,17 @@ if [ "${distribution}" == "buster" ] || [ "${distribution}" == "stretch"  ]; the
 	ADDITIONALREPO="contrib"
 fi
 
+# This list is used when the pbuilder image is build the first time. 
+# It was introduced to install ca-certificates needed to use the DESY repository later on 
+INITIALPACKAGESLIST=""
+# This list adds extra mirrors added initialy when the pbuilder image is created
+INITIALEXTRAMIRROR=""
+
+if [ "${distribution}" == "focal" ]; then
+  INITIALPACKAGESLIST = "apt-transport-https ca-certificates gnupg software-properties-common wget"
+  INITIALEXTRAMIRROR = "deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-updates main universe|deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-security main universe"
+fi
+
 # Override configuration
 if [ -d "${WD}/override_config" ]; then
     echo "Found directory 'override_config'. Loading additional config.sh"
