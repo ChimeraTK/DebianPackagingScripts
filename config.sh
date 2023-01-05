@@ -55,8 +55,8 @@ INITIALPACKAGESLIST=""
 INITIALEXTRAMIRROR=""
 
 if [ "${distribution}" == "focal" ]; then
-  INITIALPACKAGESLIST = "apt-transport-https ca-certificates gnupg software-properties-common wget"
-  INITIALEXTRAMIRROR = "deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-updates main universe|deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-security main universe"
+  INITIALPACKAGESLIST="apt-transport-https ca-certificates gnupg software-properties-common wget"
+  INITIALEXTRAMIRROR="deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-updates main universe|deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-security main universe"
 fi
 
 # Override configuration
