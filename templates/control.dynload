@@ -1,0 +1,13 @@
+Package: #package-basename#
+Section: libs
+Architecture: #architecture#
+Conflicts: #Conflicts-dynload#
+Replaces: #Replaces-dynload#
+Breaks: #Breaks-dynload#
+Recommends: #Recommends-dynload#
+Suggests: #Suggests-dynload#
+Enhances: #Enhances-dynload#
+Provides: #Provides-dynload#
+Depends: #Package-name-lib#, #Dependencies-dynload#
+Description: "Provides the so-file symlink without version number for runtime loading without bringing all the dev package dependencies."
+

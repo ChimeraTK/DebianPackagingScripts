@@ -43,14 +43,14 @@ $ export N_PBUILDER_THREADS=5
 ```
 ## Usage
 
-Run the master script with the distibution you want to build for, and the (debian) package name and the version you want to build for.
+Run the master script with the distribution you want to build for, and the (debian) package name and the version you want to build for.
 
 Currently available and tested Ubuntu releases are
 
 * `xenial` = Ubuntu 16.04
 * `focal` = Ubuntu 20.04
 
-The system uses pbuilder, which allows you to build packages also for other Ubuntu releases. Currently the host system has to be Ubuntu 18.04 or newer, if you want to build for focal. You need root privileges to run pbuilder and you need write permissions to the ChimeraTK DebianBuildVersions repository and the doocspkgs host.
+The system uses pbuilder, which allows you to build packages also for other Ubuntu releases. Currently, the host system has to be Ubuntu 18.04 or newer, if you want to build for focal. You need root privileges to run pbuilder and you need write permissions to the ChimeraTK DebianBuildVersions repository and the doocspkgs host.
 
 Syntax:
 
@@ -87,15 +87,13 @@ copy of this repository. The additional file will be sourced at the end of the
 default one.
 
 ### Preseeding
-
-In rare conditions it might be necessary to build against an older set of development packages than what is available in the official repositories.
-In that case it is possible to put the relevant packages into a repository structure below the `preseed` folder.
+In rare conditions, it might be necessary to build against an older set of development packages than what is available in the official repositories.
+In that case, it is possible to put the relevant packages into a repository structure below the `preseed` folder.
 
 The `master` script has to be called with the parameter `--preseed` for the packaging scripts to pack them up
 
 ### Additional tweaks
-
-During package development it might be that you have a high turn-around in calling the master script. To accomodate this, it is possible to skip or speed up certain parts of the process:
+During package development, it might be that you have a high turn-around in calling the master script. To accommodate this, it is possible to skip or speed up certain parts of the process:
 
 #### Skipping the initial pbuilder update
 
