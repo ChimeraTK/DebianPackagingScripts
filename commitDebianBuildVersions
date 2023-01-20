@@ -41,7 +41,7 @@ if [ $do_not_publish -eq 0 ]; then
   echo " To resolve this problem, delete your local working copy and start all over again (after"
   echo " talking to whoever worked in parallel!)"
   echo "=========================================================================================="
-  git pull --no-edit || exit 1
+  git pull --no-edit --no-rebase || exit 1
   echo "=========================================================================================="
   echo " Everything went well obviously, so we proceed with publishing our build versions."
   echo "=========================================================================================="

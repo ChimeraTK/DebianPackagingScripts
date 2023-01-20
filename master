@@ -217,7 +217,7 @@ if [ ! -d "DebianBuildVersions" ]; then
   git clone -q "$DebianBuildVersionsURI" DebianBuildVersions
 else
   cd DebianBuildVersions
-  git pull -q
+  git pull -q --no-rebase
   cd ..
 fi
 
