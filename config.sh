@@ -20,7 +20,7 @@ DebianRepository=http://doocspkgs.desy.de/
 DesyNimsRepo=http://nims.desy.de/
 # Host name where to publish the Debian packages on. You will need ssh access to that machine and rights to execute
 # reprepro with sudo as root.
-InstallHost=doocspkgs
+InstallHost=doocspkgs.desy.de
 if [ -z ${DISTRIBUTION+x} ]; then 
 DISTRIBUTION=${distribution}; 
 else distribution=${DISTRIBUTION}
