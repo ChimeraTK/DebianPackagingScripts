@@ -71,7 +71,7 @@ def resolveDeps(dependencies, filename):
           map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
 
       if "Provides" in PackageAsDictionary.keys() :
-        if dependency == PackageAsDictionary["Provides"]:
+        if dependency in [name.strip() for name in PackageAsDictionary["Provides"].split(',') ]:
           if not dependency in dependency_versions.keys() or parseVersion(PackageAsDictionary["Version"]) > parseVersion(dependency_versions[dependency]):
             dependency_versions[dependency] = PackageAsDictionary["Version"]
             map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
