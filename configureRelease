@@ -274,9 +274,9 @@ if not "Package-name-dev-alien" in config:
 if not "Package-name-doc" in config:
   config["Package-name-doc"] = config["package-basename"]+"-doc"
 if not "Install-pattern-lib" in config:
-  config["Install-pattern-lib"] = "usr/lib/lib*.so.*"
+  config["Install-pattern-lib"] = "usr/lib/x86_64-linux-gnu/lib*.so.*"
 if not "Install-pattern-dynload" in config:
-  config["Install-pattern-dynload"] = "usr/lib/lib*.so.*"
+  config["Install-pattern-dynload"] = "usr/lib/x86_64-linux-gnu/lib*.so.*"
 if not "Install-pattern-bin" in config:
   config["Install-pattern-bin"] = "usr/bin/*"
 if not "Install-pattern-python" in config:
