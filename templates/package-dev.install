@@ -1,6 +1,6 @@
 usr/bin/*-config
-usr/lib/x86_64-linux-gnu/lib*.so
-usr/lib/x86_64-linux-gnu/cmake/#project#
+@LIBDIR@/lib*.so
+@LIBDIR@/cmake/#project#
 usr/include/*
 usr/share/pkgconfig
 #Install-additional-pattern-dev#
