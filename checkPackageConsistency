@@ -221,7 +221,7 @@ for subpackage in ${config[Has_packages]} ; do
       fi
     
       # check for presence of cmake find package config
-      n_config_files=`dpkg -c $debname | grep "\./usr/lib.*/cmake/${package}/.*\.cmake" | wc -l`
+      n_config_files=`dpkg -c $debname | grep -i "\./usr/lib.*/cmake/${package}/.*\.cmake" | wc -l`
       if [ "$n_config_files" -lt 1 -a $subpackage != "dev-alien" ]; then
         echo "Did not find the cmake find_package config!"
         ERROR=1
