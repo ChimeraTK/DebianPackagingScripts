@@ -11,3 +11,6 @@ include /usr/share/dpkg/default.mk
 %:
 	dh $@ --parallel
 
+override_dh_install:
+	./debian/detect_libdir.sh
+	dh_install

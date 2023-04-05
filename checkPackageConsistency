@@ -167,19 +167,19 @@ for subpackage in ${config[Has_packages]} ; do
   if [ $subpackage == "lib" -a $IS_ALIEN != 1 ]; then
 
     # check for presence of .so file with the right name and version number in the pacakge
-    so_file=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}.so.${so_version}$"`
+    so_file=`dpkg -c $debname | grep -i "\./usr/lib.*/lib${package}.so.${so_version}$"`
     if [ -z "$so_file" ]; then
-      echo "Cannot find the .so file in the library pacakge by the name: ./usr/lib/lib${package}.so.${so_version}"
+      echo "Cannot find the .so file in the library pacakge by the name: ./usr/lib.*/lib${package}.so.${so_version}"
       ERROR=1
     fi
-    so_link=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}.so.${so_version_nopatch} -> lib${package}.so.${so_version}$"`
+    so_link=`dpkg -c $debname | grep -i "\./usr/lib.*/lib${package}.so.${so_version_nopatch} -> lib${package}.so.${so_version}$"`
     if [ -z "$so_link" ]; then
-      echo "Cannot find the link to the .so file in the library pacakge by the name: ./usr/lib/lib${package}.so.${so_version_nopatch}"
+      echo "Cannot find the link to the .so file in the library pacakge by the name: ./usr/lib.*/lib${package}.so.${so_version_nopatch}"
       ERROR=1
     fi
 
     # There should be a debug package as well
-    debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+    debug_files=`dpkg -c $debug_name| grep "\./usr/lib.*/debug/.*\.debug" | wc -l`
     package_increment=2
     echo " -> debug package for subpackage: lib"
     if [ "$debug_files" -lt 1 ]; then
@@ -190,14 +190,14 @@ for subpackage in ${config[Has_packages]} ; do
   elif [ $subpackage == "lib" -a $IS_ALIEN == 1 ]; then
 
     # check for presence of .so file without checking for the exact version
-    so_file=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}.so\..*$"`
+    so_file=`dpkg -c $debname | grep -i "\./usr/lib.*/lib${package}.so\..*$"`
     if [ -z "$so_file" ]; then
-      echo "Cannot find the .so file in the library pacakge by the name: ./usr/lib/lib*.so.*"
+      echo "Cannot find the .so file in the library pacakge by the name: ./usr/lib.*/lib*.so.*"
       ERROR=1
     fi
 
     # There should be a debug package as well
-    debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+    debug_files=`dpkg -c $debug_name| grep "\./usr/lib.*/debug/.*\.debug" | wc -l`
     package_increment=2
     echo " -> debug package for subpackage: lib"
     if [ "$debug_files" -lt 1 ]; then
@@ -217,35 +217,35 @@ for subpackage in ${config[Has_packages]} ; do
     fi
 
     if [ $subpackage != "dynload" ]; then
-      # check for presence of -config script
-      n_config_files=`dpkg -c $debname | grep "\./usr/bin/.*-config" | wc -l`
+      # check for presence pkgconfig
+      n_config_files=`dpkg -c $debname | grep "\./usr/share/pkgconfig/.*\.pc" | wc -l`
       if [ "$n_config_files" -ne 1 -a $subpackage != "dev-alien" -a $subpackage != "dev-alien-headeronly" ]; then
-        echo "Did not find the config script required for a dev package!"
+        echo "Did not find the pkgconfig required for a dev package!"
         ERROR=1
       fi
-
-      # check for presence of cmake find package macro
-      n_config_files=`dpkg -c $debname | grep "\./usr/share/cmake-.*/Modules/Find.*\.cmake" | wc -l`
+    
+      # check for presence of cmake package config
+      n_config_files=`dpkg -c $debname | grep -i "\./usr/lib.*/cmake/${package}/.*\.cmake" | wc -l`
       if [ "$n_config_files" -lt 1 -a $subpackage != "dev-alien" -a $subpackage != "dev-alien-headeronly" ]; then
-        echo "Did not find the cmake find_package macro!"
+        echo "Did not find the cmake find_package config!"
         ERROR=1
       fi
     fi
 
     # check for presence of so link
     if [ $subpackage == "dev" -o $subpackage == "dev-noheader" -o $subpackage == "dynload" ]; then
-      so_link=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}\.so -> lib${package}\.so\.${so_version_nopatch}$"`
+      so_link=`dpkg -c $debname | grep -i "\./usr/lib.*/lib${package}\.so -> lib${package}\.so\.${so_version_nopatch}$"`
       if [ -z "$so_link" ]; then
-        echo "Cannot find the link to the .so file in the dev pacakge by the name: ./usr/lib/lib${package}.so"
+        echo "Cannot find the link to the .so file in the dev pacakge by the name: ./usr/lib.*/lib${package}.so"
         ERROR=1
       fi
     fi
 
     # check for presence of so link in alien package - do not check for exact target
     if [ $subpackage == "dev-alien" ]; then
-      so_link=`dpkg -c $debname | grep -i "\./usr/lib/lib${package}\.so -> lib${package}\.so\..*$"`
+      so_link=`dpkg -c $debname | grep -i "\./usr/lib.*/lib${package}\.so -> lib${package}\.so\..*$"`
       if [ -z "$so_link" ]; then
-        echo "Cannot find the link to the .so file in the dev pacakge by the name: ./usr/lib/lib${package}.so"
+        echo "Cannot find the link to the .so file in the dev pacakge by the name: ./usr/lib.*/lib${package}.so"
         ERROR=1
       fi
     fi
@@ -331,7 +331,7 @@ for subpackage in ${config[Has_packages]} ; do
 
     # Bin packages may or may not have a debug package (could contain only scripts). If it has one, check for consistency
     if [ -e "$debug_name" ] ; then
-      debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+      debug_files=`dpkg -c $debug_name| grep "\./usr/lib.*/debug/.*\.debug" | wc -l`
       package_increment=2
       echo " -> debug package for subpackage: bin"
       if [ "$debug_files" -lt 1 ]; then
@@ -358,7 +358,7 @@ for subpackage in ${config[Has_packages]} ; do
 
     # May or may not have a debug package. If it has one, check for consistency
     if [ -e "$debug_name" ] ; then
-      debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+      debug_files=`dpkg -c $debug_name| grep "\./usr/lib.*/debug/.*\.debug" | wc -l`
       package_increment=2
       echo " -> debug package for subpackage: $subpackage"
       if [ "$debug_files" -lt 1 ]; then
@@ -389,7 +389,7 @@ for subpackage in ${config[Has_packages]} ; do
       echo " -> debug package for subpackage: python"
 
       # There should be a debug package as well
-      debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+      debug_files=`dpkg -c $debug_name| grep "\./usr/lib.*/debug/.*\.debug" | wc -l`
       if [ "$debug_files" -lt 1 ]; then
         echo "Debug package for python package is empty!"
         ERROR=1
@@ -406,7 +406,7 @@ for subpackage in ${config[Has_packages]} ; do
     fi
 
     # There should be a debug package as well
-    debug_files=`dpkg -c $debug_name| grep "\./usr/lib/debug/.*\.debug" | wc -l`
+    debug_files=`dpkg -c $debug_name| grep "\./usr/lib.*/debug/.*\.debug" | wc -l`
     package_increment=2
     echo " -> debug package for subpackage: doocs-bin"
     if [ "$debug_files" -lt 1 ]; then

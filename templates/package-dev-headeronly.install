@@ -1,5 +1,5 @@
 usr/bin/*-config
 usr/include/*
-usr/share/cmake*
+@LIBDIR@/cmake/*
 usr/share/pkgconfig
 #Install-additional-pattern-dev#

@@ -275,10 +275,11 @@ if not "Package-name-dev-alien-headeronly" in config:
   config["Package-name-dev-alien-headeronly"] = config["Package-name-dev"]
 if not "Package-name-doc" in config:
   config["Package-name-doc"] = config["package-basename"]+"-doc"
+# @LIBDIR@ will be replaced in a later step, by detect_libdir.sh, after build;install steps
 if not "Install-pattern-lib" in config:
-  config["Install-pattern-lib"] = "usr/lib/lib*.so.*"
+  config["Install-pattern-lib"] = "@LIBDIR@/lib*.so.*"
 if not "Install-pattern-dynload" in config:
-  config["Install-pattern-dynload"] = "usr/lib/lib*.so.*"
+  config["Install-pattern-dynload"] = "@LIBDIR@/lib*.so.*"
 if not "Install-pattern-bin" in config:
   config["Install-pattern-bin"] = "usr/bin/*"
 if not "Install-pattern-python" in config:
@@ -675,7 +676,7 @@ if not os.path.isdir(controldir+"/source"):
   os.makedirs(controldir+"/source")
 
 # list of files to be processed (static part)
-filelist = [ "makeDebianPackage.config", "compat", "rules", "source/format", "control.src" ]
+filelist = [ "makeDebianPackage.config", "compat", "rules", "detect_libdir.sh", "source/format", "control.src" ]
 
 # List of files to be processed for each package
 # If there is a single package only, no install file is needed and everything gets included in the package. Otherwise
@@ -764,6 +765,7 @@ if "lib" in hasPackages:
 
 # make rules file executable
 subprocess.call(["chmod", "+x", controldir+"/rules"])
+subprocess.call(["chmod", "+x", controldir+"/detect_libdir.sh"])
 
 # copy preinst, postinst, prerm and postrm scripts if existent
 if os.path.isfile("DebianBuildVersions/"+project+"/preinst"):
