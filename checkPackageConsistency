@@ -61,7 +61,7 @@ fi
 # obtain epoch version as part of the Debian package name
 epoch_version=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|-[^/].*/||' -e 's|/|-|' -e 's|\.|-|'`
 epoch_version_no_buildversion=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|/.*$||' -e 's|\.|-|'`
-  
+
 # obtain so file version in two different ways and compare
 so_version_nopatch=`echo ${package_buildcmd[$package]} | sed -e "s|^.*${package}/||" -e 's|-[^/].*/||' -e 's|/||'`
 # This cuts of the potential --preseed argument for the build
@@ -85,6 +85,10 @@ if [ -n "`echo \" ${config[Has_packages]} \" | grep \" dev-headeronly \"`" ]; th
   is_library=1
   package_prefix="lib"
 fi
+if [ -n "`echo \" ${config[Has_packages]} \" | grep \" dev-alien-headeronly \"`" ]; then
+  is_library=1
+  package_prefix="lib"
+fi
 
 # count number of files checked across calles to this script (needed for the vaildation script)
 if [ ! -f "${LOCAL_REPOS}/nDebianFilesChecked.txt" ]; then
@@ -95,7 +99,7 @@ nDebianFilesChecked=`cat "${LOCAL_REPOS}/nDebianFilesChecked.txt"`
 # check if we have the dev-alien sub-package, in which case we need to be less strict
 IS_ALIEN=0
 for subpackage in ${config[Has_packages]} ; do
-  if [ $subpackage == "dev-alien" ]; then
+  if [ $subpackage == "dev-alien" -o  $subpackage == "dev-alien-headeronly" ]; then
     IS_ALIEN=1
   fi
 done
@@ -115,13 +119,13 @@ for subpackage in ${config[Has_packages]} ; do
   # get name from config, if specified
   getFromConfig $package "Package-name-$subpackage"
   name=${config[Package_name_${subpackage}]}
-  
+
   # no name specified in the config: build it
   if [ -z "${name}" ]; then
     package_suffix=""
     if [ $subpackage == "dev" -o $subpackage == "doc" -o $subpackage == "extra" -o $subpackage == "extra2" ]; then
       package_suffix="-$subpackage"
-    elif [ $subpackage == "dev-noheader" -o $subpackage == "dev-headeronly" -o $subpackage == "dev-alien" -o $subpackage == "dev-noheader-dynload" ]; then
+    elif [ $subpackage == "dev-noheader" -o $subpackage == "dev-headeronly" -o $subpackage == "dev-alien" -o $subpackage == "dev-alien-headeronly" -o $subpackage == "dev-noheader-dynload" ]; then
       package_suffix="-dev"
     elif [ $subpackage == "python" -o $subpackage == "dynload" ]; then
       package_suffix=""
@@ -151,7 +155,7 @@ for subpackage in ${config[Has_packages]} ; do
     echo "Missing .deb file for package: $name"
     ERROR=1
   fi
-  
+
   # sub-package specific tests:
   debname=`echo ${name}_*.deb`
   debug_name=`echo ${name}-dbgsym*_*.deb`
@@ -201,10 +205,10 @@ for subpackage in ${config[Has_packages]} ; do
       ERROR=1
     fi
 
-  elif [ $subpackage == "dev" -o $subpackage == "dev-noheader" -o $subpackage == "dev-headeronly" -o $subpackage == "dev-alien"  -o $subpackage == "dev-noheader-dynload"  -o $subpackage == "dynload" ]; then
+  elif [ $subpackage == "dev" -o $subpackage == "dev-noheader" -o $subpackage == "dev-headeronly" -o $subpackage == "dev-alien" -o $subpackage == "dev-alien-headeronly" -o $subpackage == "dev-noheader-dynload"  -o $subpackage == "dynload" ]; then
 
     # check for presence of include files
-    if [ $subpackage == "dev" -o $subpackage == "dev-headeronly" -o $subpackage == "dev-alien" ]; then
+    if [ $subpackage == "dev" -o $subpackage == "dev-headeronly" -o $subpackage == "dev-alien" -o $subpackage == "dev-alien-headeronly" ]; then
       n_include_files=`dpkg -c $debname | grep "\./usr/include/" | wc -l`
       if [ "$n_include_files" -lt 2 ]; then   # 2 is correct since directories (like /usr/include itself) are counted as well
         echo "No include files found in the dev package!"
@@ -215,14 +219,14 @@ for subpackage in ${config[Has_packages]} ; do
     if [ $subpackage != "dynload" ]; then
       # check for presence of -config script
       n_config_files=`dpkg -c $debname | grep "\./usr/bin/.*-config" | wc -l`
-      if [ "$n_config_files" -ne 1 -a $subpackage != "dev-alien" ]; then
+      if [ "$n_config_files" -ne 1 -a $subpackage != "dev-alien" -a $subpackage != "dev-alien-headeronly" ]; then
         echo "Did not find the config script required for a dev package!"
         ERROR=1
       fi
     
       # check for presence of cmake package config
       n_config_files=`dpkg -c $debname | grep -i "\./usr/lib.*/cmake/${package}/.*\.cmake" | wc -l`
-      if [ "$n_config_files" -lt 1 -a $subpackage != "dev-alien" ]; then
+      if [ "$n_config_files" -lt 1 -a $subpackage != "dev-alien" -a $subpackage != "dev-alien-headeronly" ]; then
         echo "Did not find the cmake find_package config!"
         ERROR=1
       fi
@@ -236,7 +240,7 @@ for subpackage in ${config[Has_packages]} ; do
         ERROR=1
       fi
     fi
-    
+
     # check for presence of so link in alien package - do not check for exact target
     if [ $subpackage == "dev-alien" ]; then
       so_link=`dpkg -c $debname | grep -i "\./usr/lib.*/lib${package}\.so -> lib${package}\.so\..*$"`
@@ -410,18 +414,18 @@ for subpackage in ${config[Has_packages]} ; do
       ERROR=1
     fi
   else
-  
+
     echo "Unknown sub-package type: $subpackage"
     ERROR=1
 
   fi
-  
+
   # Check if description field exists in package
   if [ -z "`dpkg -I ${debname}  | grep '^ Description: '`" ]; then
     echo "Description field missing!"
     ERROR=1
   fi
-  
+
   # Additional saftey check that the expected and counted packages are really there
   if [ ! -f "${debname}" ]; then
     echo "    *** MISSING PACKAGE: ${debname}"
@@ -429,7 +433,7 @@ for subpackage in ${config[Has_packages]} ; do
   if [ ! -f "${debug_name}" -a ${package_increment} -gt 1 ]; then
     echo "    *** MISSING PACKAGE: ${debug_name}"
   fi
-  
+
   # increment checked number of files
   nDebianFilesChecked=$(( nDebianFilesChecked + package_increment ))
 

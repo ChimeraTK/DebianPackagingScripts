@@ -249,7 +249,7 @@ for package in hasPackages:
 # extend the config by dynamic variables
 if "project" not in config:
   config["project"] = project
-if "lib" in hasPackages or "dev-headeronly" in hasPackages:
+if "lib" in hasPackages or "dev-headeronly" in hasPackages or "dev-alien-headeronly" in hasPackages:
   config["package-basename"] = "lib"+project.lower()
 else:
   config["package-basename"] = project.lower()
@@ -271,6 +271,8 @@ if not "Package-name-dev-headeronly" in config:
   config["Package-name-dev-headeronly"] = config["Package-name-dev"]
 if not "Package-name-dev-alien" in config:
   config["Package-name-dev-alien"] = config["Package-name-dev"]
+if not "Package-name-dev-alien-headeronly" in config:
+  config["Package-name-dev-alien-headeronly"] = config["Package-name-dev"]
 if not "Package-name-doc" in config:
   config["Package-name-doc"] = config["package-basename"]+"-doc"
 # @LIBDIR@ will be replaced in a later step, by detect_libdir.sh, after build;install steps
@@ -364,6 +366,8 @@ elif "dev-headeronly" in hasPackages:
   dependencies_dev = config["Dependencies-dev"].split(" ")
 elif "dev-alien" in hasPackages:
   dependencies_dev = config["Dependencies-dev"].split(" ")
+elif "dev-alien-headeronly" in hasPackages:
+  dependencies_dev = config["Dependencies-dev"].split(" ")
 elif "dev-noheader-dynload" in hasPackages:
   dependencies_dev = config["Dependencies-dev"].split(" ")
 else:
@@ -377,7 +381,7 @@ print("Searching for dependencies...")
 if codename in debianCodenames:
   # download Packages file from the DESY DOOCS apt repositories
   subprocess.call(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
- 
+
 
   subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/"+codename+"/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN.gz"])
   subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
@@ -391,7 +395,7 @@ if codename in debianCodenames:
   # download Packages file from Ubuntu repositories and unpack
   subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/"+codename+"-updates/contrib/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE-UPDATES.gz"])
   subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-UPDATES.gz"])
- 
+
   subprocess.call(['./updateLocalRepos'])
 
 else:
@@ -800,8 +804,3 @@ if use_preseed:
     print("./makeDebianPackage --preseed "+controldir)
 else:
     print("./makeDebianPackage "+controldir)
-
-
-
-
-
