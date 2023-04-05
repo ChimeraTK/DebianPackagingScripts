@@ -217,10 +217,10 @@ for subpackage in ${config[Has_packages]} ; do
     fi
 
     if [ $subpackage != "dynload" ]; then
-      # check for presence of -config script
-      n_config_files=`dpkg -c $debname | grep "\./usr/bin/.*-config" | wc -l`
+      # check for presence pkgconfig
+      n_config_files=`dpkg -c $debname | grep "\./usr/share/pkgconfig/.*\.pc" | wc -l`
       if [ "$n_config_files" -ne 1 -a $subpackage != "dev-alien" -a $subpackage != "dev-alien-headeronly" ]; then
-        echo "Did not find the config script required for a dev package!"
+        echo "Did not find the pkgconfig required for a dev package!"
         ERROR=1
       fi
     
