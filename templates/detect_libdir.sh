@@ -21,9 +21,7 @@ fi
 
 # replace @LIBDIR@ in install-lists
 for f in ${INSTFILEDIR}/*.install; do
-    tf=`tempfile`
-    cat $f | sed "s|@LIBDIR@|${LIBDIR}|g" > ${tf}
-    mv ${tf} $f
+    sed -e "s|@LIBDIR@|${LIBDIR}|g" -i $f
 done
 
 
