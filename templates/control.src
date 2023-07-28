@@ -1,7 +1,7 @@
 Source: #package-basename#
-Priority: extra
+Priority: optional
 Maintainer: #Maintainer#
-Build-Depends: #build-depends#
+Build-Depends: debhelper | debhelper-compat, #build-depends# 
 Standards-Version: 3.8.3
 Section: libs
 Homepage: #SourceURI#
