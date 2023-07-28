@@ -1,0 +1,10 @@
+override_dh_dkms:
+	dh_dkms -V #tagversion#
+
+build:
+	@echo "========= BUILD ============="
+
+override_dh_auto_build:
+
+override_dh_auto_install:
+	dh_auto_install -- PACKAGING_INSTALL=1 DKMS_PKG_NAME=#Dkms-Module-Name# DKMS_PKG_VERSION=#tagversion#

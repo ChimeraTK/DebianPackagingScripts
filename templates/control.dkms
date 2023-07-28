@@ -1,0 +1,13 @@
+Package: #Package-name-dkms#
+Section: kernel
+Architecture: any
+Conflicts: #Conflicts-dkms#
+Replaces: #Replaces-dkms#
+Breaks: #Breaks-dkms#
+Recommends: #Recommends-dkms#
+Suggests: #Suggests-dkms#
+Enhances: #Enhances-dkms#
+Provides: #Provides-dkms#
+Depends: ${misc:Depends} #Dependencies-dkms#
+Description: #Description-dkms#
+

@@ -1,0 +1,5 @@
+PACKAGE_NAME="#package-basename#"
+PACKAGE_VERSION="MODULE_VERSION"
+AUTOINSTALL="yes"
+DEST_MODULE_LOCATION[0]="/extra/drivers/#package-basename#"
+BUILT_MODULE_NAME[0]="#Dkms-Module-Name#"
