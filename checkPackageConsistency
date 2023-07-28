@@ -127,6 +127,8 @@ for subpackage in ${config[Has_packages]} ; do
       package_suffix="-$subpackage"
     elif [ $subpackage == "dev-noheader" -o $subpackage == "dev-headeronly" -o $subpackage == "dev-alien" -o $subpackage == "dev-alien-headeronly" -o $subpackage == "dev-noheader-dynload" ]; then
       package_suffix="-dev"
+    elif [ $subpackage == "dkms" ]; then
+      package_suffix="-dkms"
     elif [ $subpackage == "python" -o $subpackage == "dynload" ]; then
       package_suffix=""
     else
@@ -411,6 +413,12 @@ for subpackage in ${config[Has_packages]} ; do
     echo " -> debug package for subpackage: doocs-bin"
     if [ "$debug_files" -lt 1 ]; then
       echo "Debug package for doocs server is empty!"
+      ERROR=1
+    fi
+  elif [ $subpackage == "dkms" ]; then
+    dkms_conf=`dpkg -c $debname | grep dkms.conf | wc -l`
+    if [ "$dkms_conf" -lt 1 ]; then
+      echo "No dkms config in dkms package"
       ERROR=1
     fi
   else

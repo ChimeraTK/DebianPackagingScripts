@@ -87,10 +87,33 @@ copy of this repository. The additional file will be sourced at the end of the
 default one.
 
 ### Preseeding
+
 In rare conditions, it might be necessary to build against an older set of development packages than what is available in the official repositories.
 In that case, it is possible to put the relevant packages into a repository structure below the `preseed` folder.
 
 The `master` script has to be called with the parameter `--preseed` for the packaging scripts to pack them up
+
+### DKMS
+
+It is possible to use the debian packaging scripts to build DKMS packages. To do that, the Makefile in the kernel module must provide a 
+`packaging_install` target. The Makefile will have the four variables `PACKAGING_INSTALL`, `DESTDIR`, `DKMS_PKG_NAME` and `DKMS_PKG_VERSION` set.
+
+You can use `PACKAGING_INSTALL` to provide different install targets depending on whether it is called inside packaging or not, for example
+
+```
+ifeq ($(PACKAGING_INSTALL),1)
+install: packaging_install
+else
+install: kernel_install
+endif
+
+kernel_install:
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) install
+
+packaging_install:
+	install -m 644 -D *.c Makefile -t $(DESTDIR)/usr/src/$(DKMS_PKG_NAME)-$(DKMS_PKG_VERSION)/
+	install -m 644 -D uio-dummy.rules -t $(DESTDIR)/lib/udev/rules.d/
+```
 
 ### Additional tweaks
 During package development, it might be that you have a high turn-around in calling the master script. To accommodate this, it is possible to skip or speed up certain parts of the process:

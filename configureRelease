@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+# SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 from __future__ import print_function
 import debian.debian_support
 import urllib
@@ -196,6 +199,8 @@ config["Provides-python"] = ""
 config["Provides-doc"] = ""
 config["Override-auto-configure-flags"] = ""
 
+config["Dh-extra-args"] = ""
+
 def replace_config_variables(filename):
   content = open(filename).read()
   token_list = extract_tokens(content)
@@ -275,6 +280,9 @@ if not "Package-name-dev-alien-headeronly" in config:
   config["Package-name-dev-alien-headeronly"] = config["Package-name-dev"]
 if not "Package-name-doc" in config:
   config["Package-name-doc"] = config["package-basename"]+"-doc"
+if not "Package-name-dkms" in config:
+  config["Package-name-dkms"] = config["package-basename"] + "-dkms"
+
 # @LIBDIR@ will be replaced in a later step, by detect_libdir.sh, after build;install steps
 if not "Install-pattern-lib" in config:
   config["Install-pattern-lib"] = "@LIBDIR@/lib*.so.*"
@@ -291,6 +299,11 @@ if not "Package-name-extra2" in config:
 if not "Package-name-python" in config:
   config["Package-name-python"] = config["package-basename"]
 
+
+
+# Fixme: For newer debian/ubuntu versions one can simply depend on dh-sequence-dkms
+if "dkms" in hasPackages:
+  config["Dh-extra-args"] = '--with dkms'
 
 config["current-year"] = str(datetime.datetime.now().year)
 
@@ -640,7 +653,8 @@ for package in hasPackages:
     print(" Version: "+currentVersion)
 
     # set flag in master-control file that publication is not allowed
-    subprocess.call(["echo 'do_not_publish=1' >> master-control"], shell=True)
+    with open('master-control', 'a') as f:
+      f.write('do_not_publish=1\n')
 
   # check if newer source version present in repository
   if(currentVersion != "none"):
@@ -695,6 +709,9 @@ if not os.path.isfile("DebianBuildVersions/"+project+"/copyright"):
 if "lib" in hasPackages:
   filelist.append("package-lib.shlib")
 
+if "dkms" in hasPackages:
+  filelist.append("dkms")
+
 # resolve variables inside the values of the variables
 for var1 in config.keys():
   for var2 in config.keys():
@@ -727,20 +744,20 @@ f.close()
 subprocess.call(["rm "+controldir+"/control.*"], shell=True)
 
 # add override parts to the rules file, if needed
+content = replace_config_variables(controldir+"/rules")
 if "Disable-tests" in config and config["Disable-tests"] == "yes":
   # disable the tests?
-  content = open(controldir+"/rules").read()
   content += open("templates/rules.notests").read()
-  f = open(controldir+"/rules","w")
-  f.write(content)
-  f.close()
 else:
   # tests not disabled: don't run them in parallel
-  content = open(controldir+"/rules").read()
   content += open("templates/rules.tests").read()
-  f = open(controldir+"/rules","w")
-  f.write(content)
-  f.close()
+
+if "dkms" in hasPackages:
+  content += replace_config_variables("templates/rules.dkms")
+  
+f = open(controldir+"/rules","w")
+f.write(content)
+f.close()
 
 # extend the rules file to include override_dh_auto_configure if
 # applicable. (as in case of doocs packages)

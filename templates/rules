@@ -9,7 +9,7 @@ include /usr/share/dpkg/default.mk
 
 # default action
 %:
-	dh $@ --parallel
+	dh $@ --parallel #Dh-extra-args#
 
 override_dh_install:
 	./debian/detect_libdir.sh
