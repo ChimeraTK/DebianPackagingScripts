@@ -49,7 +49,7 @@ if ! python3 -m packaging.version > /dev/null ; then
   echo "  or using pip3:"
   echo "  pip3 install packaging"
   exit 1
-fi  
+fi
 
 use_preseed_repository=0
 # check command line arguments
@@ -240,7 +240,7 @@ for package in "${!package_list[@]}"; do
   # DeviceAccess is special case: also build all packages depending on 'libchimeratk-deviceaccess', not just libs but also e.g qthardmon
   if [ ${package} = "chimeratk-deviceaccess" ]; then
     DEPENDENCIES_RESULT2=$(./findReverseDependencies lib${package}$ $distribution $DebianRepository $arch)
-    echo "${DEPENDENCIES_RESULT2}" | grep -v -- "-dbgsym " | sed -e 's/^lib//' -e 's/-dev / /' >> $TEMPFILE
+    echo "${DEPENDENCIES_RESULT2}" | grep -v -- "-dbgsym " | sed -e 's/^lib//' -e 's/-dev / /' -e 's/[0-9][0-9]-[0-9][0-9]-'${distribution}'[0-9]* / /' >> $TEMPFILE
   fi
   readarray revdeps_with_versions < $TEMPFILE
   rm -f $TEMPFILE
@@ -287,7 +287,7 @@ while [ "$sorting_done" == "0" ]; do
   declare -a package_build_order_sort
   sorting_done=1
   for package in "${package_build_order[@]}"; do
-    # check if the package has a config. If not print a warning and ignore it  
+    # check if the package has a config. If not print a warning and ignore it
     if ! [ -e DebianBuildVersions/$package/CONFIG ]; then
       echo "No config for '$package' found. No packages for this project will be built."
       continue
@@ -336,7 +336,7 @@ for package in "${package_build_order[@]}"; do
   elif [ -n "${BLACKLIST[$package]}" ]; then
     echo -n " [*** BLACKLISTED ***]"
   fi
-  echo ""  
+  echo ""
 done
 
 # ask if we want to proceed
@@ -399,4 +399,3 @@ if [ $do_not_publish -eq 0 ]; then
 else
   echo "Publication of packages is disallowed. You can find the packages in the following directory: pbuilder-result/dists/${distribution}/main/binary-${arch}"
 fi
-
