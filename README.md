@@ -142,6 +142,11 @@ To build, run `master --preseed focal doocs-legacy-server 01.00.03`
 
 Describe which questions the master script might ask, under which conditions it allows or block publishing of the results.
 
+### Custom copyright information
+
+By default, the scripts derive the package's copyright information from the given license and attribute it to DESY & MSK. This can be overriden by placing a custom file called copyright next to the CONFIG file
+in DebianBuildVersions
+
 ### Blacklisting broken packages
 
 Normally, the scripts will rebuild all reverse-dependencies of library dev packages, because those packages would be broken otherwise when a library package is released, due to the exact version dependency. If one of those reverse-dependencies is broken and cannot be built, the entire tree cannot be rebuilt until this is fixed. In case of emergencies, the script hence allows to blacklist packages to prevent them from being built. For this purpose, just create a file named `blacklist` containing one package name per line (without version). Blacklisted packages which are skipped are still shown (marked as blacklisted) when listing all packages to be built, to raise awareness that these packages will be broken after the new packages are published.
