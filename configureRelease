@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 from __future__ import print_function
-from packaging.version import parse as parseVersion
+import packaging.version
 import argparse
 import debian.debian_support
 import urllib
@@ -17,6 +17,17 @@ import shutil
 import re
 import datetime
 debianCodenames = ['jessie', 'buster', 'stretch', 'bullseye']
+
+
+# Regular expression used in parseVersion. The native packaging.version.parse() does not accept some of the usual Debian
+# versions as it contains strings like "focal" or characters like "~" and "+". We simply replace anything which is not
+# a number into dots (word-wise, to avoid consecutive dots), to prevent any issues with improper version formats. This
+# should work as long as the two versions that are compared have the same format.
+versionNumberReformatter = re.compile(r'[^0-9]+')
+
+
+def parseVersion(version: str):
+    return packaging.version.parse(versionNumberReformatter.sub('.', version))
 
 
 def extract_tokens(input_string):
