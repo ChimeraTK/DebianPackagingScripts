@@ -10,92 +10,101 @@ import sys
 import time
 import tempfile
 import shutil
-import re #regular expressions library
+import re  # regular expressions library
+
 
 def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies, codename):
-  for Package in Packages:
-    PackageAsDictionary = dict(Package)
-    if 'Depends' in PackageAsDictionary:
-      depends = PackageAsDictionary['Depends']
-      depends_array = depends.split(", ")
-      for dependency in depends_array:
-        dependency_split = dependency.split(" ")
-        if(dependency_split[0] == DependencyToSearchFor and len(dependency_split) > 1):
-          # extract source version from package version (note that this is a guess, but it holds for packages built with the DebianPackagingScripts)
-          version = ""
-            # version numbers are like 123.45xenial3.9-34
-            # split by dots, then remove everything from 'xenial3' (split(codename)[0]) and '-34' (split("-")[0])
-          for version_part in PackageAsDictionary['Version'].split("."):
-            version += version_part.split(codename)[0].split("-")[0] + "."
-          version = version[:-1]   # remove the trailing dot         
-          # add the found package to the list
-          ReverseDependencies.append(PackageAsDictionary['Package']+' '+version)
-          # recursive search: find packages depending on the found package as well
-          findReverseDependencies(PackageAsDictionary['Package'], Packages, ReverseDependencies, codename)
+    for Package in Packages:
+        PackageAsDictionary = dict(Package)
+        if 'Depends' in PackageAsDictionary:
+            depends = PackageAsDictionary['Depends']
+            depends_array = depends.split(", ")
+            for dependency in depends_array:
+                dependency_split = dependency.split(" ")
+                if (dependency_split[0] == DependencyToSearchFor and len(dependency_split) > 1):
+                    # extract source version from package version (note that this is a guess,
+                    # but it holds for packages built with the DebianPackagingScripts)
+                    version = ""
+                    # version numbers are like 123.45xenial3.9-34
+                    # split by dots, then remove everything from 'xenial3'
+                    # (split(codename)[0]) and '-34' (split("-")[0])
+                    for version_part in PackageAsDictionary['Version'].split("."):
+                        version += version_part.split(codename)[0].split("-")[0] + "."
+                    version = version[:-1]   # remove the trailing dot
+                    # add the found package to the list
+                    ReverseDependencies.append(PackageAsDictionary['Package'] + ' ' + version)
+                    # recursive search: find packages depending on the found package as well
+                    findReverseDependencies(PackageAsDictionary['Package'], Packages, ReverseDependencies, codename)
+
 
 def resolvePackagePattern(packagePattern, Packages):
-  resolvedPackages = []
-  pattern = re.compile(packagePattern)
-  for Package in Packages:
-    PackageAsDictionary = dict(Package)
-    if pattern.match(PackageAsDictionary['Package']):
-        resolvedPackages.append(PackageAsDictionary['Package'])
+    resolvedPackages = []
+    pattern = re.compile(packagePattern)
+    for Package in Packages:
+        PackageAsDictionary = dict(Package)
+        if pattern.match(PackageAsDictionary['Package']):
+            resolvedPackages.append(PackageAsDictionary['Package'])
 
-  return resolvedPackages
+    return resolvedPackages
+
 
 def subprocessHelper(argList):
-  cmd_cmplt = subprocess.run(
-      argList,
-      capture_output=True,
-  )
-  if cmd_cmplt.returncode != 0:
-      stdout_msg = cmd_cmplt.stdout.decode('utf-8')
-      stderr_msg = cmd_cmplt.stderr.decode('utf-8')
-      raise RuntimeError(f'{argList} failed:\n{stdout_msg}\n{stderr_msg}')
+    cmd_cmplt = subprocess.run(
+        argList,
+        capture_output=True,
+    )
+    if cmd_cmplt.returncode != 0:
+        stdout_msg = cmd_cmplt.stdout.decode('utf-8')
+        stderr_msg = cmd_cmplt.stderr.decode('utf-8')
+        raise RuntimeError(f'{argList} failed:\n{stdout_msg}\n{stderr_msg}')
+
 
 def main():
     # output usage
-    if len(sys.argv) != 4 and len(sys.argv) != 5 :
-      print("Usage: ./findReverseDependencies <package_name> <distribution_codename> <debian_repository> [<architecture>]")
-      print("Example: ./findReverseDependencies libmtca4u-deviceaccess-dev xenial http://doocspkgs.desy.de/")
-      print("  This will output all packages depending on a specific version of libmtca4u-deviceaccess-dev. It will recursively repeat the search for all found packages.")
-      print("  The command resolves regular expressions, so \"dev-doocs.*\" for instance searches for all packages starting with \"dev-doocs\".")
-      sys.exit()
-    
+    if len(sys.argv) != 4 and len(sys.argv) != 5:
+        print(
+            "Usage: ./findReverseDependencies <package_name> <distribution_codename> <debian_repository> [<architecture>]")
+        print("Example: ./findReverseDependencies libmtca4u-deviceaccess-dev xenial http://doocspkgs.desy.de/")
+        print("  This will output all packages depending on a specific version of libmtca4u-deviceaccess-dev. It will recursively repeat the search for all found packages.")
+        print("  The command resolves regular expressions, so \"dev-doocs.*\" for instance searches for all packages starting with \"dev-doocs\".")
+        sys.exit()
+
     # parse command line arguments
     packagePattern = sys.argv[1]
     codename = sys.argv[2]
     debianrepository = sys.argv[3]                  # repository base name used to retrieve a package list
-    if len(sys.argv) == 5 :
-      arch = sys.argv[4]
+    if len(sys.argv) == 5:
+        arch = sys.argv[4]
     else:
-      arch = "amd64"
-    
+        arch = "amd64"
+
     # download Packages file from the DESY DOOCS apt repositories
     try:
-      subprocessHelper(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
+        subprocessHelper(["wget", "-q", debianrepository + "/pub/doocs/dists/" + codename +
+                         "/main/binary-" + arch + "/Packages", "-O", "Packages.DESY"])
     except RuntimeError:
-      raise RuntimeError(f'wget from {debianrepository} failed; are you in DESY network?')
+        raise RuntimeError(f'wget from {debianrepository} failed; are you in DESY network?')
 
-    subprocessHelper(["mv","Packages.DESY","TMP.DESY"])
-    subprocessHelper(["iconv", "-c", "-t", "UTF-8", "TMP.DESY","-o","Packages.DESY"])
+    subprocessHelper(["mv", "Packages.DESY", "TMP.DESY"])
+    subprocessHelper(["iconv", "-c", "-t", "UTF-8", "TMP.DESY", "-o", "Packages.DESY"])
 
     # open Packages file and parse it
     PackageFile = debian.debian_support.PackageFile("Packages.DESY")
     Packages = []
     for Package in PackageFile:
-      Packages.append(Package)
-    
+        Packages.append(Package)
+
     inputPackages = resolvePackagePattern(packagePattern, Packages)
-    
+
     # search for packages depending on the specified package
     ReverseDependencies = []
     for package in inputPackages:
-      findReverseDependencies(package, Packages, ReverseDependencies, codename)
-    
+        findReverseDependencies(package, Packages, ReverseDependencies, codename)
+
     # output list (as a set, to make it unique)
     for dep in set(ReverseDependencies):
-      print(dep)
+        print(dep)
+
 
 if __name__ == "__main__":
     main()
