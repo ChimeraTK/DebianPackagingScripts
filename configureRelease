@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 from __future__ import print_function
+from packaging.version import parse as parseVersion
+import argparse
 import debian.debian_support
 import urllib
 import subprocess
@@ -14,35 +16,38 @@ import tempfile
 import shutil
 import re
 import datetime
-debianCodenames=['jessie','buster','stretch','bullseye']
-import argparse
+debianCodenames = ['jessie', 'buster', 'stretch', 'bullseye']
 
-from packaging.version import parse as parseVersion
 
 def extract_tokens(input_string):
-  """
-  returns a list of all keywords from input_string
-  """
-  return re.findall('#([a-zA-Z0-9-]+?)#', input_string)
+    """
+    returns a list of all keywords from input_string
+    """
+    return re.findall('#([a-zA-Z0-9-]+?)#', input_string)
+
 
 def replace_token(content_string, token):
 
-  if not token in config:
-    resolved_token = "" # defaults to empty string (when resolution fails)
-  elif 'Install-pattern-' in token or 'Install-additional-pattern-' in token:
-    resolved_token = re.sub(",[' ']*", '\n', config[token].strip())
-  else:
-    resolved_token = config[token]
+    if token not in config:
+        resolved_token = ""  # defaults to empty string (when resolution fails)
+    elif 'Install-pattern-' in token or 'Install-additional-pattern-' in token:
+        resolved_token = re.sub(",[' ']*", '\n', config[token].strip())
+    else:
+        resolved_token = config[token]
 
-  return content_string.replace("#"+token+"#", resolved_token)
+    return content_string.replace("#" + token + "#", resolved_token)
 
 # wrapper around e.g. debian.debian_support.PackageFile to catch exceptions and continue the loop
+
+
 class ExceptionHandlingIterator(object):
     def __init__(self, iterable):
         self.__iter = iter(iterable)
         self.__current = None
+
     def __iter__(self):
         return self
+
     def __next__(self):
         try:
             self.__current = self.__iter.__next__()
@@ -54,56 +59,71 @@ class ExceptionHandlingIterator(object):
 
 # function for resolving dependencies from a Packages file
 # returns a dictionary: "name" -> "version"
+
+
 def resolveDeps(dependencies, filename):
 
-  # open Packages file and parse it
-  if os.path.exists(filename):
-    PackageFile = debian.debian_support.PackageFile(filename)
-  else:
-    return ({},{})
-  dependency_versions = {}
-  map_virtual_to_real = {}
+    # open Packages file and parse it
+    if os.path.exists(filename):
+        PackageFile = debian.debian_support.PackageFile(filename)
+    else:
+        return ({}, {})
+    dependency_versions = {}
+    map_virtual_to_real = {}
 
-  # search for dependencies
-  for Package in ExceptionHandlingIterator(PackageFile):
-    for dependency in dependencies:
-      PackageAsDictionary = dict(Package)
-      if dependency == PackageAsDictionary["Package"]:
-        if not dependency in dependency_versions.keys() or parseVersion(PackageAsDictionary["Version"]) > parseVersion(dependency_versions[dependency]):
-          dependency_versions[dependency] = PackageAsDictionary["Version"]
-          map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
+    # search for dependencies
+    for Package in ExceptionHandlingIterator(PackageFile):
+        for dependency in dependencies:
+            PackageAsDictionary = dict(Package)
+            if dependency == PackageAsDictionary["Package"]:
+                if dependency not in dependency_versions.keys() or parseVersion(
+                        PackageAsDictionary["Version"]) > parseVersion(
+                        dependency_versions[dependency]):
+                    dependency_versions[dependency] = PackageAsDictionary["Version"]
+                    map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
 
-      if "Provides" in PackageAsDictionary.keys() :
-        if dependency in [name.strip() for name in PackageAsDictionary["Provides"].split(',') ]:
-          if not dependency in dependency_versions.keys() or parseVersion(PackageAsDictionary["Version"]) > parseVersion(dependency_versions[dependency]):
-            dependency_versions[dependency] = PackageAsDictionary["Version"]
-            map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
-        elif dependency in [name.strip().split(' ')[0] for name in PackageAsDictionary["Provides"].split(',') ]:
-          print('NOTE: Dependency "'+dependency+'" found as virtual package provided by "'+PackageAsDictionary["Package"]+
-                '", but the Provides statement has a version number. This is currently unsupported by the configureRelease '+
-                'script, hence this package is ignored. Check source code for more details.')
-          # This could be implemented by using the version number from the Provides statement for selecting the latest package
-          # providing the dependency. Since there is no use case at the time of writing this is not yet implemented.
+            if "Provides" in PackageAsDictionary.keys():
+                if dependency in [name.strip() for name in PackageAsDictionary["Provides"].split(',')]:
+                    if dependency not in dependency_versions.keys() or parseVersion(
+                            PackageAsDictionary["Version"]) > parseVersion(
+                            dependency_versions[dependency]):
+                        dependency_versions[dependency] = PackageAsDictionary["Version"]
+                        map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
+                elif dependency in [name.strip().split(' ')[0] for name in PackageAsDictionary["Provides"].split(',')]:
+                    print(
+                        'NOTE: Dependency "' +
+                        dependency +
+                        '" found as virtual package provided by "' +
+                        PackageAsDictionary["Package"] +
+                        '", but the Provides statement has a version number. This is currently unsupported by the configureRelease ' +
+                        'script, hence this package is ignored. Check source code for more details.')
+                    # This could be implemented by using the version number from the Provides statement for selecting the latest package
+                    # providing the dependency. Since there is no use case at the time of
+                    # writing this is not yet implemented.
 
-  return (dependency_versions, map_virtual_to_real)
+    return (dependency_versions, map_virtual_to_real)
 
 # get package version from a Packages file, or "none" if package not found
+
+
 def getPackageVersion(packageName, filename):
 
-  # open Packages file and parse it
-  PackageFile = debian.debian_support.PackageFile(filename)
+    # open Packages file and parse it
+    PackageFile = debian.debian_support.PackageFile(filename)
 
-  # search for dependencies
-  for Package in ExceptionHandlingIterator(PackageFile):
-    PackageAsDictionary = dict(Package)
-    if packageName == PackageAsDictionary["Package"]:
-      return PackageAsDictionary["Version"]
+    # search for dependencies
+    for Package in ExceptionHandlingIterator(PackageFile):
+        PackageAsDictionary = dict(Package)
+        if packageName == PackageAsDictionary["Package"]:
+            return PackageAsDictionary["Version"]
 
-  return "none"
+    return "none"
 
 # output usage
 
-parser = argparse.ArgumentParser(epilog="Example: ./configureRelease doocswrappers 0.5.0 xenial http://doocspkgs.desy.de/")
+
+parser = argparse.ArgumentParser(
+    epilog="Example: ./configureRelease doocswrappers 0.5.0 xenial http://doocspkgs.desy.de/")
 parser.add_argument('project_name')
 parser.add_argument('version_tag_name')
 parser.add_argument('distribution_codename')
@@ -120,10 +140,12 @@ project = args.project_name
 tagversion = args.version_tag_name              # tagversion is the git tag to be checked out for this version
 version = tagversion                            # version is identical to the git tag but omitting the "v" at the beginning if present
 if tagversion[0:1] == "v":
-  version = tagversion[1:]
+    version = tagversion[1:]
 splitversion = version.split(".")
-epoch = splitversion[0]+"."+splitversion[1]     # the "epoch" is the part of the version which is identical for binary compatible versions
-patchlevel = splitversion[2]                    # the patchlevel contains any part of the version which differs for binary compatible versions
+# the "epoch" is the part of the version which is identical for binary compatible versions
+epoch = splitversion[0] + "." + splitversion[1]
+# the patchlevel contains any part of the version which differs for binary compatible versions
+patchlevel = splitversion[2]
 codename = args.distribution_codename           # codename of the distribution to build for (e.g. xenial)
 debianrepository = args.debian_repository       # repository base name used to retrieve a package list
 arch = args.architecture
@@ -207,137 +229,139 @@ config["Override-auto-configure-flags"] = ""
 
 config["Dh-extra-args"] = ""
 
+
 def replace_config_variables(filename):
-  content = open(filename).read()
-  token_list = extract_tokens(content)
-  # replace all variables
-  for var in token_list:
-    content = replace_token(content, var)
-  # check for unknown variables which have not been replaced
-  # The regular expression matches a string of alpha-numeric characters enclosed within single hash characters
-  if re.match('[^#]#[a-zA-Z0-9]#[^#]', content) != None:
-    print("File "+filename+" has an unknown variable: "+content[pos1:pos2+1])
-    sys.exit(1)
-  return content
+    content = open(filename).read()
+    token_list = extract_tokens(content)
+    # replace all variables
+    for var in token_list:
+        content = replace_token(content, var)
+    # check for unknown variables which have not been replaced
+    # The regular expression matches a string of alpha-numeric characters enclosed within single hash characters
+    if re.match('[^#]#[a-zA-Z0-9]#[^#]', content) is not None:
+        print("File " + filename + " has an unknown variable: " + content[pos1:pos2 + 1])
+        sys.exit(1)
+    return content
+
 
 # check if DebianBuildVersions is checked out
 if not os.path.isdir("DebianBuildVersions/.git"):
-  print("DebianBuildVersions has not been checked out.")
-  sys.exit(1)
+    print("DebianBuildVersions has not been checked out.")
+    sys.exit(1)
 
 # check if project is known
-if not os.path.isfile("DebianBuildVersions/"+project+"/CONFIG"):
-  print("The project "+project+" is not known.")
-  sys.exit(1)
+if not os.path.isfile("DebianBuildVersions/" + project + "/CONFIG"):
+    print("The project " + project + " is not known.")
+    sys.exit(1)
 
 # read config file
-configfile = open("DebianBuildVersions/"+project+"/CONFIG",'r').read().splitlines()
-line_counter=0
+configfile = open("DebianBuildVersions/" + project + "/CONFIG", 'r').read().splitlines()
+line_counter = 0
 for line in configfile:
-  line_counter = line_counter+1
-  if line.strip() == "" or line.strip()[0:1] == "#":
-    continue
-  try:
-    ( key, value ) = line.split(":", 1)
-  except (ValueError):
-    print("Error parsing file 'DebianBuildVersions/"+project+"/CONFIG' in line "+str(line_counter))
-    sys.exit(1)
-  key = key.strip()
-  if re.match('[^a-zA-Z0-9]',key) != None:
-    print("Error parsing file 'DebianBuildVersions/"+project+"/CONFIG' in line "+str(line_counter)+". Variable names must contain only alpha-numeric characters.")
-    sys.exit(1)
-  config[key] = value.strip()
+    line_counter = line_counter + 1
+    if line.strip() == "" or line.strip()[0:1] == "#":
+        continue
+    try:
+        (key, value) = line.split(":", 1)
+    except (ValueError):
+        print("Error parsing file 'DebianBuildVersions/" + project + "/CONFIG' in line " + str(line_counter))
+        sys.exit(1)
+    key = key.strip()
+    if re.match('[^a-zA-Z0-9]', key) is not None:
+        print("Error parsing file 'DebianBuildVersions/" + project + "/CONFIG' in line " +
+              str(line_counter) + ". Variable names must contain only alpha-numeric characters.")
+        sys.exit(1)
+    config[key] = value.strip()
 
 
 # create hasPackages array from space-separated list
 hasPackages = config["Has-packages"].split(" ")
 
 for package in hasPackages:
-  if package.endswith("-dynload"):
-    hasPackages.append("dynload")
-    break
+    if package.endswith("-dynload"):
+        hasPackages.append("dynload")
+        break
 
 # extend the config by dynamic variables
 if "project" not in config:
-  config["project"] = project
+    config["project"] = project
 if "lib" in hasPackages or "dev-headeronly" in hasPackages or "dev-alien-headeronly" in hasPackages:
-  config["package-basename"] = "lib"+project.lower()
+    config["package-basename"] = "lib" + project.lower()
 else:
-  config["package-basename"] = project.lower()
+    config["package-basename"] = project.lower()
 config["version"] = version
 config["tagversion"] = tagversion
-config["epochdashversion"] = epoch.replace(".","-")
+config["epochdashversion"] = epoch.replace(".", "-")
 config["version-major"] = version_major
 config["epochversion"] = epoch
 config["distribution"] = codename
 config["architecture"] = arch
-config["package-message"] = "Debian package for the "+project+" library version "+version
-if not "Package-name-dev" in config:
-  config["Package-name-dev"] = config["package-basename"]+"-dev"
-if not "Package-name-dev-noheader" in config:
-  config["Package-name-dev-noheader"] = config["Package-name-dev"]
-if not "Package-name-dev-noheader-dynload" in config:
-  config["Package-name-dev-noheader-dynload"] = config["Package-name-dev"]
-if not "Package-name-dev-headeronly" in config:
-  config["Package-name-dev-headeronly"] = config["Package-name-dev"]
-if not "Package-name-dev-alien" in config:
-  config["Package-name-dev-alien"] = config["Package-name-dev"]
-if not "Package-name-dev-alien-headeronly" in config:
-  config["Package-name-dev-alien-headeronly"] = config["Package-name-dev"]
-if not "Package-name-doc" in config:
-  config["Package-name-doc"] = config["package-basename"]+"-doc"
-if not "Package-name-dkms" in config:
-  config["Package-name-dkms"] = config["package-basename"] + "-dkms"
+config["package-message"] = "Debian package for the " + project + " library version " + version
+if "Package-name-dev" not in config:
+    config["Package-name-dev"] = config["package-basename"] + "-dev"
+if "Package-name-dev-noheader" not in config:
+    config["Package-name-dev-noheader"] = config["Package-name-dev"]
+if "Package-name-dev-noheader-dynload" not in config:
+    config["Package-name-dev-noheader-dynload"] = config["Package-name-dev"]
+if "Package-name-dev-headeronly" not in config:
+    config["Package-name-dev-headeronly"] = config["Package-name-dev"]
+if "Package-name-dev-alien" not in config:
+    config["Package-name-dev-alien"] = config["Package-name-dev"]
+if "Package-name-dev-alien-headeronly" not in config:
+    config["Package-name-dev-alien-headeronly"] = config["Package-name-dev"]
+if "Package-name-doc" not in config:
+    config["Package-name-doc"] = config["package-basename"] + "-doc"
+if "Package-name-dkms" not in config:
+    config["Package-name-dkms"] = config["package-basename"] + "-dkms"
 
 # @LIBDIR@ will be replaced in a later step, by detect_libdir.sh, after build;install steps
-if not "Install-pattern-lib" in config:
-  config["Install-pattern-lib"] = "@LIBDIR@/lib*.so.*"
-if not "Install-pattern-dynload" in config:
-  config["Install-pattern-dynload"] = "@LIBDIR@/lib*.so.*"
-if not "Install-pattern-bin" in config:
-  config["Install-pattern-bin"] = "usr/bin/*"
-if not "Install-pattern-python" in config:
-  config["Install-pattern-python"] = "usr/lib/python*/*"
-if not "Package-name-extra" in config:
-  config["Package-name-extra"] = config["package-basename"]+"-extra"
-if not "Package-name-extra2" in config:
-  config["Package-name-extra2"] = config["package-basename"]+"-extra2"
-if not "Package-name-python" in config:
-  config["Package-name-python"] = config["package-basename"]
-
+if "Install-pattern-lib" not in config:
+    config["Install-pattern-lib"] = "@LIBDIR@/lib*.so.*"
+if "Install-pattern-dynload" not in config:
+    config["Install-pattern-dynload"] = "@LIBDIR@/lib*.so.*"
+if "Install-pattern-bin" not in config:
+    config["Install-pattern-bin"] = "usr/bin/*"
+if "Install-pattern-python" not in config:
+    config["Install-pattern-python"] = "usr/lib/python*/*"
+if "Package-name-extra" not in config:
+    config["Package-name-extra"] = config["package-basename"] + "-extra"
+if "Package-name-extra2" not in config:
+    config["Package-name-extra2"] = config["package-basename"] + "-extra2"
+if "Package-name-python" not in config:
+    config["Package-name-python"] = config["package-basename"]
 
 
 # Fixme: For newer debian/ubuntu versions one can simply depend on dh-sequence-dkms
 if "dkms" in hasPackages:
-  config["Dh-extra-args"] = '--with dkms'
+    config["Dh-extra-args"] = '--with dkms'
 
 config["current-year"] = str(datetime.datetime.now().year)
 
 
 # resolve variables inside the configuration
 for var in config.keys():
-  for var2 in config.keys():
-    config[var] = config[var].replace("#"+var2+"#", config[var2])
+    for var2 in config.keys():
+        config[var] = config[var].replace("#" + var2 + "#", config[var2])
 
 # check for mandatory variables in the config
-if not "Dependencies" in config:
-  print("Missing variable 'Dependencies' in CONFIG file")
-  sys.exit(1)
-if not "SourceURI" in config:
-  print("Missing variable 'SourceURI' in CONFIG file")
-  sys.exit(1)
-if not "Maintainer" in config:
-  print("Missing variable 'Maintainer' in CONFIG file")
-  sys.exit(1)
-if not "Section" in config:
-  print("Missing variable 'Section' in CONFIG file")
-  sys.exit(1)
-if not "Has-packages" in config:
-  print("Missing variable 'Has-packages' in CONFIG file")
-  sys.exit(1)
-if not "License" in config:
-  print("Missing variable 'License' in CONFIG file")
-  sys.exit(1)
+if "Dependencies" not in config:
+    print("Missing variable 'Dependencies' in CONFIG file")
+    sys.exit(1)
+if "SourceURI" not in config:
+    print("Missing variable 'SourceURI' in CONFIG file")
+    sys.exit(1)
+if "Maintainer" not in config:
+    print("Missing variable 'Maintainer' in CONFIG file")
+    sys.exit(1)
+if "Section" not in config:
+    print("Missing variable 'Section' in CONFIG file")
+    sys.exit(1)
+if "Has-packages" not in config:
+    print("Missing variable 'Has-packages' in CONFIG file")
+    sys.exit(1)
+if "License" not in config:
+    print("Missing variable 'License' in CONFIG file")
+    sys.exit(1)
 
 # check if version is a valid tag
 workdir = os.getcwd()
@@ -345,121 +369,136 @@ tempdir = tempfile.mkdtemp("configureRelease")
 os.chdir(tempdir)
 ret = subprocess.call(["git", "clone", "-q", config["SourceURI"], "."])
 if ret != 0:
-  print("Cannot access source repository.")
-  os.chdir(workdir)
-  shutil.rmtree(tempdir)
-  sys.exit(1)
-ret = subprocess.call(["git", "checkout", "-q", "tags/"+tagversion])
+    print("Cannot access source repository.")
+    os.chdir(workdir)
+    shutil.rmtree(tempdir)
+    sys.exit(1)
+ret = subprocess.call(["git", "checkout", "-q", "tags/" + tagversion])
 if ret != 0:
-  print("Version "+version+" does not exist in the source repository.")
-  print("List of known versions:")
-  ret = subprocess.call(["git", "tag"])
-  os.chdir(workdir)
-  shutil.rmtree(tempdir)
-  sys.exit(1)
+    print("Version " + version + " does not exist in the source repository.")
+    print("List of known versions:")
+    ret = subprocess.call(["git", "tag"])
+    os.chdir(workdir)
+    shutil.rmtree(tempdir)
+    sys.exit(1)
 os.chdir(workdir)
 shutil.rmtree(tempdir)
 
 # output generic information
-print("Project: "+project)
-print("Source tag name: "+tagversion)
-print("Version: "+version)
-print("Epoch version: "+epoch)
-print("Distribution: "+codename)
-print("Architecture: "+arch)
+print("Project: " + project)
+print("Source tag name: " + tagversion)
+print("Version: " + version)
+print("Epoch version: " + epoch)
+print("Distribution: " + codename)
+print("Architecture: " + arch)
 
 # check if we are building a doocs server
 if "doocs-bin" in hasPackages:
-  idx = hasPackages.index("doocs-bin")
-  hasPackages[idx] = "bin"
-  config["Override-auto-configure-flags"] = "-DCMAKE_INSTALL_PREFIX=/export/doocs/server "\
-                                            + config["Override-auto-configure-flags"]
+    idx = hasPackages.index("doocs-bin")
+    hasPackages[idx] = "bin"
+    config["Override-auto-configure-flags"] = "-DCMAKE_INSTALL_PREFIX=/export/doocs/server "\
+                                              + config["Override-auto-configure-flags"]
 
 # parse lists of dependencies
 dependencies = config["Dependencies"].split(" ")
 if "dev" in hasPackages:
-  dependencies_dev = config["Dependencies-dev"].split(" ")
+    dependencies_dev = config["Dependencies-dev"].split(" ")
 elif "dev-noheader" in hasPackages:
-  dependencies_dev = config["Dependencies-dev"].split(" ")
+    dependencies_dev = config["Dependencies-dev"].split(" ")
 elif "dev-headeronly" in hasPackages:
-  dependencies_dev = config["Dependencies-dev"].split(" ")
+    dependencies_dev = config["Dependencies-dev"].split(" ")
 elif "dev-alien" in hasPackages:
-  dependencies_dev = config["Dependencies-dev"].split(" ")
+    dependencies_dev = config["Dependencies-dev"].split(" ")
 elif "dev-alien-headeronly" in hasPackages:
-  dependencies_dev = config["Dependencies-dev"].split(" ")
+    dependencies_dev = config["Dependencies-dev"].split(" ")
 elif "dev-noheader-dynload" in hasPackages:
-  dependencies_dev = config["Dependencies-dev"].split(" ")
+    dependencies_dev = config["Dependencies-dev"].split(" ")
 else:
-  dependencies_dev = {}
+    dependencies_dev = {}
 
 if "Use-dynload" in config or "dynload" in hasPackages:
-  dependencies.append("libchimeratk-deviceaccess")
+    dependencies.append("libchimeratk-deviceaccess")
 
 print("Searching for dependencies...")
 
 if codename in debianCodenames:
-  # download Packages file from the DESY DOOCS apt repositories
-  subprocess.call(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
+    # download Packages file from the DESY DOOCS apt repositories
+    subprocess.call(["wget", "-q", debianrepository + "/pub/doocs/dists/" + codename +
+                    "/main/binary-" + arch + "/Packages", "-O", "Packages.DESY"])
 
+    subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/" + codename +
+                    "/main/binary-" + arch + "/Packages.gz", "-O", "Packages.MAIN.gz"])
+    subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
+    subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/" + codename +
+                    "/contrib/binary-" + arch + "/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
+    subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
 
-  subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/"+codename+"/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN.gz"])
-  subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
-  subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/"+codename+"/contrib/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
-  subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
+    # download Packages file from Ubuntu repositories and unpack
+    subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/" + codename +
+                    "-updates/main/binary-" + arch + "/Packages.gz", "-O", "Packages.MAIN-UPDATES.gz"])
+    subprocess.call(["gunzip", "-f", "Packages.MAIN-UPDATES.gz"])
 
-  # download Packages file from Ubuntu repositories and unpack
-  subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/"+codename+"-updates/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN-UPDATES.gz"])
-  subprocess.call(["gunzip", "-f", "Packages.MAIN-UPDATES.gz"])
+    # download Packages file from Ubuntu repositories and unpack
+    subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/" + codename +
+                    "-updates/contrib/binary-" + arch + "/Packages.gz", "-O", "Packages.UNIVERSE-UPDATES.gz"])
+    subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-UPDATES.gz"])
 
-  # download Packages file from Ubuntu repositories and unpack
-  subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/"+codename+"-updates/contrib/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE-UPDATES.gz"])
-  subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-UPDATES.gz"])
-
-  subprocess.call(['./updateLocalRepos'])
+    subprocess.call(['./updateLocalRepos'])
 
 else:
-  # download Packages file from the DESY DOOCS apt repositories
-  subprocess.call(["wget", "-q", debianrepository+"/pub/doocs/dists/"+codename+"/main/binary-"+arch+"/Packages", "-O", "Packages.DESY"])
+    # download Packages file from the DESY DOOCS apt repositories
+    subprocess.call(["wget", "-q", debianrepository + "/pub/doocs/dists/" + codename +
+                    "/main/binary-" + arch + "/Packages", "-O", "Packages.DESY"])
 
-  # download Packages file from Ubuntu repositories and unpack
-  subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN.gz"])
-  subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
+    # download Packages file from Ubuntu repositories and unpack
+    subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/" + codename +
+                    "/main/binary-" + arch + "/Packages.gz", "-O", "Packages.MAIN.gz"])
+    subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
 
-  # download Packages file from Ubuntu repositories and unpack
-  subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"/universe/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
-  subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
+    # download Packages file from Ubuntu repositories and unpack
+    subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/" + codename +
+                    "/universe/binary-" + arch + "/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
+    subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
 
-  # download Packages file from Ubuntu repositories and unpack
-  subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"-updates/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN-UPDATES.gz"])
-  subprocess.call(["gunzip", "-f", "Packages.MAIN-UPDATES.gz"])
+    # download Packages file from Ubuntu repositories and unpack
+    subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/" + codename +
+                    "-updates/main/binary-" + arch + "/Packages.gz", "-O", "Packages.MAIN-UPDATES.gz"])
+    subprocess.call(["gunzip", "-f", "Packages.MAIN-UPDATES.gz"])
 
-  # download Packages file from Ubuntu repositories and unpack
-  subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"-updates/universe/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE-UPDATES.gz"])
-  subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-UPDATES.gz"])
+    # download Packages file from Ubuntu repositories and unpack
+    subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/" + codename +
+                    "-updates/universe/binary-" + arch + "/Packages.gz", "-O", "Packages.UNIVERSE-UPDATES.gz"])
+    subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-UPDATES.gz"])
 
-  # download Packages file from Ubuntu repositories and unpack
-  subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"-updates/main/binary-"+arch+"/Packages.gz", "-O", "Packages.MAIN-SECURITY.gz"])
-  subprocess.call(["gunzip", "-f", "Packages.MAIN-SECURITY.gz"])
+    # download Packages file from Ubuntu repositories and unpack
+    subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/" + codename +
+                    "-updates/main/binary-" + arch + "/Packages.gz", "-O", "Packages.MAIN-SECURITY.gz"])
+    subprocess.call(["gunzip", "-f", "Packages.MAIN-SECURITY.gz"])
 
-  # download Packages file from Ubuntu repositories and unpack
-  subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/"+codename+"-updates/universe/binary-"+arch+"/Packages.gz", "-O", "Packages.UNIVERSE-SECURITY.gz"])
-  subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-SECURITY.gz"])
+    # download Packages file from Ubuntu repositories and unpack
+    subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/" + codename +
+                    "-updates/universe/binary-" + arch + "/Packages.gz", "-O", "Packages.UNIVERSE-SECURITY.gz"])
+    subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-SECURITY.gz"])
 
-  # update the locake package repository
-  subprocess.call(['./updateLocalRepos'])
-subprocess.call(["mv","Packages.DESY","TMP.DESY"])
-subprocess.call(["iconv", "-c", "-t", "UTF-8", "TMP.DESY","-o","Packages.DESY"])
+    # update the locake package repository
+    subprocess.call(['./updateLocalRepos'])
+subprocess.call(["mv", "Packages.DESY", "TMP.DESY"])
+subprocess.call(["iconv", "-c", "-t", "UTF-8", "TMP.DESY", "-o", "Packages.DESY"])
 # parse all sources
 (dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE")
 (dependency_versions_main_updates, map_virtual_real_names_main_updates) = resolveDeps(dependencies, "Packages.MAIN-UPDATES")
-(dependency_versions_universe_updates, map_virtual_real_names_universe_updates) = resolveDeps(dependencies, "Packages.UNIVERSE-UPDATES")
+(dependency_versions_universe_updates, map_virtual_real_names_universe_updates) = resolveDeps(
+    dependencies, "Packages.UNIVERSE-UPDATES")
 (dependency_versions_main_security, map_virtual_real_names_main_security) = resolveDeps(dependencies, "Packages.MAIN-SECURITY")
-(dependency_versions_universe_security, map_virtual_real_names_universe_security) = resolveDeps(dependencies, "Packages.UNIVERSE-SECURITY")
+(dependency_versions_universe_security, map_virtual_real_names_universe_security) = resolveDeps(
+    dependencies, "Packages.UNIVERSE-SECURITY")
 (dependency_versions_main, map_virtual_real_names_main) = resolveDeps(dependencies, "Packages.MAIN")
 (dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE")
 (dependency_versions_desy, map_virtual_real_names_desy) = resolveDeps(dependencies, "Packages.DESY")
-(dependency_versions_preseed, map_virtual_real_names_preseed) = resolveDeps(dependencies, "preseed/dists/"+codename+"/main/binary-"+arch+"/Packages")
-(dependency_versions_local, map_virtual_real_names_local) = resolveDeps(dependencies, "pbuilder-result/dists/"+codename+"/main/binary-"+arch+"/Packages")
+(dependency_versions_preseed, map_virtual_real_names_preseed) = resolveDeps(
+    dependencies, "preseed/dists/" + codename + "/main/binary-" + arch + "/Packages")
+(dependency_versions_local, map_virtual_real_names_local) = resolveDeps(
+    dependencies, "pbuilder-result/dists/" + codename + "/main/binary-" + arch + "/Packages")
 
 # merge the found dependencies with priority, and check for unfound dependencies
 print("")
@@ -468,362 +507,381 @@ dependency_versions = {}
 map_virtual_real_names = {}
 is_using_local = False
 for dependency in dependencies:
-  if dependency in dependency_versions_local:
-    dependency_versions[dependency] = dependency_versions_local[dependency]
-    map_virtual_real_names[dependency] = map_virtual_real_names_local[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from *** LOCAL ***")
-    is_using_local = True
-  elif use_preseed and dependency in dependency_versions_preseed:
-    dependency_versions[dependency] = dependency_versions_preseed[dependency]
-    map_virtual_real_names[dependency] = map_virtual_real_names_preseed[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from *** PRESEED ***")
-  elif dependency in dependency_versions_main_updates:
-    dependency_versions[dependency] = dependency_versions_main_updates[dependency]
-    map_virtual_real_names[dependency] = map_virtual_real_names_main_updates[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from "+codename+"-updates/main")
-  elif dependency in dependency_versions_universe_updates:
-    dependency_versions[dependency] = dependency_versions_universe_updates[dependency]
-    map_virtual_real_names[dependency] = map_virtual_real_names_universe_updates[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from "+codename+"-updates/universe")
-  elif dependency in dependency_versions_main_security:
-    dependency_versions[dependency] = dependency_versions_main_security[dependency]
-    map_virtual_real_names[dependency] = map_virtual_real_names_main_security[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from "+codename+"-security/main")
-  elif dependency in dependency_versions_universe_security:
-    dependency_versions[dependency] = dependency_versions_universe_security[dependency]
-    map_virtual_real_names[dependency] = map_virtual_real_names_universe_security[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from "+codename+"-security/universe")
-  elif dependency in dependency_versions_main:
-    dependency_versions[dependency] = dependency_versions_main[dependency]
-    map_virtual_real_names[dependency] = map_virtual_real_names_main[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from "+codename+"/main")
-  elif dependency in dependency_versions_universe:
-    dependency_versions[dependency] = dependency_versions_universe[dependency]
-    map_virtual_real_names[dependency] = map_virtual_real_names_universe[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from "+codename+"/universe")
-  elif dependency in dependency_versions_desy:
-    dependency_versions[dependency] = dependency_versions_desy[dependency]
-    map_virtual_real_names[dependency] = map_virtual_real_names_desy[dependency]
-    print("  "+dependency+" (= "+dependency_versions[dependency]+") from desy/main")
-  else:
-    print("Dependency "+dependency+" cannot be found in any of the apt repository!")
-    sys.exit(1)
+    if dependency in dependency_versions_local:
+        dependency_versions[dependency] = dependency_versions_local[dependency]
+        map_virtual_real_names[dependency] = map_virtual_real_names_local[dependency]
+        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from *** LOCAL ***")
+        is_using_local = True
+    elif use_preseed and dependency in dependency_versions_preseed:
+        dependency_versions[dependency] = dependency_versions_preseed[dependency]
+        map_virtual_real_names[dependency] = map_virtual_real_names_preseed[dependency]
+        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from *** PRESEED ***")
+    elif dependency in dependency_versions_main_updates:
+        dependency_versions[dependency] = dependency_versions_main_updates[dependency]
+        map_virtual_real_names[dependency] = map_virtual_real_names_main_updates[dependency]
+        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from " + codename + "-updates/main")
+    elif dependency in dependency_versions_universe_updates:
+        dependency_versions[dependency] = dependency_versions_universe_updates[dependency]
+        map_virtual_real_names[dependency] = map_virtual_real_names_universe_updates[dependency]
+        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from " + codename + "-updates/universe")
+    elif dependency in dependency_versions_main_security:
+        dependency_versions[dependency] = dependency_versions_main_security[dependency]
+        map_virtual_real_names[dependency] = map_virtual_real_names_main_security[dependency]
+        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from " + codename + "-security/main")
+    elif dependency in dependency_versions_universe_security:
+        dependency_versions[dependency] = dependency_versions_universe_security[dependency]
+        map_virtual_real_names[dependency] = map_virtual_real_names_universe_security[dependency]
+        print(
+            "  " +
+            dependency +
+            " (= " +
+            dependency_versions[dependency] +
+            ") from " +
+            codename +
+            "-security/universe")
+    elif dependency in dependency_versions_main:
+        dependency_versions[dependency] = dependency_versions_main[dependency]
+        map_virtual_real_names[dependency] = map_virtual_real_names_main[dependency]
+        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from " + codename + "/main")
+    elif dependency in dependency_versions_universe:
+        dependency_versions[dependency] = dependency_versions_universe[dependency]
+        map_virtual_real_names[dependency] = map_virtual_real_names_universe[dependency]
+        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from " + codename + "/universe")
+    elif dependency in dependency_versions_desy:
+        dependency_versions[dependency] = dependency_versions_desy[dependency]
+        map_virtual_real_names[dependency] = map_virtual_real_names_desy[dependency]
+        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from desy/main")
+    else:
+        print("Dependency " + dependency + " cannot be found in any of the apt repository!")
+        sys.exit(1)
 
 # replace virtual packages with real ones
-map_virtual_real_names_reverse={}
-for dependency in map_virtual_real_names.keys() :
-  if dependency != map_virtual_real_names[dependency] :
-    print("Replacing virtual package "+dependency+" with real package "+map_virtual_real_names[dependency])
-    dependency_versions[map_virtual_real_names[dependency]] = dependency_versions[dependency]
-    del dependency_versions[dependency]
-    index = dependencies.index(dependency)
-    dependencies[index] = map_virtual_real_names[dependency]
-    map_virtual_real_names_reverse[map_virtual_real_names[dependency]] = dependency
+map_virtual_real_names_reverse = {}
+for dependency in map_virtual_real_names.keys():
+    if dependency != map_virtual_real_names[dependency]:
+        print("Replacing virtual package " + dependency + " with real package " + map_virtual_real_names[dependency])
+        dependency_versions[map_virtual_real_names[dependency]] = dependency_versions[dependency]
+        del dependency_versions[dependency]
+        index = dependencies.index(dependency)
+        dependencies[index] = map_virtual_real_names[dependency]
+        map_virtual_real_names_reverse[map_virtual_real_names[dependency]] = dependency
 
 # form the directory name for the build version
-version_base_dir = project+"/"+epoch+"/"+codename+"-"+arch
+version_base_dir = project + "/" + epoch + "/" + codename + "-" + arch
 dependency_dir = version_base_dir
 
 # make dependency versions available in the config
 for dependency in dependencies:
-  if dependency != "":
-    deps_epoch_array = re.findall("^.*"+codename+"[0-9]*\.", dependency_versions[dependency])
-    if(len(deps_epoch_array) != 0):
-      deps_epoch = deps_epoch_array[0][:-1]
-      deps_epoch_split = deps_epoch.split(codename)
-      config["dependency-debversion-"+dependency] = deps_epoch_split[0].replace(".","-")+"-"+codename+deps_epoch_split[1]
-      config["dependency-epochdashversion-"+dependency] = deps_epoch_split[0].replace(".","-")
-      config["dependency-epochversion-"+dependency] = deps_epoch_split[0]
-      # allow to find dependency-debversion also by virtual package name
-      if dependency in map_virtual_real_names_reverse :
-        config["dependency-debversion-"+map_virtual_real_names_reverse[dependency]] = config["dependency-debversion-"+dependency]
-        config["dependency-epochdashversion-"+map_virtual_real_names_reverse[dependency]] = config["dependency-epochdashversion-"+dependency]
-        config["dependency-epochversion-"+map_virtual_real_names_reverse[dependency]] = config["dependency-epochversion-"+dependency]
+    if dependency != "":
+        deps_epoch_array = re.findall("^.*" + codename + "[0-9]*\\.", dependency_versions[dependency])
+        if (len(deps_epoch_array) != 0):
+            deps_epoch = deps_epoch_array[0][:-1]
+            deps_epoch_split = deps_epoch.split(codename)
+            config["dependency-debversion-" +
+                   dependency] = deps_epoch_split[0].replace(".", "-") + "-" + codename + deps_epoch_split[1]
+            config["dependency-epochdashversion-" + dependency] = deps_epoch_split[0].replace(".", "-")
+            config["dependency-epochversion-" + dependency] = deps_epoch_split[0]
+            # allow to find dependency-debversion also by virtual package name
+            if dependency in map_virtual_real_names_reverse:
+                config["dependency-debversion-" + map_virtual_real_names_reverse[dependency]
+                       ] = config["dependency-debversion-" + dependency]
+                config["dependency-epochdashversion-" + map_virtual_real_names_reverse[dependency]
+                       ] = config["dependency-epochdashversion-" + dependency]
+                config["dependency-epochversion-" + map_virtual_real_names_reverse[dependency]
+                       ] = config["dependency-epochversion-" + dependency]
 
 # create list of dependencies with versions
-build_depends=""
+build_depends = ""
 for dependency in dependencies:
-  dependency_dir = dependency_dir+"/"+dependency+"-"+dependency_versions[dependency]
-  build_depends += dependency+" (= "+dependency_versions[dependency]+"), "
+    dependency_dir = dependency_dir + "/" + dependency + "-" + dependency_versions[dependency]
+    build_depends += dependency + " (= " + dependency_versions[dependency] + "), "
 build_depends = build_depends[:-2]
 
-dev_depends=""
+dev_depends = ""
 for dependency in dependencies_dev:
-  if dependency != "":
-    deps_epoch_array = re.findall("^.*"+codename+"[0-9]*\.", dependency_versions[dependency])
-    if(len(deps_epoch_array) == 0):
-      dev_depends += dependency+" (= "+dependency_versions[dependency]+"), "
-    else:
-      deps_epoch = deps_epoch_array[0][:-1]
-      deps_epoch_split = deps_epoch.split(codename)
-      deps_next_epoch = deps_epoch_split[0] + codename + str( int(deps_epoch_split[1])+1 )
-      dev_depends += dependency+" (>= "+deps_epoch+"), " + dependency+" (<< "+deps_next_epoch+"), "
+    if dependency != "":
+        deps_epoch_array = re.findall("^.*" + codename + "[0-9]*\\.", dependency_versions[dependency])
+        if (len(deps_epoch_array) == 0):
+            dev_depends += dependency + " (= " + dependency_versions[dependency] + "), "
+        else:
+            deps_epoch = deps_epoch_array[0][:-1]
+            deps_epoch_split = deps_epoch.split(codename)
+            deps_next_epoch = deps_epoch_split[0] + codename + str(int(deps_epoch_split[1]) + 1)
+            dev_depends += dependency + " (>= " + deps_epoch + "), " + dependency + " (<< " + deps_next_epoch + "), "
 dev_depends = dev_depends[:-2]
 
 # create dependency for dynload with deviceaccess
 dynload_depends = ""
 if "Use-dynload" in config or "dynload" in hasPackages:
-  dynload_deps_epoch_array = re.findall(
-      "^.*"+codename+"[0-9]*\.", dependency_versions["libchimeratk-deviceaccess"])
-  dynload_deps_epoch = dynload_deps_epoch_array[0][:-1]
-  dynload_deps_epoch_split = dynload_deps_epoch.split(codename)
-  dynload_deps_next_epoch = dynload_deps_epoch_split[0] + \
-      codename + str(int(dynload_deps_epoch_split[1])+1)
-  dynload_depends = "libchimeratk-deviceaccess (>= "+dynload_deps_epoch + \
-      "), libchimeratk-deviceaccess (<< "+dynload_deps_next_epoch+")"
-  if "Use-dynload" in config:
-    package = config["Use-dynload"]
-  else:
-    package = "dynload"
-  if config["Dependencies-" + package] == "":
-    config["Dependencies-" + package] = dynload_depends
-  else:
-    config["Dependencies-" + package] += ", " + dynload_depends
-
+    dynload_deps_epoch_array = re.findall(
+        "^.*" + codename + "[0-9]*\\.", dependency_versions["libchimeratk-deviceaccess"])
+    dynload_deps_epoch = dynload_deps_epoch_array[0][:-1]
+    dynload_deps_epoch_split = dynload_deps_epoch.split(codename)
+    dynload_deps_next_epoch = dynload_deps_epoch_split[0] + \
+        codename + str(int(dynload_deps_epoch_split[1]) + 1)
+    dynload_depends = "libchimeratk-deviceaccess (>= " + dynload_deps_epoch + \
+        "), libchimeratk-deviceaccess (<< " + dynload_deps_next_epoch + ")"
+    if "Use-dynload" in config:
+        package = config["Use-dynload"]
+    else:
+        package = "dynload"
+    if config["Dependencies-" + package] == "":
+        config["Dependencies-" + package] = dynload_depends
+    else:
+        config["Dependencies-" + package] += ", " + dynload_depends
 
 
 # determine build number
 print("")
-if not os.path.isfile("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER"):
-  # the package has not yet been built with these dependencies
-  if not os.path.isfile("DebianBuildVersions/"+version_base_dir+"/LAST_BUILD"):
-    print("The package was not yet build in this version for this distribution")
-    build_number = 1
-    # create the dependency directory with the BUILD_NUMBER file in it
-    os.makedirs("DebianBuildVersions/"+dependency_dir)
-    f = open("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER", 'w')
-    f.write(str(build_number))
-    f.close()
-    # create the link file to the last build
-    f = open("DebianBuildVersions/"+version_base_dir+"/LAST_BUILD", 'w')
-    f.write(dependency_dir)
-    f.close()
-  else:
-    print("The package was already built in this version for this distribution with different dependencies")
-    # determine the last build's dependency directory
-    f = open("DebianBuildVersions/"+version_base_dir+"/LAST_BUILD", 'r')
-    last_build = f.readline().rstrip('\n')
-    f.close()
-    # determine the build number of the last build, increment by one
-    f = open("DebianBuildVersions/"+last_build+"/BUILD_NUMBER", 'r')
-    build_number = int(f.readline()) + 1
-    f.close()
-    # create the dependency directory with the BUILD_NUMBER file in it
-    os.makedirs("DebianBuildVersions/"+dependency_dir, exist_ok=True)
-    f = open("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER", 'w')
-    f.write(str(build_number))
-    f.close()
-    # create the link file to the last build
-    f = open("DebianBuildVersions/"+version_base_dir+"/LAST_BUILD", 'w')
-    f.write(dependency_dir)
-    f.close()
+if not os.path.isfile("DebianBuildVersions/" + dependency_dir + "/BUILD_NUMBER"):
+    # the package has not yet been built with these dependencies
+    if not os.path.isfile("DebianBuildVersions/" + version_base_dir + "/LAST_BUILD"):
+        print("The package was not yet build in this version for this distribution")
+        build_number = 1
+        # create the dependency directory with the BUILD_NUMBER file in it
+        os.makedirs("DebianBuildVersions/" + dependency_dir)
+        f = open("DebianBuildVersions/" + dependency_dir + "/BUILD_NUMBER", 'w')
+        f.write(str(build_number))
+        f.close()
+        # create the link file to the last build
+        f = open("DebianBuildVersions/" + version_base_dir + "/LAST_BUILD", 'w')
+        f.write(dependency_dir)
+        f.close()
+    else:
+        print("The package was already built in this version for this distribution with different dependencies")
+        # determine the last build's dependency directory
+        f = open("DebianBuildVersions/" + version_base_dir + "/LAST_BUILD", 'r')
+        last_build = f.readline().rstrip('\n')
+        f.close()
+        # determine the build number of the last build, increment by one
+        f = open("DebianBuildVersions/" + last_build + "/BUILD_NUMBER", 'r')
+        build_number = int(f.readline()) + 1
+        f.close()
+        # create the dependency directory with the BUILD_NUMBER file in it
+        os.makedirs("DebianBuildVersions/" + dependency_dir, exist_ok=True)
+        f = open("DebianBuildVersions/" + dependency_dir + "/BUILD_NUMBER", 'w')
+        f.write(str(build_number))
+        f.close()
+        # create the link file to the last build
+        f = open("DebianBuildVersions/" + version_base_dir + "/LAST_BUILD", 'w')
+        f.write(dependency_dir)
+        f.close()
 else:
-  print("The package was already built in this version for this distribution with the same dependencies")
-  # just read the build number from the dependency directory
-  f = open("DebianBuildVersions/"+dependency_dir+"/BUILD_NUMBER", 'r')
-  build_number = int(f.readline())
-  f.close()
+    print("The package was already built in this version for this distribution with the same dependencies")
+    # just read the build number from the dependency directory
+    f = open("DebianBuildVersions/" + dependency_dir + "/BUILD_NUMBER", 'r')
+    build_number = int(f.readline())
+    f.close()
 
-print("Build number: "+str(build_number))
+print("Build number: " + str(build_number))
 
 # Set build version depending config variables
-config["buildversion"] = codename+str(build_number)
-config["soversion"] = epoch+config["buildversion"]+"."+patchlevel
+config["buildversion"] = codename + str(build_number)
+config["soversion"] = epoch + config["buildversion"] + "." + patchlevel
 if config["package-name-contains-buildversion"] == "1":
-  config["debversion"] = epoch.replace(".","-")+"-"+config["buildversion"]
+    config["debversion"] = epoch.replace(".", "-") + "-" + config["buildversion"]
 else:
-  config["debversion"] = epoch.replace(".","-")
+    config["debversion"] = epoch.replace(".", "-")
 config["package-version"] = config["soversion"]
 config["build-depends"] = build_depends
 config["dev-depends"] = dev_depends
-if not "Package-name-lib" in config:
-  config["Package-name-lib"] = config["package-basename"]+config["debversion"]
-if not "Package-name-dynload" in config:
-  config["Package-name-dynload"] = config["package-basename"]
-if not "Package-name-bin" in config:
-  config["Package-name-bin"] = config["package-basename"]+config["debversion"]
+if "Package-name-lib" not in config:
+    config["Package-name-lib"] = config["package-basename"] + config["debversion"]
+if "Package-name-dynload" not in config:
+    config["Package-name-dynload"] = config["package-basename"]
+if "Package-name-bin" not in config:
+    config["Package-name-bin"] = config["package-basename"] + config["debversion"]
 
 # check if Debian packages which will built are already in the Debian repositories in the same version or newer version
 askIfContinue = False
 for package in hasPackages:
-  currentVersion = getPackageVersion(config["Package-name-"+package], "Packages.DESY")
+    currentVersion = getPackageVersion(config["Package-name-" + package], "Packages.DESY")
 
-  # same version: disallow publication
-  if(currentVersion == config["package-version"]):
-    askIfContinue = True
+    # same version: disallow publication
+    if (currentVersion == config["package-version"]):
+        askIfContinue = True
 
-    # print warning
-    print("*** WARNING ***")
-    print("You are building a package, which is already in the Debian repository in the same version. Publication will not be allowed!")
-    print(" Package name: "+config["Package-name-"+package])
-    print(" Version: "+currentVersion)
+        # print warning
+        print("*** WARNING ***")
+        print("You are building a package, which is already in the Debian repository in the same version. Publication will not be allowed!")
+        print(" Package name: " + config["Package-name-" + package])
+        print(" Version: " + currentVersion)
 
-    # set flag in master-control file that publication is not allowed
-    with open('master-control', 'a') as f:
-      f.write('do_not_publish=1\n')
+        # set flag in master-control file that publication is not allowed
+        with open('master-control', 'a') as f:
+            f.write('do_not_publish=1\n')
 
-  # check if newer source version present in repository
-  if(currentVersion != "none"):
-    currentVersionNoBuildVersion = re.sub(r"" + codename + "[0-9]+", "", currentVersion) # removes our build version suffix on the minor
-    currentVersionNoBuildVersion = re.sub(r"-.*", "", currentVersionNoBuildVersion) # remove the 'official' build version which we always set to '-0'
-    [ currentMajor, currentMinor, currentPatch ] = currentVersionNoBuildVersion.split('.',2)
-    newVersionNoBuildVersion = re.sub(r"" + codename + "[0-9]+", "", config["package-version"])
-    [ newMajor, newMinor, newPatch ] = newVersionNoBuildVersion.split('.')
-    if(    (newMajor < currentMajor)
-        or (newMajor == currentMajor and newMinor < currentMinor)
-        or (newMajor == currentMajor and newMinor == currentMinor and newPatch < currentPatch) ):
-      askIfContinue = True
+    # check if newer source version present in repository
+    if (currentVersion != "none"):
+        # removes our build version suffix on the minor
+        currentVersionNoBuildVersion = re.sub(r"" + codename + "[0-9]+", "", currentVersion)
+        # remove the 'official' build version which we always set to '-0'
+        currentVersionNoBuildVersion = re.sub(r"-.*", "", currentVersionNoBuildVersion)
+        [currentMajor, currentMinor, currentPatch] = currentVersionNoBuildVersion.split('.', 2)
+        newVersionNoBuildVersion = re.sub(r"" + codename + "[0-9]+", "", config["package-version"])
+        [newMajor, newMinor, newPatch] = newVersionNoBuildVersion.split('.')
+        if ((newMajor < currentMajor)
+           or (newMajor == currentMajor and newMinor < currentMinor)
+           or (newMajor == currentMajor and newMinor == currentMinor and newPatch < currentPatch)):
+            askIfContinue = True
 
-      # print warning
-      print("*** WARNING ***")
-      print("You are building source-code version " + newVersionNoBuildVersion + " of the sub-package "+package+
-            ", but the newer version " + currentVersionNoBuildVersion + " is already in the Debian repositories!")
+            # print warning
+            print("*** WARNING ***")
+            print(
+                "You are building source-code version " +
+                newVersionNoBuildVersion +
+                " of the sub-package " +
+                package +
+                ", but the newer version " +
+                currentVersionNoBuildVersion +
+                " is already in the Debian repositories!")
 
 # ask whether to continue, if version problem detected
 if askIfContinue:
-  print("Do you want to continue (y/N)? ", end="")
-  sys.stdout.flush()
-  userinput = sys.stdin.readline().rstrip()
-  if(userinput != 'y'):
-    print("Aborted.")
-    exit(1)
+    print("Do you want to continue (y/N)? ", end="")
+    sys.stdout.flush()
+    userinput = sys.stdin.readline().rstrip()
+    if (userinput != 'y'):
+        print("Aborted.")
+        exit(1)
 
 # create directory holding the debian control files
-controldir="DebianBuildVersions/"+version_base_dir+"/"+str(build_number)
+controldir = "DebianBuildVersions/" + version_base_dir + "/" + str(build_number)
 if not os.path.isdir(controldir):
-  os.makedirs(controldir)
-if not os.path.isdir(controldir+"/source"):
-  os.makedirs(controldir+"/source")
+    os.makedirs(controldir)
+if not os.path.isdir(controldir + "/source"):
+    os.makedirs(controldir + "/source")
 
 # list of files to be processed (static part)
-filelist = [ "makeDebianPackage.config", "compat", "rules", "detect_libdir.sh", "source/format", "control.src" ]
+filelist = ["makeDebianPackage.config", "compat", "rules", "detect_libdir.sh", "source/format", "control.src"]
 
 # List of files to be processed for each package
 # If there is a single package only, no install file is needed and everything gets included in the package. Otherwise
 # specific install files for each package are used.
 for package in hasPackages:
-  filelist.append("control."+package.strip())
+    filelist.append("control." + package.strip())
 if len(hasPackages) > 1:
-  for package in hasPackages:
-    filelist.append("package-"+package.strip()+".install")
+    for package in hasPackages:
+        filelist.append("package-" + package.strip() + ".install")
 
 # copyright file (only if not provided by the package)
-if not os.path.isfile("DebianBuildVersions/"+project+"/copyright"):
-  filelist.append("copyright."+config["License"])
+if not os.path.isfile("DebianBuildVersions/" + project + "/copyright"):
+    filelist.append("copyright." + config["License"])
 
 # if we have a lib package, add the shlib file
 if "lib" in hasPackages:
-  filelist.append("package-lib.shlib")
+    filelist.append("package-lib.shlib")
 
 if "dkms" in hasPackages:
-  filelist.append("dkms")
+    filelist.append("dkms")
 
 # resolve variables inside the values of the variables
 for var1 in config.keys():
-  for var2 in config.keys():
-    config[var1] = config[var1].replace("#"+var2+"#", config[var2])
-    config[var1] = config[var1].replace("#newline#", '\n')
+    for var2 in config.keys():
+        config[var1] = config[var1].replace("#" + var2 + "#", config[var2])
+        config[var1] = config[var1].replace("#newline#", '\n')
 
 
 # output the config dicitionary to a file in the control dir for debugging purposes
-f = open(controldir+"/config_dictionary","w")
+f = open(controldir + "/config_dictionary", "w")
 f.write(str(config))
 f.close()
 
 
 # replace config variables in files
 for filna in filelist:
-  # read file into string
-  content = replace_config_variables("templates/"+filna)
-  # write out the resulting file
-  f = open(controldir+"/"+filna,"w")
-  f.write(content)
-  f.close()
+    # read file into string
+    content = replace_config_variables("templates/" + filna)
+    # write out the resulting file
+    f = open(controldir + "/" + filna, "w")
+    f.write(content)
+    f.close()
 
 # create the merged control file and remove the parts
-content = open(controldir+"/control.src").read()
+content = open(controldir + "/control.src").read()
 for package in hasPackages:
-  content += open(controldir+"/control."+package).read()
-f = open(controldir+"/control","w")
+    content += open(controldir + "/control." + package).read()
+f = open(controldir + "/control", "w")
 f.write(content)
 f.close()
-subprocess.call(["rm "+controldir+"/control.*"], shell=True)
+subprocess.call(["rm " + controldir + "/control.*"], shell=True)
 
 # add override parts to the rules file, if needed
-content = replace_config_variables(controldir+"/rules")
+content = replace_config_variables(controldir + "/rules")
 if "Disable-tests" in config and config["Disable-tests"] == "yes":
-  # disable the tests?
-  content += open("templates/rules.notests").read()
+    # disable the tests?
+    content += open("templates/rules.notests").read()
 else:
-  # tests not disabled: don't run them in parallel
-  content += open("templates/rules.tests").read()
+    # tests not disabled: don't run them in parallel
+    content += open("templates/rules.tests").read()
 
 if "dkms" in hasPackages:
-  content += replace_config_variables("templates/rules.dkms")
-  
-f = open(controldir+"/rules","w")
+    content += replace_config_variables("templates/rules.dkms")
+
+f = open(controldir + "/rules", "w")
 f.write(content)
 f.close()
 
 # extend the rules file to include override_dh_auto_configure if
 # applicable. (as in case of doocs packages)
-if(config["Override-auto-configure-flags"] !=  ""):
-  content = open(controldir+"/rules").read()
-  content += replace_config_variables("templates/rules.override")
-  f = open(controldir+"/rules","w")
-  f.write(content)
-  f.close()
+if (config["Override-auto-configure-flags"] != ""):
+    content = open(controldir + "/rules").read()
+    content += replace_config_variables("templates/rules.override")
+    f = open(controldir + "/rules", "w")
+    f.write(content)
+    f.close()
 
 # rename files which need a different name
-if os.path.isfile("DebianBuildVersions/"+project+"/copyright"):
-  shutil.copy("DebianBuildVersions/"+project+"/copyright", controldir+"/copyright");
+if os.path.isfile("DebianBuildVersions/" + project + "/copyright"):
+    shutil.copy("DebianBuildVersions/" + project + "/copyright", controldir + "/copyright")
 else:
-  os.rename(controldir+"/copyright."+config["License"], controldir+"/copyright")
+    os.rename(controldir + "/copyright." + config["License"], controldir + "/copyright")
 
 if len(hasPackages) > 1:
-  for package in hasPackages:
-    os.rename(controldir+"/package-"+package+".install", controldir+"/"+config["Package-name-"+package]+".install")
+    for package in hasPackages:
+        os.rename(controldir + "/package-" + package + ".install",
+                  controldir + "/" + config["Package-name-" + package] + ".install")
 if "lib" in hasPackages:
-  os.rename(controldir+"/package-lib.shlib",   controldir+"/"+config["Package-name-lib"]+".shlib")
+    os.rename(controldir + "/package-lib.shlib", controldir + "/" + config["Package-name-lib"] + ".shlib")
 
 # make rules file executable
-subprocess.call(["chmod", "+x", controldir+"/rules"])
-subprocess.call(["chmod", "+x", controldir+"/detect_libdir.sh"])
+subprocess.call(["chmod", "+x", controldir + "/rules"])
+subprocess.call(["chmod", "+x", controldir + "/detect_libdir.sh"])
 
 # copy preinst, postinst, prerm and postrm scripts if existent
-if os.path.isfile("DebianBuildVersions/"+project+"/preinst"):
-  # read file into string
-  content = replace_config_variables("DebianBuildVersions/"+project+"/preinst")
-  # write out the resulting file
-  f = open(controldir+"/preinst","w")
-  f.write(content)
-  f.close()
-if os.path.isfile("DebianBuildVersions/"+project+"/postinst"):
-  # read file into string
-  content = replace_config_variables("DebianBuildVersions/"+project+"/postinst")
-  # write out the resulting file
-  f = open(controldir+"/postinst","w")
-  f.write(content)
-  f.close()
-if os.path.isfile("DebianBuildVersions/"+project+"/prerm"):
-  # read file into string
-  content = replace_config_variables("DebianBuildVersions/"+project+"/prerm")
-  # write out the resulting file
-  f = open(controldir+"/prerm","w")
-  f.write(content)
-  f.close()
-if os.path.isfile("DebianBuildVersions/"+project+"/postrm"):
-  # read file into string
-  content = replace_config_variables("DebianBuildVersions/"+project+"/postrm")
-  # write out the resulting file
-  f = open(controldir+"/postrm","w")
-  f.write(content)
-  f.close()
+if os.path.isfile("DebianBuildVersions/" + project + "/preinst"):
+    # read file into string
+    content = replace_config_variables("DebianBuildVersions/" + project + "/preinst")
+    # write out the resulting file
+    f = open(controldir + "/preinst", "w")
+    f.write(content)
+    f.close()
+if os.path.isfile("DebianBuildVersions/" + project + "/postinst"):
+    # read file into string
+    content = replace_config_variables("DebianBuildVersions/" + project + "/postinst")
+    # write out the resulting file
+    f = open(controldir + "/postinst", "w")
+    f.write(content)
+    f.close()
+if os.path.isfile("DebianBuildVersions/" + project + "/prerm"):
+    # read file into string
+    content = replace_config_variables("DebianBuildVersions/" + project + "/prerm")
+    # write out the resulting file
+    f = open(controldir + "/prerm", "w")
+    f.write(content)
+    f.close()
+if os.path.isfile("DebianBuildVersions/" + project + "/postrm"):
+    # read file into string
+    content = replace_config_variables("DebianBuildVersions/" + project + "/postrm")
+    # write out the resulting file
+    f = open(controldir + "/postrm", "w")
+    f.write(content)
+    f.close()
 
 # output the command to build the package
 print("")
 print("To build the package, run the following command:")
 if use_preseed:
-    print("./makeDebianPackage --preseed "+controldir)
+    print("./makeDebianPackage --preseed " + controldir)
 else:
-    print("./makeDebianPackage "+controldir)
+    print("./makeDebianPackage " + controldir)
