@@ -38,7 +38,7 @@ for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the 
 
   # get the path to the control file from the build command (argument to makeDebianPackage)
   BUILD_CONTROL_FILE=`echo ${package_buildcmd[$package]} | sed -e "s|^./makeDebianPackage.*Debian|${WD}/Debian|"`/control
-  
+
   # obtain list of package names from the control file and form wildcards to match the deb files
   PACKAGE_FILES_WILDCARDS_DEB=$(awk 'BEGIN{ORS=" "} /^Package:/{print $2"_*.deb"}' ${BUILD_CONTROL_FILE})
 
@@ -62,7 +62,7 @@ for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the 
 
   # merge the wildcards
   PACKAGE_FILES_WILDCARDS="${PACKAGE_FILES_WILDCARDS_DEB} ${PACKAGE_FILES_WILDCARDS_CHANGES} ${PACKAGE_FILES_WILDCARDS_DBGSYM}"
-  
+
 
   # obtain content of Target-repositories variable from CONFIG file
   TARGET_REPOSITORIES=`grep '^Target-repositories: ' ${WD}/DebianBuildVersions/${package}/CONFIG | sed -e 's/^Target-repositories: //'`
@@ -109,7 +109,6 @@ for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the 
 
   # Step 2: Copy the files to the package archive
   scp ${PACKAGE_FILES_WILDCARDS} ${InstallHost}:${PackageArchive}
-
   # Step 3: Install to the repository
   for REPO in ${TARGET_REPOSITORIES}; do
       PUBLISH_FILES_WILDCARDS="${PACKAGE_FILES_WILDCARDS_DEB} ${PACKAGE_FILES_WILDCARDS_DBGSYM}"
@@ -119,13 +118,14 @@ for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the 
               ${PackageArchive}/${FILE}
      done
   done
-  
+
   # Remove just installed files from the local pbuilder-result directory
   rm ${PACKAGE_FILES_WILDCARDS}
-  
+
 done
 
 # Everything installed: remove the entire pbuilder-result directory
 cd ${WD}
 rm -rf pbuilder-result master-control debian_package
 
+echo "The packages have been published successfully."
