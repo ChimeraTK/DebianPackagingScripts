@@ -16,7 +16,7 @@ import tempfile
 import shutil
 import re
 import datetime
-debianCodenames = ['jessie', 'buster', 'stretch', 'bullseye']
+debianCodenames = ['jessie', 'buster', 'stretch', 'bullseye', 'bookworm']
 
 
 # Regular expression used in parseVersion. The native packaging.version.parse() does not accept some of the usual Debian
