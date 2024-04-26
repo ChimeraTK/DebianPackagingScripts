@@ -236,11 +236,12 @@ for package in "${!package_list[@]}"; do
   # Let 'set -e' check if 'findReverseDependencies' fails; don't care about the rest of the pipeline
   # (Cannot use 'set -o pipefail', as that would break other stuff in this script)
   DEPENDENCIES_RESULT=$(./findReverseDependencies lib${package}-dev $distribution $DebianRepository $arch)
-  echo "${DEPENDENCIES_RESULT}" | grep "^lib" | grep -- "-dev " | sed -e 's/^lib//' -e 's/-dev / /' > $TEMPFILE
+  echo "${DEPENDENCIES_RESULT}" | grep "^lib" | grep -- "-dev " | sed -e 's/^lib//' -e 's/-dev / /' -e '/^[[:space:]]*$/d' > $TEMPFILE
   # DeviceAccess is special case: also build all packages depending on 'libchimeratk-deviceaccess', not just libs but also e.g qthardmon
   if [ ${package} = "chimeratk-deviceaccess" ]; then
+    echo "./findReverseDependencies lib${package}$ $distribution $DebianRepository $arch"
     DEPENDENCIES_RESULT2=$(./findReverseDependencies lib${package}$ $distribution $DebianRepository $arch)
-    echo "${DEPENDENCIES_RESULT2}" | grep -v -- "-dbgsym " | sed -e 's/^lib//' -e 's/-dev / /' >> $TEMPFILE
+    echo "${DEPENDENCIES_RESULT2}" | grep -v -- "-dbgsym " | sed -e 's/^lib//' -e 's/-dev / /' -e '/^[[:space:]]*$/d' >> $TEMPFILE
   fi
   readarray revdeps_with_versions < $TEMPFILE
   rm -f $TEMPFILE
