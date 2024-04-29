@@ -1,0 +1,3 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS=optimize=-lto
