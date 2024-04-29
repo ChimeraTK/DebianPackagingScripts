@@ -16,7 +16,7 @@ import tempfile
 import shutil
 import re
 import datetime
-debianCodenames = ['jessie', 'buster', 'stretch', 'bullseye']
+debianCodenames = ['jessie', 'buster', 'stretch', 'bullseye', 'bookworm']
 
 
 # Regular expression used in parseVersion. The native packaging.version.parse() does not accept some of the usual Debian
@@ -101,18 +101,14 @@ def resolveDeps(dependencies, filename):
                         dependency_versions[dependency] = PackageAsDictionary["Version"]
                         map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
                 elif dependency in [name.strip().split(' ')[0] for name in PackageAsDictionary["Provides"].split(',')]:
-                    print(
-                        'NOTE: Dependency "' +
-                        dependency +
-                        '" found as virtual package provided by "' +
-                        PackageAsDictionary["Package"] +
-                        '", but the Provides statement has a version number. This is currently unsupported by the configureRelease ' +
-                        'script, hence this package is ignored. Check source code for more details.')
-                    # This could be implemented by using the version number from the Provides statement for selecting the latest package
-                    # providing the dependency. Since there is no use case at the time of
-                    # writing this is not yet implemented.
+                    version_re = dependency + r'[^,]*\(=\s*([^)]*)\)'
+                    provided_version = re.search(version_re, PackageAsDictionary["Provides"]).groups()[0]
+                    if dependency not in dependency_versions.keys() or parseVersion(provided_version) > parseVersion(
+                            dependency_versions[dependency]):
+                        dependency_versions[dependency] = version
+                        map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
 
-    return (dependency_versions, map_virtual_to_real)
+    return dependency_versions, map_virtual_to_real
 
 # get package version from a Packages file, or "none" if package not found
 
