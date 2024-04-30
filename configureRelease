@@ -814,7 +814,11 @@ f.close()
 subprocess.call(["rm " + controldir + "/control.*"], shell=True)
 
 # add override parts to the rules file, if needed
-content = replace_config_variables(controldir + "/rules")
+content = ""
+if "Disable-lto" in config and config["Disable-lto"] == "yes":
+    content += open("templates/rules.nolto").read()
+content += replace_config_variables(controldir + "/rules")
+
 if "Disable-tests" in config and config["Disable-tests"] == "yes":
     # disable the tests?
     content += open("templates/rules.notests").read()
