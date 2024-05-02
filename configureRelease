@@ -426,6 +426,11 @@ else:
 if "Use-dynload" in config or "dynload" in hasPackages:
     dependencies.append("libchimeratk-deviceaccess")
 
+# DKMS support was moved to an external package for Ubuntu versions later.
+# FIXME: Move to CONFIG once we do not have to support older versions any longer
+if "dkms" in hasPackages and codename in ["bookworm", "trixie", "lunar", "mantic", "noble"]:
+    dependencies.append("dh-dkms")
+
 print("Searching for dependencies...")
 
 if codename in debianCodenames:
