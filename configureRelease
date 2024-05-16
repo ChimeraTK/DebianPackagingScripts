@@ -426,6 +426,11 @@ else:
 if "Use-dynload" in config or "dynload" in hasPackages:
     dependencies.append("libchimeratk-deviceaccess")
 
+# DKMS support was moved to an external package for Ubuntu versions later than focal or Debian after
+# bullseye.
+if "dkms" in hasPackages and codename not in ['jessie', 'buster', 'stretch', 'bullseye', 'bionic', 'focal']:
+    dependencies.append("dh-dkms")
+
 print("Searching for dependencies...")
 
 if codename in debianCodenames:
