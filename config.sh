@@ -42,10 +42,12 @@ DEBIANREPOSITORY="${DebianRepository}"
 
 # List of mirrors / package repositories used inside the pbuilder environment by apt
 MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${distribution} main|deb [trusted=yes] ${DEBIANREPOSITORY}/pub/doocs ${distribution} main|deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-updates main universe|deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-security main universe"
+MIRROR="http://de.archive.ubuntu.com/ubuntu"
 ADDITIONALREPO="universe"
-if [ "${distribution}" == "buster" ] || [ "${distribution}" == "stretch"  ]; then
+if [ "${distribution}" == "buster" ] || [ "${distribution}" == "stretch"  ] || [ "${distribution}" == "bullseye" ] || [ "${distribution}" == "bookworm" ]; then
 	MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${distribution} main|deb [trusted=yes] ${DEBIANREPOSITORY}/pub/doocs ${distribution} main|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution}-backports main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution} main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian-security ${distribution}/updates main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution}-updates main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/extra/desy ${distribution} desy|deb [trusted=yes] ${DesyNimsRepo}/extra/hasylab.debian ${distribution} main non-free contrib"
 	ADDITIONALREPO="contrib"
+    MIRROR="http://ftp.de.debian.org/debian"
 fi
 
 # This list is used when the pbuilder image is build the first time. 
