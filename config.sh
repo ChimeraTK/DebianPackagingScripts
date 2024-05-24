@@ -45,7 +45,7 @@ MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${distribution} main|deb [tr
 MIRROR="http://de.archive.ubuntu.com/ubuntu"
 ADDITIONALREPO="universe"
 if [ "${distribution}" == "buster" ] || [ "${distribution}" == "stretch"  ] || [ "${distribution}" == "bullseye" ] || [ "${distribution}" == "bookworm" ]; then
-	MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${distribution} main|deb [trusted=yes] ${DEBIANREPOSITORY}/pub/doocs ${distribution} main|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution}-backports main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution} main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian-security ${distribution}/updates main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution}-updates main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/extra/desy ${distribution} desy|deb [trusted=yes] ${DesyNimsRepo}/extra/hasylab.debian ${distribution} main non-free contrib"
+	MIRRORLIST="deb [trusted=yes] file://${LOCAL_REPOS} ${distribution} main|deb [trusted=yes] ${DEBIANREPOSITORY}/pub/doocs ${distribution} main|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution}-backports main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution} main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian-security ${distribution}-security/updates main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/debian ${distribution}-updates main contrib non-free|deb [trusted=yes] ${DesyNimsRepo}/extra/desy ${distribution} desy|deb [trusted=yes] ${DesyNimsRepo}/extra/hasylab.debian ${distribution} main non-free contrib"
 	ADDITIONALREPO="contrib"
     MIRROR="http://ftp.de.debian.org/debian"
 fi
