@@ -8,6 +8,6 @@ Recommends: #Recommends-dev#
 Suggests: #Suggests-dev#
 Enhances: #Enhances-dev#
 Provides: #Provides-dev#
-Depends: #package-basename#, #dev-depends#
+Depends: #package-basename# (= #package-version#), #dev-depends#
 Description: #Description-dev#
 
