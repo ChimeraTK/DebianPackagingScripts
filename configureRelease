@@ -235,6 +235,7 @@ config["Provides-doc"] = ""
 config["Override-auto-configure-flags"] = ""
 
 config["Dh-extra-args"] = ""
+config["Dkms-override-conf"] = ""
 
 
 def replace_config_variables(filename):
@@ -784,7 +785,7 @@ if not os.path.isfile("DebianBuildVersions/" + project + "/copyright"):
 if "lib" in hasPackages:
     filelist.append("package-lib.shlib")
 
-if "dkms" in hasPackages:
+if "dkms" in hasPackages and config["Dkms-override-conf"] == "":
     filelist.append("dkms")
 
 # resolve variables inside the values of the variables
@@ -832,7 +833,10 @@ else:
     content += open("templates/rules.tests").read()
 
 if "dkms" in hasPackages:
-    content += replace_config_variables("templates/rules.dkms")
+    if config["Dkms-override-conf"] != "":
+        content += replace_config_variables("templates/rules.dkms.override")
+    else:
+        content += replace_config_variables("templates/rules.dkms")
 
 f = open(controldir + "/rules", "w")
 f.write(content)
