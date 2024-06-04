@@ -341,7 +341,7 @@ if "Package-name-python" not in config:
 
 # Fixme: For newer debian/ubuntu versions one can simply depend on dh-sequence-dkms
 if "dkms" in hasPackages:
-    config["Dh-extra-args"] = '--with dkms'
+    config["Dh-extra-args"] += ' --with dkms'
 
 config["current-year"] = str(datetime.datetime.now().year)
 
