@@ -264,8 +264,16 @@ if not os.path.isfile("DebianBuildVersions/" + project + "/CONFIG"):
 # read config file
 configfile = open("DebianBuildVersions/" + project + "/CONFIG", 'r').read().splitlines()
 line_counter = 0
+is_in_multiline_value = False
 for line in configfile:
     line_counter = line_counter + 1
+    if is_in_multiline_value :
+        if line == multiline_terminator:
+            is_in_multiline_value = False
+            continue
+        else :
+            config[key] += line + "\n"
+            continue
     if line.strip() == "" or line.strip()[0:1] == "#":
         continue
     try:
@@ -278,6 +286,11 @@ for line in configfile:
         print("Error parsing file 'DebianBuildVersions/" + project + "/CONFIG' in line " +
               str(line_counter) + ". Variable names must contain only alpha-numeric characters.")
         sys.exit(1)
+    if value.strip().startswith("<<<") :
+        is_in_multiline_value = True
+        multiline_terminator = value.strip()[3:]
+        config[key] = ""
+        continue
     config[key] = value.strip()
 
 
