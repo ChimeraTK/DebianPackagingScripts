@@ -108,6 +108,10 @@ fi
 export PRESEED_REPOS
 export DISTRIBUTION
 
+bash <<EOF
+${PRE_PDEBUILD_HOOK}
+EOF
+
 LOGFILE="${LOGDIR}/pdebuild.${PACKAGE_BASENAME}.log"
 time pdebuild --debbuildopts -j${N_PBUILDER_THREADS} -- --distribution ${DISTRIBUTION}     \
               --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"     \
@@ -121,4 +125,3 @@ fi
 
 echo ""
 echo "You can find the resulting debian packages in this directory: ${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"
-
