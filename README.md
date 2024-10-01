@@ -11,17 +11,20 @@ The debian packaging scripts resolve the reverse dependencies and recursively de
 The scripts also automatically determine the build number and count it up if a package is built with new dependencies.
 
 The packages are published to the repositories on `doocs.desy.de` and `doocspkgs.desy.de`; the repository urls are as below:
+
 ```
-http://doocs.desy.de/pub/doocs 
+http://doocs.desy.de/pub/doocs
 http://doocspkgs.desy.de/pub/doocs
 ```
 
 ### Dependencies
 
 To work, the script requries:
+
 ```
 sudo apt install pbuilder dh-make python-debian debhelper
 ```
+
 ### Recommendations
 
 #### Linux Distribution
@@ -29,7 +32,9 @@ sudo apt install pbuilder dh-make python-debian debhelper
 It is recommended to run this script on a standard Ubuntu installation. Non-standard distributions (such as the "yellow Linux" used on some DESY PCs) may break `pbuilder` / `debootstrap` by using apt sources / GPG keys different from the original.
 
 #### Kerberos
+
 Get valid kerberos tickets to `doocs.desy.de` and `doocspkgs.desy.de` before running the script. This avoids consecutive password prompts during the publishing step. The sequential password prompts give an impression of entered passwords being rejected and needing reentry (besides being inconvenient). Having a valid kerberos ticket sidesteps this issue. For a kerberos ticket:
+
 ```
 kinit <user_name>@DESY.DE
 ```
@@ -39,16 +44,17 @@ kinit <user_name>@DESY.DE
 Set the environment variable N_PBUILDER_THREADS to allow pbuilder to use more than one core.
 
 ```
-$ export N_PBUILDER_THREADS=5
+export N_PBUILDER_THREADS=5
 ```
+
 ## Usage
 
 Run the master script with the distribution you want to build for, and the (debian) package name and the version you want to build for.
 
 Currently available and tested Ubuntu releases are
 
-* `xenial` = Ubuntu 16.04
 * `focal` = Ubuntu 20.04
+* `noble` = Ubuntu 24.04
 
 The system uses pbuilder, which allows you to build packages also for other Ubuntu releases. Currently, the host system has to be Ubuntu 18.04 or newer, if you want to build for focal. You need root privileges to run pbuilder and you need write permissions to the ChimeraTK DebianBuildVersions repository and the doocspkgs host.
 
@@ -57,6 +63,7 @@ Syntax:
 ```
 ./master <distribution_codename> <package_name1> <package_version1> [<package_name2> <package_version2>] [...]
 ```
+
 Example:
 You want to build version 00.16.00 of the DeviceAccess library (debian package base name mtca4u-deviceaccess),
 and also recompile the QtHardMon application in version 00.17.07  against this new DeviceAccess version for
@@ -74,8 +81,9 @@ doocsllrfwrapper 00.06.01
 mtca4u-virtuallab 00.04.01
 beam-arrival-time-monitor 01.01.00
 
-Do you want to proceed with configuring and building the packages in the given versions (y/N)? 
+Do you want to proceed with configuring and building the packages in the given versions (y/N)?
 ```
+
 The script will not only build those two packages but also all other libraries which have development packages that depend on the DeviceAccess library. Note that it will not update any applications automatically. If you wanted also the ChimeraTK command line tools to be recompiled with the new DeviceAccess version, you would have to specify this in the call to the master script.
 
 **Overriding the default configuration**
@@ -95,7 +103,7 @@ The `master` script has to be called with the parameter `--preseed` for the pack
 
 ### DKMS
 
-It is possible to use the debian packaging scripts to build DKMS packages. To do that, the Makefile in the kernel module must provide a 
+It is possible to use the debian packaging scripts to build DKMS packages. To do that, the Makefile in the kernel module must provide a
 `packaging_install` target. The Makefile will have the four variables `PACKAGING_INSTALL`, `DESTDIR`, `DKMS_PKG_NAME` and `DKMS_PKG_VERSION` set.
 
 You can use `PACKAGING_INSTALL` to provide different install targets depending on whether it is called inside packaging or not, for example
@@ -116,6 +124,7 @@ packaging_install:
 ```
 
 ### Additional tweaks
+
 During package development, it might be that you have a high turn-around in calling the master script. To accommodate this, it is possible to skip or speed up certain parts of the process:
 
 #### Skipping the initial pbuilder update
@@ -127,6 +136,7 @@ If you do not want the pbuilder to be updated on script start, you can use the e
 The script tries to help you with not accidentally forgetting any changes you made to the Debian package lists or configs. Again, with a high turn-around of `master` calls, this might be a bit hindering.
 
 Setting the `AUTOCLEAN` environment variable will:
+
 * remove any intermediate data that was left from a previous build
 * reset the DebianBuildVersions directory
 
@@ -136,7 +146,6 @@ To build against DOOCS 20.10, on focal with amd64 as the CPU architecture, the r
 `dev-doocs-libgul14_20.10.1-focal1_amd64.deb`. Those have to be put into `preseed/dists/focal/main/binary-amd64`, the scripts will take care of the rest.
 
 To build, run `master --preseed focal doocs-legacy-server 01.00.03`
-
 
 **FIXME**
 
@@ -151,6 +160,28 @@ in DebianBuildVersions
 
 Normally, the scripts will rebuild all reverse-dependencies of library dev packages, because those packages would be broken otherwise when a library package is released, due to the exact version dependency. If one of those reverse-dependencies is broken and cannot be built, the entire tree cannot be rebuilt until this is fixed. In case of emergencies, the script hence allows to blacklist packages to prevent them from being built. For this purpose, just create a file named `blacklist` containing one package name per line (without version). Blacklisted packages which are skipped are still shown (marked as blacklisted) when listing all packages to be built, to raise awareness that these packages will be broken after the new packages are published.
 
+## CONFIG file syntax
+
+Each project needs a file called CONFIG in the project's subdirectory inside the DebianBuildVersions repository. This file describes how the packages are built.
+
+TODO: Add documentation!
+
+### Multi-line values
+
+Variables can be set to a value containing newlines by using a `heredoc` syntax as follows:
+
+```
+variable-name: <<<EOF
+some text
+which has multiple lines
+EOF
+```
+
+The terminator token `EOF` is arbitrary, any string can be used as long as it is the same in both occurrences.
+
+### Pre-pdebuild hook
+
+The variable `additional-bind-mounts` can optionally be set to a one or more bash commands which are being executed right before the actual Debian package building is started (i.e. the `pdebuild` command is run by the `makeDebianPackage` script). The commands are launched in a sub-shell by piping them to bash as stdin. Multi-line shell scripts are supported as well (see Section "Multi-line values" above).
 
 ## DOOCS and other dependencies
 
@@ -181,4 +212,3 @@ Do you want to proceed with configuring and building the packages in the given v
 ```
 
 The package `dev-doocswrappers` is a reverse depenency of DOOCS, but it cannot be built using the ChimeraTK packaging scripts. This package would have to be updated manually (if it wasn't an obsolete, leftover library).
-
