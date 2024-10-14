@@ -1,0 +1,13 @@
+#!/bin/bash
+echo "==================> Running $0"
+if [ -n "$PRESEED_REPOS" ] ; then
+    echo ">>>>>>>>> $PRESEED_REPOS <<<< success!!"
+    echo "deb [trusted=yes] file://$PRESEED_REPOS ${DISTRIBUTION} main " > /etc/apt/sources.list.d/preseed.list
+    apt-get update
+else
+    echo ">>>>>>>>> No preseeding requested!!"
+    if [ -f /etc/apt/sources.list.d/preseed.list ]; then
+      rm /etc/apt/sources.list.d/preseed.list
+      apt-get update
+    fi
+fi

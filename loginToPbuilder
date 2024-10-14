@@ -5,16 +5,39 @@
 WD=`realpath $(dirname "$0")`
 mkdir -p "${WD}/pbuilder-base"
 
-# Parse command line arguments
-if [ -z "$1" ] ; then
+function showHelp() {
   # print usage
   echo "Usage:"
-  echo "  ./loginToPbuilder <distributionCodeName>"
+  echo "  ./loginToPbuilder [-p|--preseed] <distributionCodeName>"
   echo "     - Log in to the image for the given distribution."
   exit 1
+}
+
+# Parse command line arguments
+PRESEED_REPOS=""
+while true; do
+    case $1 in
+        -h|--help)
+            showHelp
+            exit 0
+            ;;
+        -p|--preseed)
+            PRESEED_REPOS="`pwd`/preseed"
+            ;;
+        *)
+            DISTRIBUTION="$1"
+            break;;
+    esac
+    shift
+done
+
+if [ -z "$DISTRIBUTION" ]; then
+  showHelp
+  exit 1
 fi
-DISTRIBUTION="$1"
+
 source config.sh
+HOOKDIR="`pwd`/pbuilder-hooks"
 
 echo "Using repository ${DEBIANREPOSITORY}"
 
@@ -26,7 +49,9 @@ fi
 
 ${WD}/updateLocalRepos
 
-sudo pbuilder --login --distribution ${DISTRIBUTION} --override-config --components "main universe"                  \
-              --othermirror "${MIRRORLIST}"  \
-              --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}"         || exit 1
+export PRESEED_REPOS
 
+sudo -E pbuilder --login --distribution ${DISTRIBUTION} --override-config --components "main universe"                 \
+                 --othermirror "${MIRRORLIST}"                                                                         \
+                 --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} ${PRESEED_REPOS}"                          \
+                 --hookdir "${HOOKDIR}"

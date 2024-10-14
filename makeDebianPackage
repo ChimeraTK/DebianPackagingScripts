@@ -1,7 +1,6 @@
 #!/bin/bash -e
 
 PRESEED_REPOS=""
-HOOKDIR=""
 # check command line arguments
 options=$(getopt -l "preseed,help" -o "p,h" -a -- "$@")
 eval set -- "$options"
@@ -20,7 +19,6 @@ while true; do
             ;;
         -p|--preseed)
             PRESEED_REPOS="`pwd`/preseed"
-            HOOKDIR="--hookdir `pwd`/pbuilder-hooks"
             ;;
         --)
             shift
@@ -59,6 +57,7 @@ mkdir -p "${LOGDIR}"
 
 # directory with local Debian repository and where the created packages should be placed
 LOCAL_REPOS="`pwd`/pbuilder-result"
+HOOKDIR="`pwd`/pbuilder-hooks"
 
 # directory with pbuilder base image
 PBUILDER_IMAGE="`pwd`/pbuilder-base/base-${DISTRIBUTION}.tgz"
@@ -116,7 +115,7 @@ LOGFILE="${LOGDIR}/pdebuild.${PACKAGE_BASENAME}.log"
 time pdebuild --debbuildopts -j${N_PBUILDER_THREADS} -- --distribution ${DISTRIBUTION}     \
               --buildresult "${LOCAL_REPOS}/dists/${DISTRIBUTION}/main/binary-${ARCH}"     \
               --basetgz "${PBUILDER_IMAGE}" --bindmounts "${bind_mounts}"                  \
-              --configfile "${PBUILDER_RC}" $HOOKDIR 2>&1 | tee "${LOGFILE}"
+              --configfile "${PBUILDER_RC}" --hookdir "${HOOKDIR}" 2>&1 | tee "${LOGFILE}"
 if (( ${PIPESTATUS[0]} != 0 )); then
   echo ""
   echo "Building package ${PACKAGE_BASENAME} failed!"
