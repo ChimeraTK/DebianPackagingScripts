@@ -29,8 +29,8 @@ function hasValue() {
 }
 
 function showHelp() {
-  echo "Usage: ./master <distribution_codename> <package_name1> <package_version1> [<package_name2> <package_version2>] [...]"
-  echo "Example: ./master xenial chimeratk-deviceaccess 00.16.00 qthardmon latest"
+  echo "Usage: ./master [--preseed|-p] <distribution_codename> <package_name1> <package_version1> [<package_name2> <package_version2>] [...]"
+  echo "Example: ./master noble chimeratk-deviceaccess 03.16.00 qthardmon latest"
   echo ""
   echo "Specifying 'latest' as a version will build the greatest version (see sort -V) found on the source repository."
 }
@@ -49,7 +49,7 @@ if ! python3 -m packaging.version > /dev/null ; then
   echo "  or using pip3:"
   echo "  pip3 install packaging"
   exit 1
-fi  
+fi
 
 use_preseed_repository=0
 # check command line arguments
@@ -209,6 +209,7 @@ if [ $CONTINUE_BUILD != 1 ]; then
   echo "distribution=${distribution}" >> master-control
   echo "arch=${arch}" >> master-control
   echo "declare -A package_buildcmd" >> master-control
+  echo "use_preseed_repository=${use_preseed_repository}" >> master-control
 fi
 
 # checkout or update the control git repository
@@ -288,7 +289,7 @@ while [ "$sorting_done" == "0" ]; do
   declare -a package_build_order_sort
   sorting_done=1
   for package in "${package_build_order[@]}"; do
-    # check if the package has a config. If not print a warning and ignore it  
+    # check if the package has a config. If not print a warning and ignore it
     if ! [ -e DebianBuildVersions/$package/CONFIG ]; then
       echo "No config for '$package' found. No packages for this project will be built."
       continue
@@ -337,7 +338,7 @@ for package in "${package_build_order[@]}"; do
   elif [ -n "${BLACKLIST[$package]}" ]; then
     echo -n " [*** BLACKLISTED ***]"
   fi
-  echo ""  
+  echo ""
 done
 
 # ask if we want to proceed
@@ -400,4 +401,3 @@ if [ $do_not_publish -eq 0 ]; then
 else
   echo "Publication of packages is disallowed. You can find the packages in the following directory: pbuilder-result/dists/${distribution}/main/binary-${arch}"
 fi
-

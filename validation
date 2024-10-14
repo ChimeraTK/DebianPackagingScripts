@@ -30,6 +30,12 @@ source ${WD}/config.sh
 LOCAL_REPOS="${WD}/pbuilder-result"
 PBUILDER_IMAGE="${WD}/pbuilder-base/base-${distribution}.tgz"
 
+PRESEED_REPOS=""
+if [ "${use_preseed_repository}" == "1" ]; then
+  PRESEED_REPOS="`pwd`/preseed"
+fi
+HOOKDIR="`pwd`/pbuilder-hooks"
+
 # Check that there are debian packages and return an error if not
 if [ ! -d pbuilder-result ]; then
     echo "No pbuilder-result directory found. Run the master script first."
@@ -57,16 +63,19 @@ echo "apt-get install -y `echo $PACKAGE_LIST`" >> $SCRIPT
 # The pbuilder on Ubuntu 18.04 (and presumably later) mounts /dev and /run/shm by itself
 # If we bind it into the container, it cannot unbind it properly if any browser is running on bionic
 our_version=$(lsb_release -r | awk '{print $2}' | tr -d .)
-bind_mounts="${LOCAL_REPOS}"
+bind_mounts="${LOCAL_REPOS} ${PRESEED_REPOS}"
 if test "$our_version" -lt "1804"; then
     bind_mounts="${bind_mounts} /dev /run/shm"
 fi
 
+# For the pbuilder hooks
+export PRESEED_REPOS
+export DISTRIBUTION
+echo "PRESEED_REPOS = ${PRESEED_REPOS}"
 
-
-sudo pbuilder --execute --distribution ${distribution} --override-config --components "main ${ADDITIONALREPO}" \
-              --othermirror "${MIRRORLIST}"                                                           \
-              --basetgz "${PBUILDER_IMAGE}" --bindmounts "${bind_mounts}" "${SCRIPT}"
+sudo -E pbuilder --execute --distribution ${distribution} --override-config --components "main ${ADDITIONALREPO}" \
+                 --othermirror "${MIRRORLIST}"                                                           \
+                 --basetgz "${PBUILDER_IMAGE}" --bindmounts "${bind_mounts}" --hookdir "${HOOKDIR}" "${SCRIPT}"
 if [ $? -ne 0 ]; then
   echo "*** INSTALLING THE PACKAGES FAILED"
   ERROR=1
