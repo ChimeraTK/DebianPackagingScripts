@@ -8,6 +8,5 @@ Recommends: #Recommends-dkms#
 Suggests: #Suggests-dkms#
 Enhances: #Enhances-dkms#
 Provides: #Provides-dkms#
-Depends: ${misc:Depends} #Dependencies-dkms#
+Depends: ${misc:Depends}, #Dependencies-dkms#
 Description: #Description-dkms#
-
