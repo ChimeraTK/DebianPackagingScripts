@@ -58,8 +58,9 @@ if ! python3 -m packaging.version > /dev/null ; then
 fi
 
 use_preseed_repository=0
+force_new_buildnumber=""
 # check command line arguments
-options=$(getopt -l "preseed,help" -o "p,h" -a -- "$@")
+options=$(getopt -l "preseed,force-new-buildnumber,help" -o "p,h" -a -- "$@")
 eval set -- "$options"
 
 while true; do
@@ -70,6 +71,10 @@ while true; do
             ;;
         -p|--preseed)
             use_preseed_repository=1
+            ;;
+        --force-new-buildnumber)
+            force_new_buildnumber="--force-new-buildnumber "
+            echo ">> Incrementing the build number has been forced for *all* packages which are being built! <<"
             ;;
         --)
             shift
@@ -375,7 +380,8 @@ for package in "${package_build_order[@]}"; do
   if [ "x$use_preseed_repository" = "x1" ] ; then
       preseed="--use-preseed"
   fi
-  ./configureRelease $preseed "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee $TEMPFILE ; test ${PIPESTATUS[0]} -eq 0
+
+  ./configureRelease $force_new_buildnumber $preseed "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee $TEMPFILE ; test ${PIPESTATUS[0]} -eq 0
   package_buildcmd[$package]=`tail -n1 $TEMPFILE`
   echo ""
   # actually build the package
