@@ -138,6 +138,7 @@ parser.add_argument('debian_repository')
 # nargs='?' makes this argument optional and will use the default otherwise
 parser.add_argument('architecture', nargs='?', default='amd64')
 parser.add_argument('--use-preseed', action='store_true', default=False)
+parser.add_argument('--force-new-buildnumber', action='store_true', default=False)
 
 args = parser.parse_args()
 
@@ -157,6 +158,7 @@ codename = args.distribution_codename           # codename of the distribution t
 debianrepository = args.debian_repository       # repository base name used to retrieve a package list
 arch = args.architecture
 use_preseed = args.use_preseed
+force_new_buildnumber = args.force_new_buildnumber
 version_major = splitversion[0]
 
 # preset optional config variables
@@ -659,7 +661,7 @@ if "Use-dynload" in config or "dynload" in hasPackages:
 
 # determine build number
 print("")
-if not os.path.isfile("DebianBuildVersions/" + dependency_dir + "/BUILD_NUMBER"):
+if not os.path.isfile("DebianBuildVersions/" + dependency_dir + "/BUILD_NUMBER") or force_new_buildnumber:
     # the package has not yet been built with these dependencies
     if not os.path.isfile("DebianBuildVersions/" + version_base_dir + "/LAST_BUILD"):
         print("The package was not yet build in this version for this distribution")
@@ -674,7 +676,10 @@ if not os.path.isfile("DebianBuildVersions/" + dependency_dir + "/BUILD_NUMBER")
         f.write(dependency_dir)
         f.close()
     else:
-        print("The package was already built in this version for this distribution with different dependencies")
+        if not force_new_buildnumber:
+            print("The package was already built in this version for this distribution with different dependencies")
+        else :
+            print("Increment of build number is forced by user request")
         # determine the last build's dependency directory
         f = open("DebianBuildVersions/" + version_base_dir + "/LAST_BUILD", 'r')
         last_build = f.readline().rstrip('\n')
