@@ -48,6 +48,12 @@ if ! which dh_dkms > /dev/null ; then
   echo "  sudo apt install dh-dkms"
   exit 1
 fi
+# check for dh_python3
+if ! which dh_python3 > /dev/null ; then
+  echo "ERROR: dh_python3 was not found. Please install it first by running:"
+  echo "  sudo apt install dh-python"
+  exit 1
+fi
 # check for Python module packaging used in configureRelease for version comparison
 if ! python3 -m packaging.version > /dev/null ; then
   echo "ERROR: python package 'packaging' not found."
