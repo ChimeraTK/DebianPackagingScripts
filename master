@@ -36,6 +36,11 @@ function showHelp() {
 }
 
 ## check prerequisites ##
+if ! which pbuilder > /dev/null ; then
+  echo "ERROR: pbuilder was not found. Please install it first by running:"
+  echo "  sudo apt install pbuilder"
+  exit 1
+fi
 # check for dh_make
 if ! which dh_make > /dev/null ; then
   echo "ERROR: dh_make was not found. Please install it first by running:"
