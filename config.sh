@@ -56,7 +56,7 @@ INITIALPACKAGESLIST=""
 # This list adds extra mirrors added initialy when the pbuilder image is created
 INITIALEXTRAMIRROR=""
 
-if [ "${distribution}" == "focal" ]; then
+if [ "${distribution}" == "focal" ] || [ "${distribution}" == "jammy" ] || [ "${distribution}" == "noble" ]; then
   INITIALPACKAGESLIST="apt-transport-https ca-certificates gnupg software-properties-common wget"
   INITIALEXTRAMIRROR="deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-updates main universe|deb http://de.archive.ubuntu.com/ubuntu/ ${distribution}-security main universe"
 fi
