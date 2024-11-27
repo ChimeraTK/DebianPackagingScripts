@@ -449,6 +449,8 @@ if "dkms" in hasPackages and codename not in ['jessie', 'buster', 'stretch', 'bu
 
 print("Searching for dependencies...")
 
+# Remove all existing files first to avoid leftovers from other distributions
+subprocess.call(["rm", "-f", "Packages.*"])
 if codename in debianCodenames:
     # download Packages file from the DESY DOOCS apt repositories
     subprocess.call(["wget", "-q", debianrepository + "/pub/doocs/dists/" + codename +
