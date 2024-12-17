@@ -144,6 +144,12 @@ Each project needs a file called CONFIG in the project's subdirectory inside the
 
 TODO: Add documentation!
 
+### Distribution-specific overrides
+
+It is possible to override settings for a specific distribution by adding a file 
+`CONFIG.codename` next to the `CONFIG` file. Settings made in that file take precedence 
+over `CONFIG`.
+
 ### Multi-line values
 
 Variables can be set to a value containing newlines by using a `heredoc` syntax as follows:

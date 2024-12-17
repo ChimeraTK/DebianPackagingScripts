@@ -2,6 +2,8 @@
 cd $(dirname "$0")
 full_cmdline="$*"
 
+source functions.sh
+
 # master shell script for creating debian packages for multiple packages, with proper reverse-dependency checking
 # and other safetly checks.
 
@@ -290,7 +292,7 @@ done
 # check versions and deal with "latest" version spec
 echo "Verifying versions..."
 for package in "${!package_list[@]}"; do
-  REPO=`grep "^SourceURI: " DebianBuildVersions/$package/CONFIG | sed -e 's|^SourceURI: ||'`
+  REPO=`getConfigValue "DebianBuildVersions/${package}" "${distribution}" SourceURI`
   if [ ${package_list["${package}"]} == "latest" ]; then
     package_list["${package}"]=`git ls-remote --tags ${REPO} | sed -e 's_^.*refs/tags/__' | grep -v "\^{}$" | sort -V | tail -1`
   else
@@ -325,7 +327,7 @@ while [ "$sorting_done" == "0" ]; do
       continue
     fi
     # add the dependencies of the package to the new list, if not yet present
-    DEPENDENCIES=`grep "^Dependencies: " DebianBuildVersions/$package/CONFIG | sed -e 's|^Dependencies: ||'`
+    DEPENDENCIES=`getConfigValue "DebianBuildVersions/${package}" "${distribution}" Dependencies`
     for dependency in $DEPENDENCIES; do
       dependency_packagename=`echo $dependency | sed -e 's|^lib||' | sed -e 's|-dev$||' | sed -e 's|#epoch.*#||'`
       if hasValue package_build_order "$dependency_packagename" ; then

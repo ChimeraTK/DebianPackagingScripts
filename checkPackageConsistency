@@ -13,15 +13,17 @@ package_lc=`echo "$package" | tr '[:upper:]' '[:lower:]'`
 WD=`realpath $(dirname "$0")`
 cd "$WD"
 
+source functions.sh
+
 declare -A config
 
 # function to extract a variable from a CONFIG file
 function getFromConfig() {  # arguments: package name, config variable; sets variable in environment ("-" repaces with "_")
-  CONFIG="${WD}/DebianBuildVersions/${1}/CONFIG"
-  value=`grep "^${2}:" "${CONFIG}" | sed -e "s:^${2}\: *::"`
+  value=`getConfigValue "${WD}/DebianBuildVersions/${1}" "${distribution}" ${2}`
   name=`echo ${2} | sed -e "s|-|_|g"`
   config[$name]=$value
 }
+
 
 # load configuration
 source config.sh

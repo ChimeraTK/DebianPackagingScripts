@@ -2,6 +2,7 @@
 
 WD=`pwd`
 
+source functions.sh
 # load configuration
 source config.sh
 
@@ -65,7 +66,7 @@ for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the 
 
 
   # obtain content of Target-repositories variable from CONFIG file
-  TARGET_REPOSITORIES=`grep '^Target-repositories: ' ${WD}/DebianBuildVersions/${package}/CONFIG | sed -e 's/^Target-repositories: //'`
+  TARGET_REPOSITORIES=`getConfigValue "${WD}/DebianBuildVersions/${package}" "${distribution} Target-repositories`
 
   # Step 1: Remove an older version of the package
   # -- from the package archive
