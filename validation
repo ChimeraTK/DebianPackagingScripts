@@ -5,15 +5,7 @@
 WD=`realpath $(dirname "$0")`
 cd "$WD"
 
-declare -A config
-
-# function to extract a variable from a CONFIG file
-function getFromConfig() {  # arguments: package name, config variable; sets variable in environment ("-" repaces with "_")
-  CONFIG="${WD}/DebianBuildVersions/${1}/CONFIG"
-  value=`grep "^${2}:" "${CONFIG}" | sed -e "s:^${2}\: *::"`
-  name=`echo ${2} | sed -e "s|-|_|g"`
-  config[$name]=$value
-}
+source functions.sh
 
 # load master-control file
 if [ ! -f master-control ]; then

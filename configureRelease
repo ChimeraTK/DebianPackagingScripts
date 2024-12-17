@@ -16,6 +16,7 @@ import tempfile
 import shutil
 import re
 import datetime
+from contextlib import suppress
 debianCodenames = ['jessie', 'buster', 'stretch', 'bullseye', 'bookworm']
 
 
@@ -47,6 +48,37 @@ def replace_token(content_string, token):
         resolved_token = config[token]
 
     return content_string.replace("#" + token + "#", resolved_token)
+
+def read_config_file(config_file_path, config_map):
+    configfile = open(config_file_path, 'r').read().splitlines()
+    is_in_multiline_value = False
+    for line_counter, line in enumerate(configfile, start=1):
+        if is_in_multiline_value :
+            if line == multiline_terminator:
+                is_in_multiline_value = False
+                continue
+            else :
+                config[key] += line + "\n"
+                continue
+        if line.strip() == "" or line.strip()[0:1] == "#":
+            continue
+        try:
+            (key, value) = line.split(":", 1)
+        except (ValueError):
+            print(f"Error parsing file '{config_file_path}' in line {line_counter}")
+            sys.exit(1)
+        key = key.strip()
+        if re.match('[^a-zA-Z0-9]', key) is not None:
+            print(f"Error parsing file '{config_file_path}' in line {line_counter}. " +
+                  ". Variable names must contain only alpha-numeric characters.")
+            sys.exit(1)
+        if value.strip().startswith("<<<") :
+            is_in_multiline_value = True
+            multiline_terminator = value.strip()[3:]
+            config_map[key] = ""
+            continue
+        config_map[key] = value.strip()
+    
 
 # wrapper around e.g. debian.debian_support.PackageFile to catch exceptions and continue the loop
 
@@ -265,37 +297,9 @@ if not os.path.isfile("DebianBuildVersions/" + project + "/CONFIG"):
     sys.exit(1)
 
 # read config file
-configfile = open("DebianBuildVersions/" + project + "/CONFIG", 'r').read().splitlines()
-line_counter = 0
-is_in_multiline_value = False
-for line in configfile:
-    line_counter = line_counter + 1
-    if is_in_multiline_value :
-        if line == multiline_terminator:
-            is_in_multiline_value = False
-            continue
-        else :
-            config[key] += line + "\n"
-            continue
-    if line.strip() == "" or line.strip()[0:1] == "#":
-        continue
-    try:
-        (key, value) = line.split(":", 1)
-    except (ValueError):
-        print("Error parsing file 'DebianBuildVersions/" + project + "/CONFIG' in line " + str(line_counter))
-        sys.exit(1)
-    key = key.strip()
-    if re.match('[^a-zA-Z0-9]', key) is not None:
-        print("Error parsing file 'DebianBuildVersions/" + project + "/CONFIG' in line " +
-              str(line_counter) + ". Variable names must contain only alpha-numeric characters.")
-        sys.exit(1)
-    if value.strip().startswith("<<<") :
-        is_in_multiline_value = True
-        multiline_terminator = value.strip()[3:]
-        config[key] = ""
-        continue
-    config[key] = value.strip()
-
+read_config_file(f"DebianBuildVersions/{project}/CONFIG", config)
+with suppress(FileNotFoundError):
+    read_config_file(f"DebianBuildVersions/{project}/CONFIG.{codename}", config)
 
 # create hasPackages array from space-separated list
 hasPackages = config["Has-packages"].split(" ")
