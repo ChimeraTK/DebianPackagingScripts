@@ -67,6 +67,7 @@ echo "PRESEED_REPOS = ${PRESEED_REPOS}"
 
 sudo -E pbuilder --execute --distribution ${distribution} --override-config --components "main ${ADDITIONALREPO}" \
                  --othermirror "${MIRRORLIST}"                                                           \
+                 --mirror "${MIRROR}"									 \
                  --basetgz "${PBUILDER_IMAGE}" --bindmounts "${bind_mounts}" --hookdir "${HOOKDIR}" "${SCRIPT}"
 if [ $? -ne 0 ]; then
   echo "*** INSTALLING THE PACKAGES FAILED"
