@@ -1,0 +1,63 @@
+#!/bin/bash -e
+
+package=$1
+
+if [ -z "$package" ]; then
+  echo "Usage: ./packageStatus <nameOfPackage>"
+  echo "nameOfPackage must be one of the package names defined in the DebianBuildVersions repository."
+  exit 1
+fi
+
+source functions.sh
+
+# Extract the git url and the maintainer from the CONFIG file
+git_url=`getConfigValue "DebianBuildVersions/${package}" "" "SourceURI"`
+maintainer=`getConfigValue "DebianBuildVersions/${package}" "" "Maintainer" | sed -e "s/\s*<.*>\s*//"`
+
+# Extract the latest tag from the git repo.
+git_tag=`git ls-remote --tags ${git_url} 2> /dev/null| sed -e 's_^.*refs/tags/__' | grep -v "\^{}$" | sort -V | tail -1 || true`
+if [ "${git_tag}" = "" ]; then
+  git_tag="UNKNOWN"
+fi
+     
+echo -e -n "${package}\t ${git_tag} "
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+distributions="focal noble bookworm"
+
+# The whole LAST_BUILD mechanism is per minor version, so we first have to
+# find the latest minor build directory
+last_build_minor=`ls DebianBuildVersions/${package} | grep "[0-9][0-9]\.[0-9][0-9]" | sort -V | tail -1`
+
+for distribution in ${distributions}; do
+  last_build_file=`cat DebianBuildVersions/${package}/${last_build_minor}/${distribution}-amd64/LAST_BUILD 2> /dev/null || true`
+
+  if [ -z "${last_build_file}" ]; then
+    echo -e -n "${RED}###${distribution}###${NC} "
+    continue
+  fi
+      
+  build_number_file=DebianBuildVersions/${last_build_file}/BUILD_NUMBER
+  last_build_number=`cat ${build_number_file}`
+
+  # If the tag version is identical to the latest tag in git, we set the
+  # printout to green, otherwise to red
+  tag_version=`sed -n "s/^TAGVERSION=//p" DebianBuildVersions/${package}/${last_build_minor}/${distribution}-amd64/${last_build_number}/makeDebianPackage.config`
+
+  # The actual printout is the package version because it contains the
+  # distribution, which improved readability
+  package_version=`sed -n "s/^PACKAGE_VERSION=\"//p" DebianBuildVersions/${package}/${last_build_minor}/${distribution}-amd64/${last_build_number}/makeDebianPackage.config| sed -e "s/\"$//"`
+
+  if [ ${git_tag} = ${tag_version} ]; then
+    COLOR=${GREEN}
+  else
+    COLOR=${RED}
+  fi
+
+  echo -e -n "${COLOR}${package_version}${NC} "
+
+done
+echo " ${maintainer}"
