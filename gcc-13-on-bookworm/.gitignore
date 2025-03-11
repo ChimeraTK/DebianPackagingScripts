@@ -1,0 +1,6 @@
+gcc-13_13.3.0/
+*.deb
+*.tar.gz
+*.changes
+*.build
+*.buildinfo
