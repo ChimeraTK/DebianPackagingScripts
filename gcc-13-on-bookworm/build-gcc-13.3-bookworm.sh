@@ -18,6 +18,9 @@ sudo apt-get install debhelper dpkg-dev g++-multilib m4 libtool autoconf2.69 dwz
 git clone -b 13.3.0-12 https://salsa.debian.org/toolchain-team/gcc.git gcc-13_13.3.0
 cd gcc-13_13.3.0
 
+# revert commit which disables building certain packages which would come from gcc-14 on true Debian...
+git revert 68461ac22716c8587ab3137cd7b3cddf34fc853a --no-edit
+
 wget https://ftp.mpi-inf.mpg.de/mirrors/gnu/mirror/gcc.gnu.org/pub/gcc/releases/gcc-13.3.0/gcc-13.3.0.tar.xz
 wget ftp://sourceware.org/pub/newlib/newlib-4.4.0.20231231.tar.gz
 
