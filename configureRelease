@@ -4,18 +4,18 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 from __future__ import print_function
+import glob
 import packaging.version
 import argparse
 import debian.debian_support
-import urllib
 import subprocess
 import os
 import sys
-import time
 import tempfile
 import shutil
 import re
 import datetime
+from util import downloadAndUnpack
 from contextlib import suppress
 debianCodenames = ['jessie', 'buster', 'stretch', 'bullseye', 'bookworm']
 
@@ -25,7 +25,6 @@ debianCodenames = ['jessie', 'buster', 'stretch', 'bullseye', 'bookworm']
 # a number into dots (word-wise, to avoid consecutive dots), to prevent any issues with improper version formats. This
 # should work as long as the two versions that are compared have the same format.
 versionNumberReformatter = re.compile(r'[^0-9]+')
-
 
 def parseVersion(version: str):
     return packaging.version.parse(versionNumberReformatter.sub('.', version))
@@ -49,15 +48,16 @@ def replace_token(content_string, token):
 
     return content_string.replace("#" + token + "#", resolved_token)
 
+
 def read_config_file(config_file_path, config_map):
     configfile = open(config_file_path, 'r').read().splitlines()
     is_in_multiline_value = False
     for line_counter, line in enumerate(configfile, start=1):
-        if is_in_multiline_value :
+        if is_in_multiline_value:
             if line == multiline_terminator:
                 is_in_multiline_value = False
                 continue
-            else :
+            else:
                 config[key] += line + "\n"
                 continue
         if line.strip() == "" or line.strip()[0:1] == "#":
@@ -72,13 +72,13 @@ def read_config_file(config_file_path, config_map):
             print(f"Error parsing file '{config_file_path}' in line {line_counter}. " +
                   ". Variable names must contain only alpha-numeric characters.")
             sys.exit(1)
-        if value.strip().startswith("<<<") :
+        if value.strip().startswith("<<<"):
             is_in_multiline_value = True
             multiline_terminator = value.strip()[3:]
             config_map[key] = ""
             continue
         config_map[key] = value.strip()
-    
+
 
 # wrapper around e.g. debian.debian_support.PackageFile to catch exceptions and continue the loop
 
@@ -454,70 +454,60 @@ if "dkms" in hasPackages and codename not in ['jessie', 'buster', 'stretch', 'bu
 print("Searching for dependencies...")
 
 # Remove all existing files first to avoid leftovers from other distributions
-subprocess.call(["rm", "-f", "Packages.*"])
+for p in glob.glob("Packages.*"):
+    os.remove(p)
+os.remove("TMP.DESY")
+
 if codename in debianCodenames:
     # download Packages file from the DESY DOOCS apt repositories
-    subprocess.call(["wget", "-q", debianrepository + "/pub/doocs/dists/" + codename +
-                    "/main/binary-" + arch + "/Packages", "-O", "Packages.DESY"])
+    downloadAndUnpack(f"{debianrepository}/pub/doocs/dists/{codename}/main/binary-{arch}/Packages", 'Packages.DESY')
 
-    subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/" + codename +
-                    "/main/binary-" + arch + "/Packages.gz", "-O", "Packages.MAIN.gz"])
-    subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
-    subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/" + codename +
-                    "/contrib/binary-" + arch + "/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
-    subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
+    downloadAndUnpack(f"http://nims.desy.de/debian/dists/{codename}/main/binary-{arch}/Packages.xz", 'Packages.MAIN')
+
+    downloadAndUnpack(
+        f"http://nims.desy.de/debian/dists/{codename}/contrib/binary-{arch}/Packages.xz", 'Packages.UNIVERSE')
 
     # download Packages file from Ubuntu repositories and unpack
-    subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/" + codename +
-                    "-updates/main/binary-" + arch + "/Packages.gz", "-O", "Packages.MAIN-UPDATES.gz"])
-    subprocess.call(["gunzip", "-f", "Packages.MAIN-UPDATES.gz"])
+    downloadAndUnpack(
+        f"http://security.debian.org/debian-security/dists/{codename}-security/main/binary-{arch}/Packages.xz", 'Packages.MAIN-SECURITY')
 
     # download Packages file from Ubuntu repositories and unpack
-    subprocess.call(["wget", "-q", "http://nims.desy.de/debian/dists/" + codename +
-                    "-updates/contrib/binary-" + arch + "/Packages.gz", "-O", "Packages.UNIVERSE-UPDATES.gz"])
-    subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-UPDATES.gz"])
-
-    subprocess.call(['./updateLocalRepos'])
+    downloadAndUnpack(
+        f"http://security.debian.org/debian-security/dists/{codename}-security/contrib/binary-{arch}/Packages.xz", 'Packages.UNIVERSE-SECURITY')
 
 else:
     # download Packages file from the DESY DOOCS apt repositories
-    subprocess.call(["wget", "-q", debianrepository + "/pub/doocs/dists/" + codename +
-                    "/main/binary-" + arch + "/Packages", "-O", "Packages.DESY"])
+    downloadAndUnpack(f"{debianrepository}/pub/doocs/dists/{codename}/main/binary-{arch}/Packages", "Packages.DESY")
 
     # download Packages file from Ubuntu repositories and unpack
-    subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/" + codename +
-                    "/main/binary-" + arch + "/Packages.gz", "-O", "Packages.MAIN.gz"])
-    subprocess.call(["gunzip", "-f", "Packages.MAIN.gz"])
+    downloadAndUnpack(
+        f"http://de.archive.ubuntu.com/ubuntu/dists/{codename}/main/binary-{arch}/Packages.xz", "Packages.MAIN")
 
     # download Packages file from Ubuntu repositories and unpack
-    subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/" + codename +
-                    "/universe/binary-" + arch + "/Packages.gz", "-O", "Packages.UNIVERSE.gz"])
-    subprocess.call(["gunzip", "-f", "Packages.UNIVERSE.gz"])
+    downloadAndUnpack(
+        f"http://de.archive.ubuntu.com/ubuntu/dists/{codename}/universe/binary-{arch}/Packages.xz", "Packages.UNIVERSE")
 
     # download Packages file from Ubuntu repositories and unpack
-    subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/" + codename +
-                    "-updates/main/binary-" + arch + "/Packages.gz", "-O", "Packages.MAIN-UPDATES.gz"])
-    subprocess.call(["gunzip", "-f", "Packages.MAIN-UPDATES.gz"])
+    downloadAndUnpack(
+        f"http://de.archive.ubuntu.com/ubuntu/dists/{codename}-updates/main/binary-{arch}/Packages.xz", "Packages.MAIN-UPDATES")
 
     # download Packages file from Ubuntu repositories and unpack
-    subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/" + codename +
-                    "-updates/universe/binary-" + arch + "/Packages.gz", "-O", "Packages.UNIVERSE-UPDATES.gz"])
-    subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-UPDATES.gz"])
+    downloadAndUnpack(
+        f"http://de.archive.ubuntu.com/ubuntu/dists/{codename}-updates/universe/binary-{arch}/Packages.xz", "Packages.UNIVERSE-UPDATES")
 
     # download Packages file from Ubuntu repositories and unpack
-    subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/" + codename +
-                    "-updates/main/binary-" + arch + "/Packages.gz", "-O", "Packages.MAIN-SECURITY.gz"])
-    subprocess.call(["gunzip", "-f", "Packages.MAIN-SECURITY.gz"])
+    downloadAndUnpack(
+        f"http://de.archive.ubuntu.com/ubuntu/dists/{codename}-security/main/binary-{arch}/Packages.xz", "Packages.MAIN-SECURITY")
 
     # download Packages file from Ubuntu repositories and unpack
-    subprocess.call(["wget", "-q", "http://de.archive.ubuntu.com/ubuntu/dists/" + codename +
-                    "-updates/universe/binary-" + arch + "/Packages.gz", "-O", "Packages.UNIVERSE-SECURITY.gz"])
-    subprocess.call(["gunzip", "-f", "Packages.UNIVERSE-SECURITY.gz"])
+    downloadAndUnpack(
+        f"http://de.archive.ubuntu.com/ubuntu/dists/{codename}-security/main/binary-{arch}/Packages.xz", "Packages.UNIVERSE-SECURITY")
 
-    # update the locake package repository
-    subprocess.call(['./updateLocalRepos'])
+# update the locake package repository
+subprocess.call(['./updateLocalRepos'])
 subprocess.call(["mv", "Packages.DESY", "TMP.DESY"])
 subprocess.call(["iconv", "-c", "-t", "UTF-8", "TMP.DESY", "-o", "Packages.DESY"])
+
 # parse all sources
 (dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE")
 (dependency_versions_main_updates, map_virtual_real_names_main_updates) = resolveDeps(dependencies, "Packages.MAIN-UPDATES")
@@ -684,7 +674,7 @@ if not os.path.isfile("DebianBuildVersions/" + dependency_dir + "/BUILD_NUMBER")
     else:
         if not force_new_buildnumber:
             print("The package was already built in this version for this distribution with different dependencies")
-        else :
+        else:
             print("Increment of build number is forced by user request")
         # determine the last build's dependency directory
         f = open("DebianBuildVersions/" + version_base_dir + "/LAST_BUILD", 'r')
@@ -841,7 +831,8 @@ for package in hasPackages:
 f = open(controldir + "/control", "w")
 f.write(content)
 f.close()
-subprocess.call(["rm " + controldir + "/control.*"], shell=True)
+for control in glob.glob(f"{controldir}/control.*"):
+    os.remove(control)
 
 # add override parts to the rules file, if needed
 content = ""

@@ -3,15 +3,10 @@
 # Note: The script output will be parsed by the master script. Change with care!
 
 import debian.debian_support
-import urllib
 import subprocess
-import os
 import sys
-import time
-import tempfile
-import shutil
 import re  # regular expressions library
-
+from util import downloadAndUnpack
 
 def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies, codename):
     for Package in Packages:
@@ -79,12 +74,10 @@ def main():
         arch = "amd64"
 
     # download Packages file from the DESY DOOCS apt repositories
-    try:
-        subprocessHelper(["wget", "-q", debianrepository + "/pub/doocs/dists/" + codename +
-                         "/main/binary-" + arch + "/Packages", "-O", "Packages.DESY"])
-    except RuntimeError:
+    
+    if not downloadAndUnpack(f"{debianrepository}/pub/doocs/dists/{codename}/main/binary-{arch}/Packages", "Packages.DESY"):
         raise RuntimeError(f'wget from {debianrepository} failed; are you in DESY network?')
-
+        
     subprocessHelper(["mv", "Packages.DESY", "TMP.DESY"])
     subprocessHelper(["iconv", "-c", "-t", "UTF-8", "TMP.DESY", "-o", "Packages.DESY"])
 
