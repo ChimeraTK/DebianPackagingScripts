@@ -129,6 +129,14 @@ if [ -n "$AUTOCLEAN" ]; then
     echo
 fi
 
+if [ -n "$AUTOSTART" ]; then
+    echo -e "Will start build without question: \033[0;31myes\033[0m"
+fi
+
+if [ -n "$AUTOPUBLISH" ]; then
+    echo -e "Will \033[0;31mPUBLISH\033[0m final packages without question: \033[0;31myes\033[0m"
+fi
+
 # check for other unfinished operations
 NEED_CLEANUP=0
 CONTINUE_BUILD=0
@@ -151,6 +159,7 @@ if [ "$NEED_CLEANUP" == "1" ]; then
       read -r answer
   else
       answer="y"
+      echo "y (AUTOCLEAN set)"
   fi
   if [ "$answer" == "c" ] || [ "$answer" == "C" ]; then
     echo ""
@@ -374,8 +383,10 @@ for package in "${package_build_order[@]}"; do
   echo ""
 done
 
-# ask if we want to proceed
-ask "Do you want to proceed with configuring and building the packages in the given versions (y/N)?" || ( if [ $CONTINUE_BUILD != 1 ]; then rm master-control; fi ; exit 1 )
+# ask if we want to proceed (unless AUTOSTART env variable has been set)
+if [ -z "${AUTOSTART}" ]; then
+  ask "Do you want to proceed with configuring and building the packages in the given versions (y/N)?" || ( if [ $CONTINUE_BUILD != 1 ]; then rm master-control; fi ; exit 1 )
+fi
 
 # gain root rights. This (likely) avoids the need to type the password later in the middle of the build step
 sudo echo "We have root rights now."
@@ -429,10 +440,12 @@ echo -e "\033[34;1mValidating all built packages...\033[0m"
 source master-control       # might be changed e.g. during configureRelease
 if [ $do_not_publish -eq 0 ]; then
   echo "You can find the packages in the following directory: pbuilder-result/dists/${distribution}/main/binary-${arch}"
-  # before asking a question now let's clear the input buffer (at least up to 10000 chars) so we don't accidentally abort.
+  if [ -z "${AUTOPUBLISH}" ]; then
+    # before asking a question now let's clear the input buffer (at least up to 10000 chars) so we don't accidentally abort.
     # shellcheck disable=SC2034
-  read -r -t 1 -n 10000 discard || true
-  ask "Publish the build versions to git and the packages to the DESY Debian repositories (y/N)?"
+    read -r -t 1 -n 10000 discard || true
+    ask "Publish the build versions to git and the packages to the DESY Debian repositories (y/N)?"
+  fi
   ./commitDebianBuildVersions
   ./publishDebianPackages
 else
