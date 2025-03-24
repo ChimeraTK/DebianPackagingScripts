@@ -1,5 +1,5 @@
 #!/bin/bash -e
-cd $(dirname "$0")
+cd "$(dirname "$0")"
 full_cmdline="$*"
 
 source functions.sh
@@ -12,8 +12,8 @@ source functions.sh
 function ask() {
   echo ""
   echo -n "$1 "
-  read answer
-  if [ "$answer" != "y" -a "$answer" != "Y" ]; then
+  read -r answer
+  if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
     echo "Aborted."
     false
   fi
@@ -21,7 +21,7 @@ function ask() {
 
 # function to check if an array (first parameter - just the name without $) contains a value (second parameter)
 function hasValue() {
-  arrayname=$1[@]
+  arrayname="$1[@]"
   for val in "${!arrayname}"; do
     if [ "$val" == "$2" ]; then
       return 0  # True
@@ -69,9 +69,9 @@ if [ "$PREREQS_OK" != "1" ]; then
   echo apt-get install pbuilder dh-make dh-dkms dh-python python3-packaging
   apt-get install -s pbuilder dh-make dh-dkms dh-python python3-packaging
   echo ""
-  read -n1 -p "Proceed installing these packages (y/n)? " ANSWER
+  read -r -n1 -p "Proceed installing these packages (y/n)? " ANSWER
   echo ""
-  if [ "$ANSWER" != "y" -a "$ANSWER" != "Y" ]; then
+  if [ "$ANSWER" != "y" ] && [ "$ANSWER" != "Y" ]; then
     echo "Cannot proceed without prerequisitions."
     exit 1
   fi
@@ -104,14 +104,14 @@ while true; do
     shift
 done
 
-if [ $# -lt 3 -o $(($#%2)) -eq 0 ]; then
+if [ $# -lt 3 ] || [ $(($#%2)) -eq 0 ]; then
     showHelp
   exit 1
 fi
 
 echo "Active overides:"
 if [ -n "$AUTOCLEAN" ]; then
-    echo -e "Will remove all temporary and uncommited data: \033[0;31myes\033[0m$v"
+    echo -e "Will remove all temporary and uncommited data: \033[0;31myes\033[0m"
 fi
 
 if [ -n "$SKIP_PBUILDER_UPDATE" ]; then
@@ -147,12 +147,12 @@ fi
 if [ "$NEED_CLEANUP" == "1" ]; then
   echo ""
   echo -n "Do you want to remove any leftovers from the previous (or current!?) run [y], try to continue the previous build [c], or abort [n] (y/c/N)? "
-  if [ -z $AUTOCLEAN ] ; then
-      read answer
+  if [ -z "$AUTOCLEAN" ] ; then
+      read -r answer
   else
       answer="y"
   fi
-  if [ "$answer" == "c" -o "$answer" == "C" ]; then
+  if [ "$answer" == "c" ] || [ "$answer" == "C" ]; then
     echo ""
     echo " **************************************************"
     echo " ***  Trying to continue the last build chain.  ***"
@@ -169,7 +169,7 @@ if [ "$NEED_CLEANUP" == "1" ]; then
     done
     echo ""
     CONTINUE_BUILD=1
-  elif [ "$answer" != "y" -a "$answer" != "Y" ]; then
+  elif [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
     echo ""
     echo "Aborted."
     false
@@ -187,16 +187,16 @@ fi
 if [ $do_not_publish == 1 ]; then
   echo ""
   echo -n "Continue anyway or reset the DebianBuildVersions directory (y/r/N)? "
-  if [ -z $AUTOCLEAN ] ; then
-    read answer
+  if [ -z "$AUTOCLEAN" ] ; then
+    read -r answer
   else
     answer="r"
   fi
-  if [ "$answer" = "r" -o "$answer" = "R" ]; then
+  if [ "$answer" = "r" ] || [ "$answer" = "R" ]; then
     echo ""
     echo "*** ATTENTION ***"
     echo "All modifications to the DebianBuildVersions directory including new files will be lost irreversible!"
-    if [ -z $AUTOCLEAN ] ; then
+    if [ -z "$AUTOCLEAN" ] ; then
       ask "Do you really want to reset the DebianBuildVersions directory (y/N)? "
     fi
     ( cd DebianBuildVersions ; git reset --hard ; git clean -f -d )
@@ -207,7 +207,7 @@ if [ $do_not_publish == 1 ]; then
     else
       echo "The DebianBuildVersions directory has been cleaned successfully."
     fi
-  elif [ "$answer" != "y" -a "$answer" != "Y" ]; then
+  elif [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
     echo "Aborted."
     false
   fi
@@ -235,13 +235,14 @@ fi
 
 # create the master control file
 if [ $CONTINUE_BUILD != 1 ]; then
-  touch master-control
-  echo "cmdline='$full_cmdline'" >> master-control
-  echo "do_not_publish=${do_not_publish}" >> master-control
-  echo "distribution=${distribution}" >> master-control
-  echo "arch=${arch}" >> master-control
-  echo "declare -A package_buildcmd" >> master-control
-  echo "use_preseed_repository=${use_preseed_repository}" >> master-control
+  {
+    echo "cmdline='$full_cmdline'"
+    echo "do_not_publish=${do_not_publish}"
+    echo "distribution=${distribution}"
+    echo "arch=${arch}"
+    echo "declare -A package_buildcmd"
+    echo "use_preseed_repository=${use_preseed_repository}"
+  } > master-control
 fi
 
 # checkout or update the control git repository
@@ -265,23 +266,23 @@ done
 echo "Searching for reverse dependencies..."
 for package in "${!package_list[@]}"; do
   # obtain possible reverse dependencies for lib${package}-dev
-  TEMPFILE=`mktemp`
+  TEMPFILE=$( mktemp )
   # Let 'set -e' check if 'findReverseDependencies' fails; don't care about the rest of the pipeline
   # (Cannot use 'set -o pipefail', as that would break other stuff in this script)
-  DEPENDENCIES_RESULT=$(./findReverseDependencies lib${package}-dev $distribution $DebianRepository $arch)
-  echo "${DEPENDENCIES_RESULT}" | grep "^lib" | grep -- "-dev " | sed -e 's/^lib//' -e 's/-dev / /' -e '/^[[:space:]]*$/d' > $TEMPFILE
+  DEPENDENCIES_RESULT=$(./findReverseDependencies "lib${package}-dev" "$distribution" "$DebianRepository" $arch)
+  echo "${DEPENDENCIES_RESULT}" | grep "^lib" | grep -- "-dev " | sed -e 's/^lib//' -e 's/-dev / /' -e '/^[[:space:]]*$/d' > "$TEMPFILE"
   # DeviceAccess is special case: also build all packages depending on 'libchimeratk-deviceaccess', not just libs but also e.g qthardmon
-  if [ ${package} = "chimeratk-deviceaccess" ]; then
+  if [ "${package}" = "chimeratk-deviceaccess" ]; then
     echo "./findReverseDependencies lib${package}$ $distribution $DebianRepository $arch"
-    DEPENDENCIES_RESULT2=$(./findReverseDependencies lib${package}$ $distribution $DebianRepository $arch)
-    echo "${DEPENDENCIES_RESULT2}" | grep -v -- "-dbgsym " | sed -e 's/^lib//' -e 's/-dev / /' -e '/^[[:space:]]*$/d' >> $TEMPFILE
+    DEPENDENCIES_RESULT2=$(./findReverseDependencies "lib${package}$" "$distribution" "$DebianRepository" $arch)
+    echo "${DEPENDENCIES_RESULT2}" | grep -v -- "-dbgsym " | sed -e 's/^lib//' -e 's/-dev / /' -e '/^[[:space:]]*$/d' >> "TEMPFILE"
   fi
-  readarray revdeps_with_versions < $TEMPFILE
-  rm -f $TEMPFILE
+  readarray revdeps_with_versions < "$TEMPFILE"
+  rm -f "$TEMPFILE"
   # loop over any found reverse dependencies
   for revdep_with_version in "${revdeps_with_versions[@]}" ; do
-    revdep_name=`echo ${revdep_with_version} | sed -e 's/ .*$//'`
-    revdep_version=`echo ${revdep_with_version} | sed -e 's/^.* //'`
+    revdep_name=$( echo "${revdep_with_version}" | sed -e 's/ .*$//' )
+    revdep_version=$( echo "${revdep_with_version}" | sed -e 's/^.* //' )
     if [ -z "${package_list[$revdep_name]+abc}" ]; then
       # package not yet in the list: add it
       package_list["${revdep_name}"]="${revdep_version}"
@@ -292,19 +293,19 @@ done
 # check versions and deal with "latest" version spec
 echo "Verifying versions..."
 for package in "${!package_list[@]}"; do
-  REPO=`getConfigValue "DebianBuildVersions/${package}" "${distribution}" SourceURI`
-  if [ ${package_list["${package}"]} == "latest" ]; then
-    package_list["${package}"]=`git ls-remote --tags ${REPO} | sed -e 's_^.*refs/tags/__' | grep -v "\^{}$" | sort -V | tail -1`
+  REPO=$( getConfigValue "DebianBuildVersions/${package}" "${distribution}" SourceURI )
+  if [ "${package_list["${package}"]}" == "latest" ]; then
+    package_list["${package}"]=$( git ls-remote --tags ${REPO} | sed -e 's_^.*refs/tags/__' | grep -v "\^{}$" | sort -V | tail -1 )
   else
     VERSION_OK=0
-    for version in `git ls-remote --tags ${REPO} | sed -e 's_^.*refs/tags/__' | grep -v "\^{}$"`; do
-      if [ ${package_list["${package}"]} == $version ]; then
+    for version in $( git ls-remote --tags ${REPO} | sed -e 's_^.*refs/tags/__' | grep -v "\^{}$" ); do
+      if [ "${package_list["${package}"]}" == $version ]; then
         VERSION_OK=1
       fi
     done
     if [ $VERSION_OK == 0 ]; then
       rm master-control
-      echo "*** ERROR: Version "${package_list["${package}"]}" of package ${package} is not found on the repository!"
+      echo "*** ERROR: Version ${package_list["${package}"]} of package ${package} is not found on the repository!"
       exit 1
     fi
   fi
@@ -327,9 +328,9 @@ while [ "$sorting_done" == "0" ]; do
       continue
     fi
     # add the dependencies of the package to the new list, if not yet present
-    DEPENDENCIES=`getConfigValue "DebianBuildVersions/${package}" "${distribution}" Dependencies`
+    DEPENDENCIES=$( getConfigValue "DebianBuildVersions/${package}" "${distribution}" Dependencies )
     for dependency in $DEPENDENCIES; do
-      dependency_packagename=`echo $dependency | sed -e 's|^lib||' | sed -e 's|-dev$||' | sed -e 's|#epoch.*#||'`
+      dependency_packagename=$( echo $dependency | sed -e 's|^lib||' | sed -e 's|-dev$||' | sed -e 's|#epoch.*#||' )
       if hasValue package_build_order "$dependency_packagename" ; then
         if ! hasValue package_build_order_sort "$dependency_packagename" ; then
           sorting_done=0
@@ -355,7 +356,7 @@ done
 declare -A BLACKLIST
 if [ -f blacklist ]; then
   echo "ATTENTION: Blacklist is in effect!"
-  while read line ; do
+  while read -r line ; do
     BLACKLIST[$line]="y"
   done < blacklist
 fi
@@ -380,7 +381,7 @@ ask "Do you want to proceed with configuring and building the packages in the gi
 sudo echo "We have root rights now."
 
 # configure and build packages
-TEMPFILE=`mktemp`
+TEMPFILE=$( mktemp )
 declare -A package_buildcmd        # associative array: package name -> command to build the package
 for package in "${package_build_order[@]}"; do
   if [ -n "${package_buildcmd[$package]}" ]; then
@@ -393,20 +394,22 @@ for package in "${package_build_order[@]}"; do
   echo ""
   echo -e "\033[34;1mConfiguring $package in version ${package_list[$package]} for ${distribution}...\033[0m"
   # update pbuilder chroot environment (needed for every package, since dependencies might be added)
-  if [ -z $SKIP_PBUILDER_UPDATE ] ; then
+  if [ -z "$SKIP_PBUILDER_UPDATE" ] ; then
       ./helper_compress_output.sh ./updatePBuilder "$distribution" "$DebianRepository"
   fi
   # configure the package (possibly using just built dependencies)
   preseed=""
-  if [ "x$use_preseed_repository" = "x1" ] ; then
+  if [ "$use_preseed_repository" = "1" ] ; then
       preseed="--use-preseed"
   fi
 
-  ./configureRelease $force_new_buildnumber $preseed "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee $TEMPFILE ; test ${PIPESTATUS[0]} -eq 0
-  package_buildcmd[$package]=`tail -n1 $TEMPFILE`
+  # shellcheck disable=SC2086
+  ./configureRelease $force_new_buildnumber $preseed "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee "$TEMPFILE" ; test "${PIPESTATUS[0]}" -eq 0
+  package_buildcmd[$package]=$( tail -n1 "$TEMPFILE" )
   echo ""
   # actually build the package
   echo -e "\033[34;1mBuilding $package in version ${package_list[$package]} for ${distribution}...\033[0m"
+  # shellcheck disable=SC2086
   ./helper_compress_output.sh ${package_buildcmd[$package]}
   # put buildcmd into master-control file
   echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
@@ -415,7 +418,7 @@ for package in "${package_build_order[@]}"; do
   echo -e "\033[34;1mChecking $package in version ${package_list[$package]} for ${distribution}...\033[0m"
   ./checkPackageConsistency "$package"
 done
-rm $TEMPFILE
+rm "$TEMPFILE"
 
 # run validation
 echo ""
@@ -427,7 +430,8 @@ source master-control       # might be changed e.g. during configureRelease
 if [ $do_not_publish -eq 0 ]; then
   echo "You can find the packages in the following directory: pbuilder-result/dists/${distribution}/main/binary-${arch}"
   # before asking a question now let's clear the input buffer (at least up to 10000 chars) so we don't accidentally abort.
-  read -t 1 -n 10000 discard || true
+    # shellcheck disable=SC2034
+  read -r -t 1 -n 10000 discard || true
   ask "Publish the build versions to git and the packages to the DESY Debian repositories (y/N)?"
   ./commitDebianBuildVersions
   ./publishDebianPackages
