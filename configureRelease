@@ -26,6 +26,7 @@ debianCodenames = ['jessie', 'buster', 'stretch', 'bullseye', 'bookworm']
 # should work as long as the two versions that are compared have the same format.
 versionNumberReformatter = re.compile(r'[^0-9]+')
 
+
 def parseVersion(version: str):
     return packaging.version.parse(versionNumberReformatter.sub('.', version))
 
@@ -104,7 +105,7 @@ class ExceptionHandlingIterator(object):
 # returns a dictionary: "name" -> "version"
 
 
-def resolveDeps(dependencies, filename):
+def resolveDeps(dependencies, filename, version_comparator):
 
     # open Packages file and parse it
     if os.path.exists(filename):
@@ -137,10 +138,10 @@ def resolveDeps(dependencies, filename):
                     provided_version = re.search(version_re, PackageAsDictionary["Provides"]).groups()[0]
                     if dependency not in dependency_versions.keys() or parseVersion(provided_version) > parseVersion(
                             dependency_versions[dependency]):
-                        dependency_versions[dependency] = version
+                        dependency_versions[dependency] = provided_version
                         map_virtual_to_real[dependency] = PackageAsDictionary["Package"]
 
-    return dependency_versions, map_virtual_to_real
+    return {k: (v, version_comparator) for k, v in dependency_versions.items()}, map_virtual_to_real
 
 # get package version from a Packages file, or "none" if package not found
 
@@ -503,26 +504,35 @@ else:
     downloadAndUnpack(
         f"http://de.archive.ubuntu.com/ubuntu/dists/{codename}-security/main/binary-{arch}/Packages.xz", "Packages.UNIVERSE-SECURITY")
 
-# update the locake package repository
+
+def version_to_string(version) -> str:
+    return f"({version[1]} {version[0]})"
+
+
+# update the local package repository
 subprocess.call(['./updateLocalRepos'])
 subprocess.call(["mv", "Packages.DESY", "TMP.DESY"])
+
+# fix invalid characters in the DESY repository
 subprocess.call(["iconv", "-c", "-t", "UTF-8", "TMP.DESY", "-o", "Packages.DESY"])
 
 # parse all sources
-(dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE")
-(dependency_versions_main_updates, map_virtual_real_names_main_updates) = resolveDeps(dependencies, "Packages.MAIN-UPDATES")
+(dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE",  ">=")
+(dependency_versions_main_updates, map_virtual_real_names_main_updates) = resolveDeps(
+    dependencies, "Packages.MAIN-UPDATES", ">=")
 (dependency_versions_universe_updates, map_virtual_real_names_universe_updates) = resolveDeps(
-    dependencies, "Packages.UNIVERSE-UPDATES")
-(dependency_versions_main_security, map_virtual_real_names_main_security) = resolveDeps(dependencies, "Packages.MAIN-SECURITY")
+    dependencies, "Packages.UNIVERSE-UPDATES", ">=")
+(dependency_versions_main_security, map_virtual_real_names_main_security) = resolveDeps(
+    dependencies, "Packages.MAIN-SECURITY", ">=")
 (dependency_versions_universe_security, map_virtual_real_names_universe_security) = resolveDeps(
-    dependencies, "Packages.UNIVERSE-SECURITY")
-(dependency_versions_main, map_virtual_real_names_main) = resolveDeps(dependencies, "Packages.MAIN")
-(dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE")
-(dependency_versions_desy, map_virtual_real_names_desy) = resolveDeps(dependencies, "Packages.DESY")
+    dependencies, "Packages.UNIVERSE-SECURITY", ">=")
+(dependency_versions_main, map_virtual_real_names_main) = resolveDeps(dependencies, "Packages.MAIN", ">=")
+(dependency_versions_universe, map_virtual_real_names_universe) = resolveDeps(dependencies, "Packages.UNIVERSE", ">=")
+(dependency_versions_desy, map_virtual_real_names_desy) = resolveDeps(dependencies, "Packages.DESY", "=")
 (dependency_versions_preseed, map_virtual_real_names_preseed) = resolveDeps(
-    dependencies, "preseed/dists/" + codename + "/main/binary-" + arch + "/Packages")
+    dependencies, "preseed/dists/" + codename + "/main/binary-" + arch + "/Packages", "=")
 (dependency_versions_local, map_virtual_real_names_local) = resolveDeps(
-    dependencies, "pbuilder-result/dists/" + codename + "/main/binary-" + arch + "/Packages")
+    dependencies, "pbuilder-result/dists/" + codename + "/main/binary-" + arch + "/Packages", "=")
 
 # merge the found dependencies with priority, and check for unfound dependencies
 print("")
@@ -534,47 +544,46 @@ for dependency in dependencies:
     if dependency in dependency_versions_local:
         dependency_versions[dependency] = dependency_versions_local[dependency]
         map_virtual_real_names[dependency] = map_virtual_real_names_local[dependency]
-        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from *** LOCAL ***")
+        print("  " + dependency + " " + version_to_string(dependency_versions[dependency]) + " from *** LOCAL ***")
         is_using_local = True
     elif use_preseed and dependency in dependency_versions_preseed:
         dependency_versions[dependency] = dependency_versions_preseed[dependency]
         map_virtual_real_names[dependency] = map_virtual_real_names_preseed[dependency]
-        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from *** PRESEED ***")
+        print("  " + dependency + " " + version_to_string(dependency_versions[dependency]) + " from *** PRESEED ***")
     elif dependency in dependency_versions_main_updates:
         dependency_versions[dependency] = dependency_versions_main_updates[dependency]
         map_virtual_real_names[dependency] = map_virtual_real_names_main_updates[dependency]
-        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from " + codename + "-updates/main")
+        print("  " + dependency + " " +
+              version_to_string(dependency_versions[dependency]) + " from " + codename + "-updates/main")
     elif dependency in dependency_versions_universe_updates:
         dependency_versions[dependency] = dependency_versions_universe_updates[dependency]
         map_virtual_real_names[dependency] = map_virtual_real_names_universe_updates[dependency]
-        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from " + codename + "-updates/universe")
+        print("  " + dependency + " " +
+              version_to_string(dependency_versions[dependency]) + " from " + codename + "-updates/universe")
     elif dependency in dependency_versions_main_security:
         dependency_versions[dependency] = dependency_versions_main_security[dependency]
         map_virtual_real_names[dependency] = map_virtual_real_names_main_security[dependency]
-        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from " + codename + "-security/main")
+        print("  " + dependency + " " +
+              version_to_string(dependency_versions[dependency]) + " from " + codename + "-security/main")
     elif dependency in dependency_versions_universe_security:
         dependency_versions[dependency] = dependency_versions_universe_security[dependency]
         map_virtual_real_names[dependency] = map_virtual_real_names_universe_security[dependency]
-        print(
-            "  " +
-            dependency +
-            " (= " +
-            dependency_versions[dependency] +
-            ") from " +
-            codename +
-            "-security/universe")
+        print("  " + dependency + " " +
+              version_to_string(dependency_versions[dependency]) + " from " + codename + "-security/universe")
     elif dependency in dependency_versions_main:
         dependency_versions[dependency] = dependency_versions_main[dependency]
         map_virtual_real_names[dependency] = map_virtual_real_names_main[dependency]
-        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from " + codename + "/main")
+        print("  " + dependency + " " +
+              version_to_string(dependency_versions[dependency]) + " from " + codename + "/main")
     elif dependency in dependency_versions_universe:
         dependency_versions[dependency] = dependency_versions_universe[dependency]
         map_virtual_real_names[dependency] = map_virtual_real_names_universe[dependency]
-        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from " + codename + "/universe")
+        print("  " + dependency + " " +
+              version_to_string(dependency_versions[dependency]) + " from " + codename + "/universe")
     elif dependency in dependency_versions_desy:
         dependency_versions[dependency] = dependency_versions_desy[dependency]
         map_virtual_real_names[dependency] = map_virtual_real_names_desy[dependency]
-        print("  " + dependency + " (= " + dependency_versions[dependency] + ") from desy/main")
+        print("  " + dependency + " " + version_to_string(dependency_versions[dependency]) + " from desy/main")
     else:
         print("Dependency " + dependency + " cannot be found in any of the apt repository!")
         sys.exit(1)
@@ -597,7 +606,7 @@ dependency_dir = version_base_dir
 # make dependency versions available in the config
 for dependency in dependencies:
     if dependency != "":
-        deps_epoch_array = re.findall("^.*" + codename + "[0-9]*\\.", dependency_versions[dependency])
+        deps_epoch_array = re.findall("^.*" + codename + "[0-9]*\\.", dependency_versions[dependency][0])
         if (len(deps_epoch_array) != 0):
             deps_epoch = deps_epoch_array[0][:-1]
             deps_epoch_split = deps_epoch.split(codename)
@@ -617,16 +626,16 @@ for dependency in dependencies:
 # create list of dependencies with versions
 build_depends = ""
 for dependency in dependencies:
-    dependency_dir = dependency_dir + "/" + dependency + "-" + dependency_versions[dependency]
-    build_depends += dependency + " (= " + dependency_versions[dependency] + "), "
+    dependency_dir = dependency_dir + "/" + dependency + "-" + dependency_versions[dependency][0]
+    build_depends += f"{dependency} {version_to_string(dependency_versions[dependency])}, "
 build_depends = build_depends[:-2]
 
 dev_depends = ""
 for dependency in dependencies_dev:
     if dependency != "":
-        deps_epoch_array = re.findall("^.*" + codename + "[0-9]*\\.", dependency_versions[dependency])
+        deps_epoch_array = re.findall("^.*" + codename + "[0-9]*\\.", dependency_versions[dependency][0])
         if (len(deps_epoch_array) == 0):
-            dev_depends += dependency + " (= " + dependency_versions[dependency] + "), "
+            dev_depends += f"{dependency} {version_to_string(dependency_versions[dependency])}, "
         else:
             deps_epoch = deps_epoch_array[0][:-1]
             deps_epoch_split = deps_epoch.split(codename)
@@ -638,7 +647,7 @@ dev_depends = dev_depends[:-2]
 dynload_depends = ""
 if "Use-dynload" in config or "dynload" in hasPackages:
     dynload_deps_epoch_array = re.findall(
-        "^.*" + codename + "[0-9]*\\.", dependency_versions["libchimeratk-deviceaccess"])
+        "^.*" + codename + "[0-9]*\\.", dependency_versions["libchimeratk-deviceaccess"][0])
     dynload_deps_epoch = dynload_deps_epoch_array[0][:-1]
     dynload_deps_epoch_split = dynload_deps_epoch.split(codename)
     dynload_deps_next_epoch = dynload_deps_epoch_split[0] + \
