@@ -52,6 +52,7 @@ ${WD}/updateLocalRepos
 export PRESEED_REPOS
 
 sudo -E pbuilder --login --distribution ${DISTRIBUTION} --override-config --components "main universe"                 \
+                 --mirror "${MIRROR}"                                                                                  \
                  --othermirror "${MIRRORLIST}"                                                                         \
                  --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS} ${PRESEED_REPOS}"                          \
                  --hookdir "${HOOKDIR}"
