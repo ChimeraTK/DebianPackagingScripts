@@ -281,8 +281,9 @@ def replace_config_variables(filename):
         content = replace_token(content, var)
     # check for unknown variables which have not been replaced
     # The regular expression matches a string of alpha-numeric characters enclosed within single hash characters
-    if re.match('[^#]#[a-zA-Z0-9]#[^#]', content) is not None:
-        print("File " + filename + " has an unknown variable: " + content[pos1:pos2 + 1])
+    variable = re.search(r'[^#]#[\w\d-]+#[^#]', content)
+    if variable is not None:
+        print("File " + filename + " has an unknown variable: " + content[variable.span()[0]:variable.span()[1]])
         sys.exit(1)
     return content
 
