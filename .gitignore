@@ -10,3 +10,4 @@ override_config
 blacklist
 buildlogs
 preseed
+__pycache__
