@@ -1,12 +1,14 @@
 # SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+import sys
 import requests
 import zlib
 import lzma
 
+
 def downloadAndUnpack(url: str, localFile: str) -> bool:
-    print(f"Downloading {url}")
+    print(f"Downloading {url}", file=sys.stderr)
     try:
         with requests.get(url, stream=True) as request:
             request.raise_for_status()
@@ -27,5 +29,5 @@ def downloadAndUnpack(url: str, localFile: str) -> bool:
                     f.write(d.flush())
         return True
     except Exception as e:
-        print(f"Failed to download {url}: {e}")
+        print(f"Failed to download {url}: {e}", file=sys.stderr)
         return False
