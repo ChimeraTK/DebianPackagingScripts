@@ -284,7 +284,7 @@ for package in "${!package_list[@]}"; do
   if [ "${package}" = "chimeratk-deviceaccess" ]; then
     echo "./findReverseDependencies lib${package}$ $distribution $DebianRepository $arch"
     DEPENDENCIES_RESULT2=$(./findReverseDependencies "lib${package}$" "$distribution" "$DebianRepository" $arch)
-    echo "${DEPENDENCIES_RESULT2}" | grep -v -- "-dbgsym " | sed -e 's/^lib//' -e 's/-dev / /' -e '/^[[:space:]]*$/d' >> "TEMPFILE"
+    echo "${DEPENDENCIES_RESULT2}" | grep -v -- "-dbgsym " | sed -e 's/^lib//' -e 's/-dev / /' -e '/^[[:space:]]*$/d' >> "$TEMPFILE"
   fi
   readarray revdeps_with_versions < "$TEMPFILE"
   rm -f "$TEMPFILE"
