@@ -1,4 +1,3 @@
-usr/bin/*-config
 @LIBDIR@/lib*.so
 @LIBDIR@/cmake/*
 usr/include/*
