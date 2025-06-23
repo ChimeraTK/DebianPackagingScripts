@@ -22,7 +22,8 @@ if [ ! -d pbuilder-result ]; then
     echo "No pbuilder-result directory found. Run the master script first."
     exit 1
 fi
-cd ${WD}/pbuilder-result/dists/${distribution}/main/binary-${arch}
+PBUILDER_RESULTS_DIR="${WD}/pbuilder-result/dists/${distribution}/main/binary-${arch}"
+cd "${PBUILDER_RESULTS_DIR}"
 
 # check that none of the packages already exists in the repositories
 wget -q "http://doocspkgs.desy.de/pub/doocs/dists/${distribution}/main/binary-${arch}/Packages" -O "${WD}/Packages.DESY"
@@ -38,7 +39,16 @@ done
 for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the list (note: this is *not* the list of .deb files but the list of projects!)
 
   # get the path to the control file from the build command (argument to makeDebianPackage)
-  BUILD_CONTROL_FILE=`echo ${package_buildcmd[$package]} | sed -e "s|^./makeDebianPackage.*Debian|${WD}/Debian|"`/control
+  BUILD_CONTROL_DIRECTORY=`echo ${package_buildcmd[$package]} | sed -e "s|^./makeDebianPackage.*Debian|${WD}/Debian|"`
+  BUILD_CONTROL_FILE="${BUILD_CONTROL_DIRECTORY}/control"
+
+  # skip if the package has already been published
+  NOT_PUBLISHED_FILE="${BUILD_CONTROL_DIRECTORY}/NOT_PUBLISHED"
+  if [ ! -f "${NOT_PUBLISHED_FILE}" ]; then
+      echo "${NOT_PUBLISHED_FILE} file not found. This package probably is already published. Skipping..."
+      continue
+  fi
+
 
   # obtain list of package names from the control file and form wildcards to match the deb files
   PACKAGE_FILES_WILDCARDS_DEB=$(awk 'BEGIN{ORS=" "} /^Package:/{print $2"_*.deb"}' ${BUILD_CONTROL_FILE})
@@ -123,6 +133,17 @@ for package in "${!package_buildcmd[@]}"; do    # loop over all packages in the 
   # Remove just installed files from the local pbuilder-result directory
   rm ${PACKAGE_FILES_WILDCARDS}
 
+  # Remove the file inicating that the package needs to be published
+  cd "${WD}/DebianBuildVersions"
+  git rm "${NOT_PUBLISHED_FILE}"
+  PACKAGE_AND_VERSION=`echo ${package_buildcmd[$package]} | sed -e "s|^\./makeDebianPackage DebianBuildVersions/||"`
+  git commit -m "automated commit: successfully published ${PACKAGE_AND_VERSION}"
+  # There should be no merge conflict here. The commitDebianBuildVersions script
+  # prevents multiple scripts accessing this NOT_PUBLISHED file.
+  git pull --rebase
+  git push
+  cd "${PBUILDER_RESULTS_DIR}"
+  
 done
 
 # Everything installed: remove the entire pbuilder-result directory
