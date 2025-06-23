@@ -19,6 +19,9 @@ if [ $do_not_publish -eq 0 ]; then
     # get the path to the control directory from the build command (argument to makeDebianPackage)
     BUILD_CONTROL_DIRECTORY=`echo ${package_buildcmd[$package]} | sed -e 's|^./makeDebianPackage.*DebianBuildVersions/||'`
 
+    # touch and add the file indicating that the publication is still ongoing
+    touch "${BUILD_CONTROL_DIRECTORY}/NOT_PUBLISHED"
+
     # add control direcotry to commit
     git add ${BUILD_CONTROL_DIRECTORY}
   
