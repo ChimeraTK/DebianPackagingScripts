@@ -8,7 +8,6 @@ import lzma
 
 
 def downloadAndUnpack(url: str, localFile: str) -> bool:
-    print(f"Downloading {url}", file=sys.stderr)
     try:
         with requests.get(url, stream=True) as request:
             request.raise_for_status()
