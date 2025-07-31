@@ -301,6 +301,10 @@ done
 # check versions and deal with "latest" version spec
 echo "Verifying versions..."
 for package in "${!package_list[@]}"; do
+  if [ ! -d "DebianBuildVersions/${package}" ]; then
+    echo "Skipping ${package}, seems to be an external package..."
+    continue
+  fi
   REPO=$( getConfigValue "DebianBuildVersions/${package}" "${distribution}" SourceURI )
   if [ "${package_list["${package}"]}" == "latest" ]; then
     package_list["${package}"]=$( git ls-remote --tags ${REPO} | sed -e 's_^.*refs/tags/__' | grep -v "\^{}$" | sort -V | tail -1 )
