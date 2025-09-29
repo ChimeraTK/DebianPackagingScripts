@@ -17,7 +17,7 @@ import re
 import datetime
 from util import downloadAndUnpack
 from contextlib import suppress
-debianCodenames = ['jessie', 'buster', 'stretch', 'bullseye', 'bookworm']
+debianCodenames = ['bookworm', 'trixie']
 
 
 # Regular expression used in parseVersion. The native packaging.version.parse() does not accept some of the usual Debian
