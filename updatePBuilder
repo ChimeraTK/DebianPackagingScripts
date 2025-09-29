@@ -64,27 +64,9 @@ groupadd doocsadm
 useradd -m -g doocsadm doocsadm
 EOF
   sudo pbuilder --execute --distribution "${DISTRIBUTION}" --override-config --components "main ${ADDITIONALREPO}"    \
+                --mirror "${MIRROR}"                                                                                  \
                 --othermirror "${MIRRORLIST}"  --save-after-exec                                                      \
                 --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}" "${SCRIPT}"
-fi
-
-# On Bookwork only: configure g++13 to be the default compiler
-if [ "${DISTRIBUTION}" == "bookworm" ]; then
-    SCRIPT2=$(mktemp -p "${LOCAL_REPOS}")  # must be in the pbuilder-result directory, since it is bind-mounted in the pbuilder environment
-    cat > "$SCRIPT2" <<EOF
-#!/bin/bash -e
-# install g++13 and configure it to be the default compiler
-apt-get install -y g++-13
-update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12
-update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
-update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 12
-update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 13
-update-alternatives --set gcc /usr/bin/gcc-13
-update-alternatives --set g++ /usr/bin/g++-13
-EOF
-    sudo pbuilder --execute --distribution "${DISTRIBUTION}" --override-config --components "main ${ADDITIONALREPO}" \
-                  --othermirror "${MIRRORLIST}"  --save-after-exec                                                   \
-                  --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}" "${SCRIPT2}"
 fi
 
 # update local repositories, if build process on-going
@@ -102,5 +84,26 @@ sudo pbuilder --update                                                          
               --hookdir "${WD}/pbuilder-hooks"                                                                        \
               --basetgz "${PBUILDER_IMAGE}"                                                                           \
               --bindmounts "${LOCAL_REPOS}"         || exit 1
+
+
+# On Bookwork only: configure g++13 to be the default compiler
+if [ "${DISTRIBUTION}" == "bookworm" ]; then
+    SCRIPT2=$(mktemp -p "${LOCAL_REPOS}")  # must be in the pbuilder-result directory, since it is bind-mounted in the pbuilder environment
+    cat > "$SCRIPT2" <<EOF
+#!/bin/bash -e
+# install g++13 and configure it to be the default compiler
+apt-get install -y g++-13
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
+update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 12
+update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 13
+update-alternatives --set gcc /usr/bin/gcc-13
+update-alternatives --set g++ /usr/bin/g++-13
+EOF
+    sudo pbuilder --execute --distribution "${DISTRIBUTION}" --override-config --components "main ${ADDITIONALREPO}" \
+                  --mirror "${MIRROR}"                                                                               \
+                  --othermirror "${MIRRORLIST}"  --save-after-exec                                                   \
+                  --basetgz "${PBUILDER_IMAGE}" --bindmounts "${LOCAL_REPOS}" "${SCRIPT2}"
+fi
 
 echo "pbuilder chroot environment successfully updated."
