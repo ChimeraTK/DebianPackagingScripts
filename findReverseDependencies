@@ -8,7 +8,8 @@ import sys
 import re  # regular expressions library
 from util import downloadAndUnpack
 
-def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies, codename):
+
+def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies, codename, no_recurse):
     for Package in Packages:
         PackageAsDictionary = dict(Package)
         if 'Depends' in PackageAsDictionary:
@@ -29,7 +30,9 @@ def findReverseDependencies(DependencyToSearchFor, Packages, ReverseDependencies
                     # add the found package to the list
                     ReverseDependencies.append(PackageAsDictionary['Package'] + ' ' + version)
                     # recursive search: find packages depending on the found package as well
-                    findReverseDependencies(PackageAsDictionary['Package'], Packages, ReverseDependencies, codename)
+                    if not no_recurse:
+                        findReverseDependencies(PackageAsDictionary['Package'],
+                                                Packages, ReverseDependencies, codename, no_recurse)
 
 
 def resolvePackagePattern(packagePattern, Packages):
@@ -56,12 +59,13 @@ def subprocessHelper(argList):
 
 def main():
     # output usage
-    if len(sys.argv) != 4 and len(sys.argv) != 5:
+    if len(sys.argv) < 4 or len(sys.argv) > 6:
         print(
-            "Usage: ./findReverseDependencies <package_name> <distribution_codename> <debian_repository> [<architecture>]")
-        print("Example: ./findReverseDependencies libmtca4u-deviceaccess-dev xenial http://doocspkgs.desy.de/")
+            "Usage: ./findReverseDependencies <package_name> <distribution_codename> <debian_repository> [<architecture>] [no_recurse]")
+        print("Example: ./findReverseDependencies libchimeratk-deviceaccess-dev noble http://doocspkgs.desy.de/")
         print("  This will output all packages depending on a specific version of libmtca4u-deviceaccess-dev. It will recursively repeat the search for all found packages.")
         print("  The command resolves regular expressions, so \"dev-doocs.*\" for instance searches for all packages starting with \"dev-doocs\".")
+        print("  If the optional 'no_recurse' keyword is specified at the end, only packages which directly depend on <package_name> will be listed.")
         sys.exit()
 
     # parse command line arguments
@@ -73,11 +77,19 @@ def main():
     else:
         arch = "amd64"
 
+    if len(sys.argv) == 6:
+        if sys.argv[5] != "no_recurse":
+            print("Error: 5th parameter can only be 'no_recurse' or empty.")
+            sys.exit()
+        no_recurse = True
+    else:
+        no_recurse = False
+
     # download Packages file from the DESY DOOCS apt repositories
-    
+
     if not downloadAndUnpack(f"{debianrepository}/pub/doocs/dists/{codename}/main/binary-{arch}/Packages", "Packages.DESY"):
         raise RuntimeError(f'wget from {debianrepository} failed; are you in DESY network?')
-        
+
     subprocessHelper(["mv", "Packages.DESY", "TMP.DESY"])
     subprocessHelper(["iconv", "-c", "-t", "UTF-8", "TMP.DESY", "-o", "Packages.DESY"])
 
@@ -92,7 +104,7 @@ def main():
     # search for packages depending on the specified package
     ReverseDependencies = []
     for package in inputPackages:
-        findReverseDependencies(package, Packages, ReverseDependencies, codename)
+        findReverseDependencies(package, Packages, ReverseDependencies, codename, no_recurse)
 
     # output list (as a set, to make it unique)
     for dep in set(ReverseDependencies):

@@ -282,7 +282,7 @@ for package in "${!package_list[@]}"; do
   echo "${DEPENDENCIES_RESULT}" | grep "^lib" | grep -- "-dev " | sed -e 's/^lib//' -e 's/-dev / /' -e '/^[[:space:]]*$/d' > "$TEMPFILE"
   # DeviceAccess is special case: also build all packages depending on 'libchimeratk-deviceaccess', not just libs but also e.g qthardmon
   if [ "${package}" = "chimeratk-deviceaccess" ]; then
-    DEPENDENCIES_RESULT2=$(./findReverseDependencies "lib${package}$" "$distribution" "$DebianRepository" $arch)
+    DEPENDENCIES_RESULT2=$(./findReverseDependencies "lib${package}$" "$distribution" "$DebianRepository" $arch "no_recurse")
     echo "${DEPENDENCIES_RESULT2}" | grep -v -- "-dbgsym " | sed -e 's/^lib//' -e 's/-dev / /' -e '/^[[:space:]]*$/d' >> "$TEMPFILE"
   fi
   readarray revdeps_with_versions < "$TEMPFILE"
