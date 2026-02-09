@@ -19,11 +19,13 @@ http://doocspkgs.desy.de/pub/doocs
 
 ### Dependencies
 
-To work, the script requries:
+To work, the script requires:
 
 ```
 sudo apt install pbuilder dh-make python-debian debhelper
 ```
+
+If you want to also build packages for debian distributions, the package `debian-archive-keyring` is also required on Ubuntu.
 
 ### Recommendations
 
