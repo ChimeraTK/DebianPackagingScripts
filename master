@@ -306,8 +306,10 @@ for package in "${!package_list[@]}"; do
     continue
   fi
   REPO=$( getConfigValue "DebianBuildVersions/${package}" "${distribution}" SourceURI )
-  if [ "${package_list["${package}"]}" == "latest" ]; then
-    package_list["${package}"]=$( git ls-remote --tags ${REPO} | sed -e 's_^.*refs/tags/__' | grep -v "\^{}$" | sort -V | tail -1 )
+  requested_version=${package_list["${package}"]}
+  IFS=":" read -r -a version_specifier <<< "${requested_version}"
+  if [ "${version_specifier[0]}" == "latest" ]; then
+    package_list["${package}"]=$( git ls-remote --tags ${REPO} | sed -e 's_^.*refs/tags/__' | grep "^${version_specifier[1]//\./\\.}" | grep -v "\^{}$" | sort -V | tail -1 )
   else
     VERSION_OK=0
     for version in $( git ls-remote --tags ${REPO} | sed -e 's_^.*refs/tags/__' | grep -v "\^{}$" ); do
