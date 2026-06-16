@@ -4,6 +4,15 @@ full_cmdline="$*"
 
 source functions.sh
 
+# function to check if a package is marked as Allow-fail in its CONFIG file
+function isAllowFail() {
+  _VALUE=$(getConfigValue "DebianBuildVersions/$1" "${distribution}" "Allow-fail")
+  if [ "$_VALUE" = "yes" ] || [ "$_VALUE" = "true" ]; then
+    return 0
+  fi
+  return 1
+}
+
 # master shell script for creating debian packages for multiple packages, with proper reverse-dependency checking
 # and other safetly checks.
 
@@ -35,6 +44,10 @@ function showHelp() {
   echo "Example: ./master noble chimeratk-deviceaccess 03.16.00 qthardmon latest"
   echo ""
   echo "Specifying 'latest' as a version will build the greatest version (see sort -V) found on the source repository."
+  echo ""
+  echo "CONFIG option 'Allow-fail: yes' marks a package so that when it is discovered"
+  echo "as a reverse dependency (not explicitly listed), build failures are non-fatal."
+  echo "When explicitly listed on the command line, failures are always hard."
 }
 
 ## check prerequisites ##
@@ -266,8 +279,10 @@ fi
 
 # create list of packages to build from command line arguments
 declare -A package_list        # associative array: package name -> package version
+declare -A EXPLICIT_PACKAGES   # associative array: packages explicitly listed on the command line
 while [ -n "$1" ]; do
   package_list["$1"]="$2"
+  EXPLICIT_PACKAGES["$1"]="$2"
   shift ; shift
 done
 
@@ -384,6 +399,8 @@ for package in "${package_build_order[@]}"; do
     echo -n " [already done]"
   elif [ -n "${BLACKLIST[$package]}" ]; then
     echo -n " [*** BLACKLISTED ***]"
+  elif [ -z "${EXPLICIT_PACKAGES[$package]+abc}" ] && isAllowFail "$package"; then
+    echo -n " [Allow-fail]"
   fi
   echo ""
 done
@@ -419,20 +436,52 @@ for package in "${package_build_order[@]}"; do
       preseed="--use-preseed"
   fi
 
-  # shellcheck disable=SC2086
-  ./configureRelease $force_new_buildnumber $preseed "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee "$TEMPFILE" ; test "${PIPESTATUS[0]}" -eq 0
-  package_buildcmd[$package]=$( tail -n1 "$TEMPFILE" )
-  echo ""
-  # actually build the package
-  echo -e "\033[34;1mBuilding $package in version ${package_list[$package]} for ${distribution}...\033[0m"
-  # shellcheck disable=SC2086
-  ./helper_compress_output.sh ${package_buildcmd[$package]}
-  # put buildcmd into master-control file
-  echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
-  # check consistency of the package
-  echo ""
-  echo -e "\033[34;1mChecking $package in version ${package_list[$package]} for ${distribution}...\033[0m"
-  ./checkPackageConsistency "$package"
+  # determine if failures for this package should be soft (allow-fail)
+  ALLOW_FAIL=0
+  if [ -z "${EXPLICIT_PACKAGES[$package]+abc}" ] && isAllowFail "$package"; then
+    ALLOW_FAIL=1
+    echo -e "\033[33;1mPackage $package has Allow-fail set and is not explicitly requested.\033[0m"
+    echo -e "\033[33;1mFailures during configure/build/check will be non-fatal.\033[0m"
+  fi
+
+  if [ $ALLOW_FAIL -eq 1 ]; then
+    # shellcheck disable=SC2086
+    ./configureRelease $force_new_buildnumber $preseed "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee "$TEMPFILE" ; _CONFIG_STATUS=${PIPESTATUS[0]}
+    if [ $_CONFIG_STATUS -ne 0 ]; then
+      echo -e "\033[33;1mWARNING: Configuration of $package failed (Allow-fail set, continuing)...\033[0m"
+      continue
+    fi
+    package_buildcmd[$package]=$( tail -n1 "$TEMPFILE" )
+    echo ""
+    echo -e "\033[34;1mBuilding $package in version ${package_list[$package]} for ${distribution}...\033[0m"
+    # shellcheck disable=SC2086
+    ./helper_compress_output.sh ${package_buildcmd[$package]} ; _BUILD_STATUS=$?
+    if [ $_BUILD_STATUS -ne 0 ]; then
+      echo -e "\033[33;1mWARNING: Build of $package failed (Allow-fail set, continuing)...\033[0m"
+      echo ""
+      continue
+    fi
+    # put buildcmd into master-control file
+    echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
+    echo ""
+    echo -e "\033[34;1mChecking $package in version ${package_list[$package]} for ${distribution}...\033[0m"
+    ./checkPackageConsistency "$package" || echo -e "\033[33;1mWARNING: Consistency check of $package failed (Allow-fail set, continuing)...\033[0m"
+  else
+    # shellcheck disable=SC2086
+    ./configureRelease $force_new_buildnumber $preseed "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee "$TEMPFILE" ; test "${PIPESTATUS[0]}" -eq 0
+    package_buildcmd[$package]=$( tail -n1 "$TEMPFILE" )
+    echo ""
+    # actually build the package
+    echo -e "\033[34;1mBuilding $package in version ${package_list[$package]} for ${distribution}...\033[0m"
+    # shellcheck disable=SC2086
+    ./helper_compress_output.sh ${package_buildcmd[$package]}
+    # put buildcmd into master-control file
+    echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
+    # check consistency of the package
+    echo ""
+    echo -e "\033[34;1mChecking $package in version ${package_list[$package]} for ${distribution}...\033[0m"
+    ./checkPackageConsistency "$package"
+  fi
 done
 rm "$TEMPFILE"
 

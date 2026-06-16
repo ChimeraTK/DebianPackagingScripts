@@ -140,6 +140,18 @@ in DebianBuildVersions
 
 Normally, the scripts will rebuild all reverse-dependencies of library dev packages, because those packages would be broken otherwise when a library package is released, due to the exact version dependency. If one of those reverse-dependencies is broken and cannot be built, the entire tree cannot be rebuilt until this is fixed. In case of emergencies, the script hence allows to blacklist packages to prevent them from being built. For this purpose, just create a file named `blacklist` containing one package name per line (without version). Blacklisted packages which are skipped are still shown (marked as blacklisted) when listing all packages to be built, to raise awareness that these packages will be broken after the new packages are published.
 
+### Allow-fail option
+
+As a more flexible alternative to blacklisting, the `Allow-fail` option can be set in a package's CONFIG file:
+
+```
+Allow-fail: yes
+```
+
+When a package has `Allow-fail: yes` and is discovered as a reverse dependency (not explicitly listed on the `./master` command line), failures during configure, build, or consistency check will be non-fatal. The build chain continues with the next package.
+
+If the same package is **explicitly listed** on the command line, the `Allow-fail` setting is ignored and failures are hard. This ensures that when you intentionally request a build, any failure should stop the process.
+
 ## CONFIG file syntax
 
 Each project needs a file called CONFIG in the project's subdirectory inside the DebianBuildVersions repository. This file describes how the packages are built.
@@ -148,8 +160,8 @@ TODO: Add documentation!
 
 ### Distribution-specific overrides
 
-It is possible to override settings for a specific distribution by adding a file 
-`CONFIG.codename` next to the `CONFIG` file. Settings made in that file take precedence 
+It is possible to override settings for a specific distribution by adding a file
+`CONFIG.codename` next to the `CONFIG` file. Settings made in that file take precedence
 over `CONFIG`.
 
 ### Multi-line values
