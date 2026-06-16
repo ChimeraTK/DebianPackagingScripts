@@ -416,9 +416,11 @@ sudo echo "We have root rights now."
 # configure and build packages
 TEMPFILE=$( mktemp )
 declare -A package_buildcmd        # associative array: package name -> command to build the package
+declare -A BUILD_RESULT           # associative array: package name -> "ok" or "failed (Allow-fail)"
 for package in "${package_build_order[@]}"; do
   if [ -n "${package_buildcmd[$package]}" ]; then
     echo "Package $package has already been built, continuing with next package..."
+    BUILD_RESULT["$package"]="ok"
     continue
   elif [ -n "${BLACKLIST[$package]}" ]; then
     echo "Package $package is blacklisted, continuing with next package..."
@@ -449,6 +451,7 @@ for package in "${package_build_order[@]}"; do
     ./configureRelease $force_new_buildnumber $preseed "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee "$TEMPFILE" ; _CONFIG_STATUS=${PIPESTATUS[0]}
     if [ $_CONFIG_STATUS -ne 0 ]; then
       echo -e "\033[33;1mWARNING: Configuration of $package failed (Allow-fail set, continuing)...\033[0m"
+      BUILD_RESULT["$package"]="failed during configuration"
       continue
     fi
     package_buildcmd[$package]=$( tail -n1 "$TEMPFILE" )
@@ -459,13 +462,14 @@ for package in "${package_build_order[@]}"; do
     if [ $_BUILD_STATUS -ne 0 ]; then
       echo -e "\033[33;1mWARNING: Build of $package failed (Allow-fail set, continuing)...\033[0m"
       echo ""
+      BUILD_RESULT["$package"]="failed during build"
       continue
     fi
     # put buildcmd into master-control file
     echo "package_buildcmd[$package]=\"${package_buildcmd[$package]}\"" >> master-control
     echo ""
     echo -e "\033[34;1mChecking $package in version ${package_list[$package]} for ${distribution}...\033[0m"
-    ./checkPackageConsistency "$package" || echo -e "\033[33;1mWARNING: Consistency check of $package failed (Allow-fail set, continuing)...\033[0m"
+    ./checkPackageConsistency "$package" && BUILD_RESULT["$package"]="ok" || BUILD_RESULT["$package"]="failed during consistency check"
   else
     # shellcheck disable=SC2086
     ./configureRelease $force_new_buildnumber $preseed "$package" "${package_list[$package]}" "$distribution" "$DebianRepository" "$arch" | tee "$TEMPFILE" ; test "${PIPESTATUS[0]}" -eq 0
@@ -481,9 +485,28 @@ for package in "${package_build_order[@]}"; do
     echo ""
     echo -e "\033[34;1mChecking $package in version ${package_list[$package]} for ${distribution}...\033[0m"
     ./checkPackageConsistency "$package"
+    BUILD_RESULT["$package"]="ok"
   fi
 done
 rm "$TEMPFILE"
+
+# print build summary
+echo ""
+echo -e "\033[34;1mBuild summary:\033[0m"
+for package in "${package_build_order[@]}"; do
+  if [ -n "${BLACKLIST[$package]}" ]; then
+    echo "  $package - skipped (blacklisted)"
+  elif [ -n "${BUILD_RESULT[$package]}" ]; then
+    if [ "${BUILD_RESULT[$package]}" = "ok" ]; then
+      echo -e "  $package - \033[32;1mok\033[0m"
+    else
+      echo -e "  $package - \033[31;1m${BUILD_RESULT[$package]}\033[0m"
+    fi
+  else
+    echo "  $package - did not run"
+  fi
+done
+echo ""
 
 # run validation
 echo ""
