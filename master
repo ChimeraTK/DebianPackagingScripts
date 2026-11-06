@@ -4,6 +4,9 @@ full_cmdline="$*"
 
 source functions.sh
 
+# the distribution codename is always taken from the command line, an inherited DISTRIBUTION must not override it
+unset DISTRIBUTION
+
 # master shell script for creating debian packages for multiple packages, with proper reverse-dependency checking
 # and other safetly checks.
 
