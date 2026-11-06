@@ -9,7 +9,7 @@ cd $(dirname "$0")
 #check the input.
 if [[ $# != 3 ]]; then
   echo "Usage: ./runMasterForDependencies <distribution_codename> <package_pattern> <debian_repository>"
-  echo "Example: ./runMasterForDependencies xenial \"dev-doocs.*\" http://doocspkgs.desy.de/"
+  echo "Example: ./runMasterForDependencies noble \"dev-doocs.*\" http://doocspkgs.desy.de/"
   exit 1
 fi
 

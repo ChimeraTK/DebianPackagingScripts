@@ -163,15 +163,17 @@ def getPackageVersion(packageName, filename):
 
 
 parser = argparse.ArgumentParser(
-    epilog="Example: ./configureRelease doocswrappers 0.5.0 xenial http://doocspkgs.desy.de/")
+    epilog="Example: ./configureRelease chimeratk-deviceaccess 03.31.00 noble http://doocspkgs.desy.de/")
 parser.add_argument('project_name')
 parser.add_argument('version_tag_name')
 parser.add_argument('distribution_codename')
 parser.add_argument('debian_repository')
 # nargs='?' makes this argument optional and will use the default otherwise
 parser.add_argument('architecture', nargs='?', default='amd64')
-parser.add_argument('--use-preseed', action='store_true', default=False)
-parser.add_argument('--force-new-buildnumber', action='store_true', default=False)
+parser.add_argument('--use-preseed', action='store_true', default=False,
+                    help="build against the preseed packages instead of the official repositories")
+parser.add_argument('--force-new-buildnumber', action='store_true', default=False,
+                    help="increment the build number even if the package was built with the same dependencies before")
 
 args = parser.parse_args()
 
