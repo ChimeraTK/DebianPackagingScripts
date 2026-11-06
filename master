@@ -31,10 +31,16 @@ function hasValue() {
 }
 
 function showHelp() {
-  echo "Usage: ./master [--preseed|-p] <distribution_codename> <package_name1> <package_version1> [<package_name2> <package_version2>] [...]"
-  echo "Example: ./master noble chimeratk-deviceaccess 03.16.00 qthardmon latest"
+  echo "Usage: ./master [--preseed|-p] [--force-new-buildnumber] <distribution_codename> <package_name1> <package_version1> [<package_name2> <package_version2>] [...]"
+  echo "Example: ./master noble chimeratk-deviceaccess 03.31.00 qthardmon latest"
   echo ""
   echo "Specifying 'latest' as a version will build the greatest version (see sort -V) found on the source repository."
+  echo ""
+  echo "Options:"
+  echo "  -p, --preseed                Build against the packages found in the preseed folder instead of the official repositories."
+  echo "      --force-new-buildnumber  Increment the build number of all packages which are being built, even if they have"
+  echo "                               already been built with the same dependencies."
+  echo "  -h, --help                   Show this help."
 }
 
 ## check prerequisites ##

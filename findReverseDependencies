@@ -63,7 +63,7 @@ def main():
         print(
             "Usage: ./findReverseDependencies <package_name> <distribution_codename> <debian_repository> [<architecture>] [no_recurse]")
         print("Example: ./findReverseDependencies libchimeratk-deviceaccess-dev noble http://doocspkgs.desy.de/")
-        print("  This will output all packages depending on a specific version of libmtca4u-deviceaccess-dev. It will recursively repeat the search for all found packages.")
+        print("  This will output all packages depending on a specific version of libchimeratk-deviceaccess-dev. It will recursively repeat the search for all found packages.")
         print("  The command resolves regular expressions, so \"dev-doocs.*\" for instance searches for all packages starting with \"dev-doocs\".")
         print("  If the optional 'no_recurse' keyword is specified at the end, only packages which directly depend on <package_name> will be listed.")
         sys.exit()
